@@ -431,6 +431,11 @@ generate_user_files() {
 
     # Generate plugins/user-plugins/example.sh
     echo -e "  ${BLUE}Generating plugins/user-plugins/example.sh...${NC}"
+    # Ensure the directory exists
+    mkdir -p "$install_dir/plugins/user-plugins" 2>/dev/null || {
+        echo -e "  ${RED}✗${NC} Failed to create plugins/user-plugins directory" >&2
+        return 1
+    }
     if bash "$generate_template" example > "$install_dir/plugins/user-plugins/example.sh" 2>/dev/null; then
         chmod +x "$install_dir/plugins/user-plugins/example.sh" 2>/dev/null || true
         echo -e "  ${GREEN}✓${NC} Created plugins/user-plugins/example.sh"
@@ -839,12 +844,14 @@ main() {
 
     echo -e "${GREEN}Dependency check passed!${NC}"
     echo
+    sleep 0.5
 
     # Create backups of existing configuration files
     if ! backup_config_files; then
         echo -e "${RED}Backup failed. Exiting.${NC}"
         exit 1
     fi
+    sleep 0.5
 
     # Copy DOGRC files to installation location
     if ! copy_dogrc_files; then
@@ -852,6 +859,7 @@ main() {
         rollback_installation
         exit 1
     fi
+    sleep 0.5
 
     # Generate user-configurable files
     if ! generate_user_files; then
@@ -859,6 +867,7 @@ main() {
         rollback_installation
         exit 1
     fi
+    sleep 0.5
 
     # Verify installation
     if ! verify_installation; then
@@ -866,12 +875,14 @@ main() {
         rollback_installation
         exit 1
     fi
+    sleep 0.5
 
     # Generate MOTD with user instructions
     if ! generate_motd; then
         # MOTD failure is non-critical, but we'll still log it
         echo -e "${YELLOW}Warning: Failed to generate MOTD, but installation is complete.${NC}"
     fi
+    sleep 0.5
 
     # Installation complete
     echo -e "${GREEN}========================================${NC}"
