@@ -1,0 +1,95 @@
+#!/bin/bash
+# Sourcing Guard - check if motd function already exists
+if declare -f motd >/dev/null 2>&1; then
+    return 0
+fi
+
+[[ -z "${__UTILITIES_DIR:-}" ]] && readonly __UTILITIES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[[ -z "${__PLUGINS_DIR:-}" ]] && readonly __PLUGINS_DIR="$(cd "${__UTILITIES_DIR}/.." && pwd)"
+[[ -z "${__CORE_DIR:-}" ]] && readonly __CORE_DIR="$(cd "${__UTILITIES_DIR}/../../core" && pwd)"
+[[ -z "${__DOGRC_DIR:-}" ]] && readonly __DOGRC_DIR="$(cd "${__UTILITIES_DIR}/../.." && pwd)"
+
+source "${__CORE_DIR}/dependency_check.sh"
+
+# Message of the day (shoo to remove, make to edit)
+motd() {
+  # Show help if no argument provided or if help is requested
+  case "${1^^}" in
+  "SHOO")
+    ensure_commands_present --caller "motd shoo" rm || {
+      return $?
+    }
+    if ! rm -f "$HOME/motd.txt"; then
+      echo "Error: failed to remove message of the day file"
+      return 1
+    fi
+    echo "MOTD file removed"
+    return 0
+    ;;
+  "MAKE")
+    # If stdin is not a terminal (i.e., data is being piped), write it to motd.txt.
+    if [[ ! -t 0 ]]; then
+      ensure_commands_present --caller "motd make (stdin)" cat || {
+        return $?
+      }
+      if ! cat > "$HOME/motd.txt"; then
+        echo "Error: failed to write message of the day from stdin"
+        return 1
+      else
+        echo "Message of the day written to file"
+      fi
+      return 0
+    fi
+
+    # Otherwise, open the editor to edit/create motd.txt.
+    local editor="${EDITOR:-nvim}"
+    ensure_commands_present --caller "motd make" "$editor" || {
+      return $?
+    }
+    "$editor" "$HOME/motd.txt"
+    return
+    ;;
+  "PRINT")
+    ensure_commands_present --caller "motd print" cat || {
+      return $?
+    }
+    [[ -f "$HOME/motd.txt" ]] && {
+      printf "\nMESSAGE OF THE DAY:\n"
+      if ! cat "$HOME/motd.txt"; then
+        echo "Error: failed to display message of the day"
+        return 1
+      fi
+      printf "\n"
+      sleep 1
+    }
+    return 0
+    ;;
+  *)
+    cat <<'EOF'
+Usage: motd [COMMAND]
+
+Message of the Day - Display, create, or manage your daily message
+
+Commands:
+  (no args)  - Show this help message
+  print      - Display the current message of the day
+  make       - Create or edit the message of the day file
+  shoo       - Remove the message of the day file
+
+Examples:
+  motd              # Show this help message
+  motd print        # Display current message
+  motd make         # Edit/create message in nvim
+  motd shoo         # Delete message file
+
+File location: ~/motd.txt
+EOF
+    return 0
+  esac
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  motd "$@"
+  exit $?
+fi
+
