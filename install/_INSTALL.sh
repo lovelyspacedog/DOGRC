@@ -3,7 +3,14 @@
 # DOGRC Installation Script
 # This script installs DOGRC to the user's system
 
-set -eo pipefail
+# Exit on error, but allow functions to handle their own errors
+set -o pipefail
+
+# Ensure we're running in bash (not sh)
+if [[ -z "${BASH_VERSION:-}" ]]; then
+    echo "Error: This script requires bash. Please run with: bash $0" >&2
+    exit 1
+fi
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -878,3 +885,7 @@ main() {
     echo
 }
 
+# Run main function if script is executed directly
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+    main "$@"
+fi
