@@ -35,10 +35,16 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 # Update changelog (hardcoded at top of script)
 __UPDATE_CHANGELOG="$(cat <<'EOF'
 Changes in this update:
+
+Changes since 0.1.0:
   • Added drcupdate utility for checking and auto-updating DOGRC
   • Added automatic update check on shell startup
   • Enhanced documentation with drcupdate help entries
   • Improved version comparison and update workflow
+
+Changes since 0.1.1:
+  • Added --yes flag to drcupdate for auto-update without confirmation
+  • Enhanced drcupdate documentation with --yes flag usage and examples
 EOF
 )"
 

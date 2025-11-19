@@ -57,6 +57,7 @@ drcupdate() {
     local silent=false
     local ignore_this_version=false
     local return_only=false
+    local yes_flag=false
     for arg in "$@"; do
         case "$arg" in
             --silent|-s)
@@ -67,6 +68,9 @@ drcupdate() {
                 ;;
             --return-only)
                 return_only=true
+                ;;
+            --yes|-y)
+                yes_flag=true
                 ;;
             *)
                 # Ignore unknown arguments
@@ -239,58 +243,16 @@ drcupdate() {
         echo "  Repository version: $remote_version"
         echo ""
         
-        # Offer auto-update if not in silent mode
-        if [[ "$silent" != "true" ]]; then
+        # Determine if we should auto-update (either --yes flag or user confirms)
+        local should_autoupdate=false
+        if [[ "$yes_flag" == "true" ]]; then
+            should_autoupdate=true
+        elif [[ "$silent" != "true" ]]; then
             echo "Would you like to auto-update now? (This will clone the repository to /tmp and run the update)"
             read -r -p "Auto-update? [y/N]: " __autoupdate
             case "${__autoupdate:-N}" in
                 [Yy]* )
-                    # Check if git is available
-                    if ! command -v git >/dev/null 2>&1; then
-                        echo "Error: git is required for auto-update but is not installed" >&2
-                        echo ""
-                        echo "To update manually:"
-                        echo "  1. Navigate to your cloned DOGRC repository directory"
-                        echo "  2. When in the repository directory, run: git pull"
-                        echo "  3. Run: ./install/_UPDATE.sh"
-                        return 1
-                    fi
-                    
-                    # Create temporary directory for cloning
-                    local temp_repo
-                    temp_repo=$(mktemp -d "/tmp/DOGRC-update.XXXXXX" 2>/dev/null || echo "/tmp/DOGRC-update.$$")
-                    
-                    echo ""
-                    echo "Cloning repository to $temp_repo..."
-                    if ! git clone "https://github.com/lovelyspacedog/DOGRC.git" "$temp_repo" 2>/dev/null; then
-                        echo "Error: Failed to clone repository" >&2
-                        rm -rf "$temp_repo" 2>/dev/null
-                        return 1
-                    fi
-                    
-                    echo "Running update script..."
-                    if [[ -f "$temp_repo/install/_UPDATE.sh" ]] && [[ -x "$temp_repo/install/_UPDATE.sh" ]]; then
-                        # Run update script from temp directory
-                        if (cd "$temp_repo" && bash "./install/_UPDATE.sh"); then
-                            echo ""
-                            echo "Update completed successfully!"
-                        else
-                            echo ""
-                            echo "Error: Update script failed" >&2
-                            rm -rf "$temp_repo" 2>/dev/null
-                            return 1
-                        fi
-                    else
-                        echo "Error: Update script not found or not executable in cloned repository" >&2
-                        rm -rf "$temp_repo" 2>/dev/null
-                        return 1
-                    fi
-                    
-                    # Cleanup
-                    echo "Cleaning up temporary repository..."
-                    rm -rf "$temp_repo" 2>/dev/null
-                    echo "Done!"
-                    return 0
+                    should_autoupdate=true
                     ;;
                 * )
                     echo ""
@@ -309,13 +271,65 @@ drcupdate() {
                     return 0
                     ;;
             esac
+        fi
+        
+        # Perform auto-update if requested
+        if [[ "$should_autoupdate" == "true" ]]; then
+            # Check if git is available
+            if ! command -v git >/dev/null 2>&1; then
+                echo "Error: git is required for auto-update but is not installed" >&2
+                echo ""
+                echo "To update manually:"
+                echo "  1. Navigate to your cloned DOGRC repository directory"
+                echo "  2. When in the repository directory, run: git pull"
+                echo "  3. Run: ./install/_UPDATE.sh"
+                return 1
+            fi
+            
+            # Create temporary directory for cloning
+            local temp_repo
+            temp_repo=$(mktemp -d "/tmp/DOGRC-update.XXXXXX" 2>/dev/null || echo "/tmp/DOGRC-update.$$")
+            
+            echo ""
+            echo "Cloning repository to $temp_repo..."
+            if ! git clone "https://github.com/lovelyspacedog/DOGRC.git" "$temp_repo" 2>/dev/null; then
+                echo "Error: Failed to clone repository" >&2
+                rm -rf "$temp_repo" 2>/dev/null
+                return 1
+            fi
+            
+            echo "Running update script..."
+            if [[ -f "$temp_repo/install/_UPDATE.sh" ]] && [[ -x "$temp_repo/install/_UPDATE.sh" ]]; then
+                # Run update script from temp directory
+                if (cd "$temp_repo" && bash "./install/_UPDATE.sh"); then
+                    echo ""
+                    echo "Update completed successfully!"
+                else
+                    echo ""
+                    echo "Error: Update script failed" >&2
+                    rm -rf "$temp_repo" 2>/dev/null
+                    return 1
+                fi
+            else
+                echo "Error: Update script not found or not executable in cloned repository" >&2
+                rm -rf "$temp_repo" 2>/dev/null
+                return 1
+            fi
+            
+            # Cleanup
+            echo "Cleaning up temporary repository..."
+            rm -rf "$temp_repo" 2>/dev/null
+            echo "Done!"
+            return 0
         else
             # Silent mode - just show update instructions
             echo "Tips:"
             echo "  - To ignore this repository version in future checks, run: drcupdate --ignore-this-version"
+            echo "  - To begin auto-update, run: drcupdate --yes"
             echo ""
-            echo "To update:"
+            echo "To update manually:"
             echo "  1. Navigate to your cloned DOGRC repository directory"
+            echo "       Repository URL: https://github.com/lovelyspacedog/DOGRC"
             echo "  2. When in the repository directory, run: git pull"
             echo "  3. Run: ./install/_UPDATE.sh"
             echo ""

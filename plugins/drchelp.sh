@@ -1057,6 +1057,7 @@ Options:
                             Store current remote version in version.fake to ignore it
   --return-only             Compare versions without output, return exit code only
                             Exit codes: 0=up-to-date, 1=error, 2=update available, 3=downgrade possible
+  --yes, -y                 Skip confirmation and automatically proceed with update
 
 Version Detection:
   - Reads installed version from ~/DOGRC/config/DOGRC.json
@@ -1069,6 +1070,8 @@ Behavior:
   - With --silent: only shows output if update is available
   - With --ignore-this-version: stores remote version in version.fake to ignore future checks
   - With --return-only: compares versions silently, returns exit code only (no output)
+  - With --yes: skips confirmation prompt and automatically proceeds with auto-update
+  - With --silent --yes: shows update message and automatically proceeds with auto-update
   
 Exit Codes:
   Normal mode:
@@ -1099,6 +1102,8 @@ Files:
 Examples:
   drcupdate                        # Check for updates (shows result)
   drcupdate --silent               # Check silently (only shows if update available)
+  drcupdate --yes                  # Auto-update without confirmation
+  drcupdate --silent --yes         # Check and auto-update silently
   drcupdate --ignore-this-version  # Ignore current remote version in future checks
   drcupdate --return-only          # Compare versions silently, check exit code
   
@@ -1112,10 +1117,13 @@ Examples:
   esac
 
 Update Process:
-  When an update is available, the function provides instructions:
-  1. Navigate to your cloned DOGRC repository directory
-  2. Run: git pull
-  3. Run: ./install/_UPDATE.sh
+  When an update is available, the function can:
+  - Auto-update: Use --yes flag to automatically clone repository to /tmp and run update
+  - Manual update: Follow these steps:
+    1. Navigate to your cloned DOGRC repository directory
+       Repository URL: https://github.com/lovelyspacedog/DOGRC
+    2. Run: git pull
+    3. Run: ./install/_UPDATE.sh
 
 Note: The function uses the same version comparison algorithm as _UPDATE.sh for
       consistency. Version masking via version.fake allows you to test updates
