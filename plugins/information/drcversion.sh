@@ -16,18 +16,23 @@ drcversion() {
         return $?
     }
 
-    # Ensure __DOGRC_DIR and __CORE_DIR are set
+    # Ensure __DOGRC_DIR is set
     [[ -z "${__DOGRC_DIR:-}" ]] && __DOGRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-    [[ -z "${__CORE_DIR:-}" ]] && __CORE_DIR="$(cd "${__DOGRC_DIR}/core" && pwd)"
 
-    real_version=$(cat "${__DOGRC_DIR}/config/DOGRC.json" | jq -r '.version')
-    
-    if [[ -f "${__CORE_DIR}/version.fake" ]]; then
-        spoofed_version=$(cat "${__CORE_DIR}/version.fake")
-        echo "DOGRC Version $spoofed_version (spoofed, real version: $real_version)"
-    else
-        echo "DOGRC Version $real_version"
+    # Check version.fake first (matches _UPDATE.sh behavior)
+    local version_file="${__DOGRC_DIR}/config/version.fake"
+    if [[ -f "$version_file" ]]; then
+        local version=$(cat "$version_file" 2>/dev/null | tr -d '[:space:]')
+        if [[ -n "$version" ]]; then
+            local real_version=$(cat "${__DOGRC_DIR}/config/DOGRC.json" | jq -r '.version' 2>/dev/null || echo "unknown")
+            echo "DOGRC Version $version (spoofed, real version: $real_version)"
+            return 0
+        fi
     fi
+    
+    # Fall back to DOGRC.json
+    local real_version=$(cat "${__DOGRC_DIR}/config/DOGRC.json" | jq -r '.version' 2>/dev/null || echo "unknown")
+    echo "DOGRC Version $real_version"
     
     return 0
 }
