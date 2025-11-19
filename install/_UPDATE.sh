@@ -644,6 +644,15 @@ main() {
         echo -e "  ${YELLOW}⚠${NC} Failed to restore enable_ values" >&2
     fi
     
+    # Restore navto.json if it exists in backup
+    if [[ -f "${__BACKUP_DOGRC}/config/navto.json" ]]; then
+        if cp "${__BACKUP_DOGRC}/config/navto.json" "${INSTALLED_DOGRC}/config/navto.json" 2>/dev/null; then
+            echo -e "  ${GREEN}✓${NC} Restored config/navto.json"
+        else
+            echo -e "  ${YELLOW}⚠${NC} Failed to restore config/navto.json" >&2
+        fi
+    fi
+    
     # Validate DOGRC.json
     if command -v jq >/dev/null 2>&1; then
         if jq empty "${INSTALLED_DOGRC}/config/DOGRC.json" 2>/dev/null; then
