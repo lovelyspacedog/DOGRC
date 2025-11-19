@@ -204,3 +204,4 @@ fi
 ## STARTUP
 type pokefetch >/dev/null 2>&1 && pokefetch
 type motd >/dev/null 2>&1 && motd print
+[[ -x "${__PLUGINS_DIR}/utilities/drcupdate.sh" ]] && "${__PLUGINS_DIR}/utilities/drcupdate.sh" --silent || true

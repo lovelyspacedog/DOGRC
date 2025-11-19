@@ -1036,6 +1036,96 @@ Note: The version is read from the DOGRC.json configuration file in the
 EOF
                 return 0
                 ;;
+            drcupdate)
+                cat <<EOF
+drcupdate - Check for DOGRC Updates
+
+Check if a newer version of DOGRC is available from the repository.
+
+Usage: drcupdate [OPTIONS]
+
+Description:
+  - Checks for available DOGRC updates by comparing installed version with repository
+  - Fetches remote version from GitHub repository
+  - Uses semantic version comparison (same algorithm as _UPDATE.sh)
+  - Supports version masking via version.fake file
+  - Can run silently for automated checks (e.g., on shell startup)
+
+Options:
+  --silent, -s              Suppress output unless update is available
+  --ignore-this-version, --ignore
+                            Store current remote version in version.fake to ignore it
+  --return-only             Compare versions without output, return exit code only
+                            Exit codes: 0=up-to-date, 1=error, 2=update available, 3=downgrade possible
+
+Version Detection:
+  - Reads installed version from ~/DOGRC/config/DOGRC.json
+  - If ~/DOGRC/config/version.fake exists, uses that version instead
+  - Fetches remote version from GitHub repository
+  - Compares versions using semantic versioning (major.minor.patch)
+
+Behavior:
+  - Without options: checks for updates and displays result
+  - With --silent: only shows output if update is available
+  - With --ignore-this-version: stores remote version in version.fake to ignore future checks
+  - With --return-only: compares versions silently, returns exit code only (no output)
+  
+Exit Codes:
+  Normal mode:
+    - Returns 0 if check succeeds (regardless of update availability)
+    - Returns 1 if DOGRC is not installed or version cannot be determined
+    - Returns 123 if required dependencies are missing
+  
+  With --return-only:
+    - Returns 0 if versions are equal (up-to-date)
+    - Returns 1 if error occurs (DOGRC not installed, version cannot be determined, etc.)
+    - Returns 2 if local version is older (update available)
+    - Returns 3 if repository version is older (downgrade possible)
+
+Version Masking:
+  - Create ~/DOGRC/config/version.fake with a version to "fake" the installed version
+  - Useful for testing or ignoring specific repository versions
+  - Use --ignore-this-version to automatically create version.fake with current remote version
+  - Delete version.fake to restore normal version checking
+
+Dependencies:
+  - curl (for fetching remote version from GitHub)
+  - jq (for parsing JSON configuration files)
+
+Files:
+  - ~/DOGRC/config/DOGRC.json - Contains installed version
+  - ~/DOGRC/config/version.fake - Optional file to override installed version
+
+Examples:
+  drcupdate                        # Check for updates (shows result)
+  drcupdate --silent               # Check silently (only shows if update available)
+  drcupdate --ignore-this-version  # Ignore current remote version in future checks
+  drcupdate --return-only          # Compare versions silently, check exit code
+  
+  # Use in scripts:
+  drcupdate --return-only
+  case \$? in
+      0) echo "Up to date" ;;
+      1) echo "Error occurred" ;;
+      2) echo "Update available" ;;
+      3) echo "Downgrade possible" ;;
+  esac
+
+Update Process:
+  When an update is available, the function provides instructions:
+  1. Navigate to your cloned DOGRC repository directory
+  2. Run: git pull
+  3. Run: ./install/_UPDATE.sh
+
+Note: The function uses the same version comparison algorithm as _UPDATE.sh for
+      consistency. Version masking via version.fake allows you to test updates
+      or ignore specific repository versions. The --silent flag is useful for
+      automated checks that run on shell startup without cluttering output.
+      The update script must be run from the git repository directory, not from
+      ~/DOGRC/ (which is the installation directory).
+EOF
+                return 0
+                ;;
             genpassword)
                 cat <<EOF
 genpassword - Generate Random Passwords
@@ -1981,6 +2071,7 @@ Information:
   weather            - Weather information display
   wttr               - Direct weather query via wttr.in
   drcversion         - Display DOGRC version
+  drcupdate          - Check for DOGRC updates
 
 Utilities:
   available          - List available bash functions
@@ -2034,6 +2125,7 @@ _drchelp_completion() {
         "dl-paper"
         "dots"
         "drcfortune"
+        "drcupdate"
         "drcversion"
         "drchelp"
         "extract"
