@@ -9,8 +9,17 @@ set -o pipefail
 # Ensure we're running in bash (not sh)
 if [[ -z "${BASH_VERSION:-}" ]]; then
     echo "Error: This script requires bash. Please run with: bash $0" >&2
-    exit 1
+    exit 1  # Exit code 1: Bash version check failed
 fi
+
+# Prevent running from ~/BASHRC - must run from git repository
+CHECK_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$CHECK_ROOT_DIR" == "$HOME/BASHRC" ]]; then
+    echo "Error: This script cannot be run directly from ~/BASHRC" >&2
+    echo "Please run this script from the git repository location (e.g., ~/Code/DOGRC)" >&2
+    exit 2  # Exit code 2: Running from ~/BASHRC (not allowed)
+fi
+unset CHECK_ROOT_DIR
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -470,7 +479,7 @@ main() {
     
     if [[ -z "$new_version" ]]; then
         echo -e "${RED}ERROR: Cannot determine version from install directory${NC}" >&2
-        exit 1
+        exit 3  # Exit code 3: Cannot determine version from install directory
     fi
     
     # Compare versions
@@ -515,12 +524,12 @@ main() {
     
     if [[ ! -f "$install_script" ]] || [[ ! -x "$install_script" ]]; then
         echo -e "${RED}ERROR: _INSTALL.sh not found or not executable: $install_script${NC}" >&2
-        exit 1
+        exit 4  # Exit code 4: _INSTALL.sh not found or not executable
     fi
     
     if [[ ! -f "$generate_template" ]] || [[ ! -x "$generate_template" ]]; then
         echo -e "${RED}ERROR: generate_template.sh not found or not executable: $generate_template${NC}" >&2
-        exit 1
+        exit 5  # Exit code 5: generate_template.sh not found or not executable
     fi
     
     # Create timestamp
@@ -535,7 +544,7 @@ main() {
         echo -e "  ${GREEN}✓${NC} Backed up DOGRC to $__BACKUP_DOGRC"
     else
         echo -e "  ${RED}✗${NC} Failed to backup DOGRC" >&2
-        exit 1
+        exit 6  # Exit code 6: Failed to backup DOGRC
     fi
     
     # Backup .bashrc
@@ -549,6 +558,7 @@ main() {
         fi
     fi
     echo
+    sleep 0.5
     
     # Store enable_ values
     echo -e "${BLUE}Storing configuration...${NC}"
@@ -589,6 +599,7 @@ main() {
         echo -e "  ${YELLOW}⚠${NC} Some preamble snippets have syntax errors. Update will continue but snippets may need manual fixes.${NC}" >&2
     fi
     echo
+    sleep 0.5
     
     # Delete old DOGRC and install new
     echo -e "${BLUE}Installing new version...${NC}"
@@ -597,7 +608,7 @@ main() {
         rm -rf "$INSTALLED_DOGRC" 2>/dev/null || {
             echo -e "${RED}ERROR: Failed to remove old installation${NC}" >&2
             rollback_update
-            exit 1
+            exit 7  # Exit code 7: Failed to remove old installation
         }
     fi
     
@@ -605,11 +616,12 @@ main() {
     if ! printf "y\ny\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
         echo -e "${RED}ERROR: Installation failed${NC}" >&2
         rollback_update
-        exit 1
+        exit 8  # Exit code 8: Installation failed
     fi
     
     echo -e "  ${GREEN}✓${NC} Installation completed"
     echo
+    sleep 0.5
     
     # Merge user aliases
     echo -e "${BLUE}Merging user customizations...${NC}"
@@ -639,7 +651,7 @@ main() {
         else
             echo -e "  ${RED}✗${NC} DOGRC.json is not valid JSON" >&2
             rollback_update
-            exit 1
+            exit 9  # Exit code 9: DOGRC.json is not valid JSON
         fi
     fi
     
@@ -677,6 +689,7 @@ main() {
         fi
     fi
     echo
+    sleep 0.5
     
     # Generate MOTD
     echo -e "${BLUE}Generating update summary...${NC}"
@@ -716,6 +729,7 @@ EOF
         echo -e "  ${YELLOW}⚠${NC} Failed to create MOTD" >&2
     fi
     echo
+    sleep 0.5
     
     # Update complete
     echo -e "${GREEN}========================================${NC}"

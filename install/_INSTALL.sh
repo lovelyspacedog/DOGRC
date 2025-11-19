@@ -9,8 +9,17 @@ set -o pipefail
 # Ensure we're running in bash (not sh)
 if [[ -z "${BASH_VERSION:-}" ]]; then
     echo "Error: This script requires bash. Please run with: bash $0" >&2
-    exit 1
+    exit 1  # Exit code 1: Bash version check failed
 fi
+
+# Prevent running from ~/BASHRC - must run from git repository
+CHECK_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [[ "$CHECK_ROOT_DIR" == "$HOME/BASHRC" ]]; then
+    echo "Error: This script cannot be run directly from ~/BASHRC" >&2
+    echo "Please run this script from the git repository location (e.g., ~/Code/DOGRC)" >&2
+    exit 2  # Exit code 2: Running from ~/BASHRC (not allowed)
+fi
+unset CHECK_ROOT_DIR
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -875,7 +884,7 @@ main() {
     # Check dependencies first
     if ! check_dependencies; then
         echo -e "${RED}Dependency check failed. Exiting.${NC}"
-        exit 1
+        exit 3  # Exit code 3: Dependency check failed
     fi
 
     echo -e "${GREEN}Dependency check passed!${NC}"
@@ -885,7 +894,7 @@ main() {
     # Create backups of existing configuration files
     if ! backup_config_files; then
         echo -e "${RED}Backup failed. Exiting.${NC}"
-        exit 1
+        exit 4  # Exit code 4: Backup failed
     fi
     sleep 0.5
 
@@ -893,7 +902,7 @@ main() {
     if ! copy_dogrc_files; then
         echo -e "${RED}File copy failed.${NC}"
         rollback_installation
-        exit 1
+        exit 5  # Exit code 5: File copy failed
     fi
     sleep 0.5
 
@@ -901,7 +910,7 @@ main() {
     if ! generate_user_files; then
         echo -e "${RED}Failed to generate user files.${NC}"
         rollback_installation
-        exit 1
+        exit 6  # Exit code 6: Failed to generate user files
     fi
     sleep 0.5
 
@@ -909,7 +918,7 @@ main() {
     if ! verify_installation; then
         echo -e "${RED}Installation verification failed.${NC}"
         rollback_installation
-        exit 1
+        exit 7  # Exit code 7: Installation verification failed
     fi
     sleep 0.5
 
