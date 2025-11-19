@@ -13,6 +13,17 @@ source "${__CORE_DIR}/dependency_check.sh"
 
 # xdg-open wrapper
 openthis() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp openthis
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     # If no arguments, just return
     [[ -z "$1" ]] && return 0
 
@@ -55,6 +66,12 @@ _openthis_completion() {
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
 
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
+    
     # Use default file completion for file paths
     # This will naturally complete files with common extensions
     compopt -o default

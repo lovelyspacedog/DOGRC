@@ -13,6 +13,17 @@ source "${__CORE_DIR}/dependency_check.sh"
 
 # Swap two filenames safely
 swap() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp swap
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     ensure_commands_present --caller "swap" mv || {
         return $?
     }
@@ -53,6 +64,12 @@ _swap_completion() {
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
 
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
+    
     # If we're on the second argument, exclude the first file from completions
     if [[ $cword -eq 2 ]]; then
         local first_file="${words[1]}"

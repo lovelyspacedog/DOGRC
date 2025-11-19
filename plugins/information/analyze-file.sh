@@ -12,48 +12,49 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 analyze-file() {
-    ensure_commands_present --caller "analyze-file" file stat du wc sha256sum && {
+    ensure_commands_present --caller "analyze-file" file stat du wc sha256sum || {
         return $?
     }
 
-    # Show help if no argument provided or if 'help' is requested
-    if [[ -z "$1" ]] || [[ "${1^^}" == "HELP" ]]; then
-        # Use >&2 for error if no argument, stdout otherwise.
-        if [[ -z "$1" ]]; then
-            out=">&2"
-            ret=1
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp analyze-file
+            return 0
         else
-            out=">&1"
-            ret=0
+            echo "Error: drchelp not available" >&2
+            return 1
         fi
+    fi
 
-        eval echo "Usage: analyze-file <file>" $out
-        eval echo "" $out
-        eval echo "Provide detailed file analysis and information" $out
-        eval echo "" $out
-        eval echo "Description:" $out
-        eval echo "  - Analyzes files and provides comprehensive information" $out
-        eval echo "  - Shows file size, permissions, ownership, and type" $out
-        eval echo "  - Displays line count, word count, and character count for text files" $out
-        eval echo "  - Generates SHA256 hash for security verification" $out
-        eval echo "  - Works with any file type" $out
-        eval echo "  - Provides human-readable output with formatting" $out
-        eval echo "" $out
-        eval echo "Dependencies:" $out
-        eval echo "  - file (file type detection)" $out
-        eval echo "  - stat (file statistics)" $out
-        eval echo "  - du (disk usage)" $out
-        eval echo "  - wc (word count)" $out
-        eval echo "  - sha256sum (hash generation)" $out
-        eval echo "" $out
-        eval echo "Examples:" $out
-        eval echo "  analyze-file document.txt" $out
-        eval echo "  analyze-file script.sh" $out
-        eval echo "  analyze-file image.jpg" $out
-        eval echo "  analyze-file help" $out
-        eval echo "" $out
-        eval echo "Note: Provides different analysis based on file type" $out
-        return $ret
+    # Show help if no argument provided
+    if [[ -z "$1" ]]; then
+        echo "Usage: analyze-file <file>" >&2
+        echo "" >&2
+        echo "Provide detailed file analysis and information" >&2
+        echo "" >&2
+        echo "Description:" >&2
+        echo "  - Analyzes files and provides comprehensive information" >&2
+        echo "  - Shows file size, permissions, ownership, and type" >&2
+        echo "  - Displays line count, word count, and character count for text files" >&2
+        echo "  - Generates SHA256 hash for security verification" >&2
+        echo "  - Works with any file type" >&2
+        echo "  - Provides human-readable output with formatting" >&2
+        echo "" >&2
+        echo "Dependencies:" >&2
+        echo "  - file (file type detection)" >&2
+        echo "  - stat (file statistics)" >&2
+        echo "  - du (disk usage)" >&2
+        echo "  - wc (word count)" >&2
+        echo "  - sha256sum (hash generation)" >&2
+        echo "" >&2
+        echo "Examples:" >&2
+        echo "  analyze-file document.txt" >&2
+        echo "  analyze-file script.sh" >&2
+        echo "  analyze-file image.jpg" >&2
+        echo "" >&2
+        echo "Note: Provides different analysis based on file type" >&2
+        return 1
     fi
 
     local file="$1"

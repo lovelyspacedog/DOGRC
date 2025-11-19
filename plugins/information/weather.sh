@@ -31,6 +31,17 @@ fi
 
 # Wttr module
 wttr() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp wttr
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     ensure_commands_present --caller "wttr" curl || {
         return $?
     }
@@ -47,9 +58,43 @@ wttr() {
 }
 
 weather() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp weather
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     ensure_commands_present --caller "weather" curl head || {
         return $?
     }
+
+    # Show help if no argument provided
+    if [[ -z "$1" ]]; then
+        echo "Usage: weather [mode] [flags] [location...]" >&2
+        echo "" >&2
+        echo "Display weather information for the current location" >&2
+        echo "or a specified location. The current location is detected" >&2
+        echo "automatically using ipinfo.io." >&2
+        echo "" >&2
+        echo "Modes: (none)      Display both current weather and 3-day forecast" >&2
+        echo "        current     Show only current weather" >&2
+        echo "        forecast    Show only 3-day forecast" >&2
+        echo "        help        Show this help message" >&2
+        echo "" >&2
+        echo "Flags: --location/-l, --wttr/-w" >&2
+        echo "" >&2
+        echo "Examples:" >&2
+        echo "  weather current" >&2
+        echo "  weather forecast" >&2
+        echo "  weather current --wttr \"Orlando\" n" >&2
+        echo "  weather --location \"New York\"" >&2
+        return 1
+    fi
 
     if [[ "${1^^}" == "HELP" ]]; then
         echo "Usage: weather [mode] [flags] [location...]"
@@ -190,7 +235,7 @@ _weather_completion() {
         "Fort Worth" "Charlotte" "Seattle" "Denver" "Washington"
         "Boston" "El Paso" "Detroit" "Nashville" "Portland"
         "Oklahoma City" "Las Vegas" "Memphis" "Louisville" "Baltimore"
-        "Milwaukee" "Albuquerque" "Tucson" "Fresno" "Sacramento"
+        "Milwaukee" "Albuquerque" "Tucson" "Fresno" "Sacramento" "Orlando"
         # International cities
         "London" "Tokyo" "Paris" "Sydney" "Berlin"
         "Moscow" "Dubai" "Singapore" "Toronto" "Mumbai"
@@ -225,7 +270,7 @@ _weather_completion() {
 
     # Check if current word starts with a dash (flag)
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=($(compgen -W "--location -l --wttr -w" -- "$cur"))
+        COMPREPLY=($(compgen -W "--help -h --location -l --wttr -w" -- "$cur"))
         return 0
     fi
 
@@ -269,7 +314,7 @@ _weather_completion() {
 
     # Complete flags
     if [[ "$cur" == -* ]]; then
-        flag_completions=($(compgen -W "--location -l --wttr -w" -- "$cur"))
+        flag_completions=($(compgen -W "--help -h --location -l --wttr -w" -- "$cur"))
     fi
 
     COMPREPLY=("${mode_completions[@]}" "${flag_completions[@]}")
@@ -294,13 +339,19 @@ _wttr_completion() {
         "Fort Worth" "Charlotte" "Seattle" "Denver" "Washington"
         "Boston" "El Paso" "Detroit" "Nashville" "Portland"
         "Oklahoma City" "Las Vegas" "Memphis" "Louisville" "Baltimore"
-        "Milwaukee" "Albuquerque" "Tucson" "Fresno" "Sacramento"
+        "Milwaukee" "Albuquerque" "Tucson" "Fresno" "Sacramento" "Orlando"
         # International cities
         "London" "Tokyo" "Paris" "Sydney" "Berlin"
         "Moscow" "Dubai" "Singapore" "Toronto" "Mumbai"
         "Barcelona" "Rome" "Amsterdam" "Hong Kong" "Seoul"
         "Bangkok" "Istanbul"
     )
+
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
 
     # Complete with city names
     local city_completions=()

@@ -94,12 +94,34 @@ __available_print_functions() {
 }
 
 available() {
+  # Handle help flags (case-insensitive) - delegate to drchelp
+  if [[ -n "${1:-}" ]] && [[ "${1,,}" == "--help" ]]; then
+    if declare -f drchelp >/dev/null 2>&1; then
+      drchelp available
+      return 0
+    else
+      echo "Error: drchelp not available" >&2
+      return 1
+    fi
+  fi
+  
   __available_print_functions "$@"
 }
 
 # If run directly, source ~/.bashrc in an interactive subshell first so
 # that all functions are loaded before listing them.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  # Handle help flags (case-insensitive) - delegate to drchelp
+  if [[ -n "${1:-}" ]] && [[ "${1,,}" == "--help" ]]; then
+    if declare -f drchelp >/dev/null 2>&1; then
+      drchelp available
+      exit 0
+    else
+      echo "Error: drchelp not available" >&2
+      exit 1
+    fi
+  fi
+  
   mode=$(__available_determine_mode warn "$@")
   mapfile -t raw_funcs < <(bash --noprofile -ic 'compgen -A function | sort' 2>/dev/null)
   funcs=()

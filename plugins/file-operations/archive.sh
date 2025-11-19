@@ -12,6 +12,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 extract() {
+    # Handle help flags (case-insensitive)
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp extract
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     [[ ! -f "$1" ]] && {
         echo "Error: '$1' does not exist or is not a file" >&2
         return 1
@@ -106,6 +117,17 @@ extract() {
 }
 
 compress() {
+    # Handle help flags (case-insensitive)
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp compress
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     local input="$1"
     local format="${2:-}"
     local output=""
@@ -242,6 +264,12 @@ _extract_completion() {
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
 
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
+
     # Complete with archive files (supported extensions)
     # Filter files by supported archive extensions
     compopt -o filenames
@@ -269,6 +297,12 @@ _compress_completion() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
+
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
 
     # If we're on the second argument, complete with supported formats
     if [[ $cword -eq 2 ]]; then

@@ -12,6 +12,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 genpassword() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp genpassword
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     if ! ensure_commands_present --caller "genpassword" tr head xargs; then
         return 123
     fi

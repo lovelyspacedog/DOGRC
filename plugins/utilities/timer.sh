@@ -12,6 +12,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 timer() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp timer
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     ensure_commands_present --caller "timer" date read rm printf shopt || {
         return $?
     }
@@ -144,6 +155,12 @@ _timer_completion() {
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
 
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
+    
     # Build list of completions: commands first, then timer names
     local command_completions=()
     local timer_completions=()

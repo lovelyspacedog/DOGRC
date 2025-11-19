@@ -17,6 +17,17 @@ is_pos_num() {
 }
 
 fastnote() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp fastnote
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     [[ ! -d "$HOME/.fastnotes" ]] && {
         ensure_commands_present --caller "fastnote (init)" mkdir || {
             return $?
@@ -222,6 +233,12 @@ _fastnote_completion() {
             COMPREPLY=("${action_completions[@]}")
             return 0
         fi
+    fi
+
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
     fi
 
     # Build list of completions: commands first, then note numbers

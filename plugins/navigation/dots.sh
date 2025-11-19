@@ -13,26 +13,35 @@ source "${__CORE_DIR}/dependency_check.sh"
 
 # Dots (dots to list and cd to directories in .config)
 dots() {
-    # Show help if no argument provided or help is requested
-    if [[ -z "$1" || "${1^^}" == "HELP" ]]; then
-        echo "Usage: dots <command> [directory]"
-        echo ""
-        echo "Manage and navigate .config directories"
-        echo ""
-        echo "Commands:"
-        echo "  ls [dir]  - List directories or contents"
-        echo "  <dir>     - Navigate to a .config directory"
-        echo "  help      - Show this help message"
-        echo ""
-        echo "Examples:"
-        echo "  dots ls           # List all .config directories"
-        echo "  dots ls hypr      # List contents of ~/.config/hypr"
-        echo "  dots hypr         # Navigate to ~/.config/hypr"
-        echo "  dots waybar       # Navigate to ~/.config/waybar"
-        echo "  dots help         # Show this help"
-        echo ""
-        echo "Note: All operations work within ~/.config/"
-        [[ -z "$1" ]] && return 1 || return 0
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp dots
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+
+    # Show help if no argument provided
+    if [[ -z "$1" ]]; then
+        echo "Usage: dots <command> [directory]" >&2
+        echo "" >&2
+        echo "Manage and navigate .config directories" >&2
+        echo "" >&2
+        echo "Commands:" >&2
+        echo "  ls [dir]  - List directories or contents" >&2
+        echo "  <dir>     - Navigate to a .config directory" >&2
+        echo "" >&2
+        echo "Examples:" >&2
+        echo "  dots ls           # List all .config directories" >&2
+        echo "  dots ls hypr      # List contents of ~/.config/hypr" >&2
+        echo "  dots hypr         # Navigate to ~/.config/hypr" >&2
+        echo "  dots waybar       # Navigate to ~/.config/waybar" >&2
+        echo "" >&2
+        echo "Note: All operations work within ~/.config/" >&2
+        return 1
     fi
 
     [[ "$1" == "ls" ]] && {
@@ -143,6 +152,12 @@ _dots_completion() {
 
     # If we're on the first argument (after "dots"), complete with commands and directories
     if [[ $cword -eq 1 ]]; then
+        # Complete help flags if current word starts with dash
+        if [[ "$cur" == -* ]]; then
+            COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+            return 0
+        fi
+        
         # Get directory names
         local dirs
         mapfile -t dirs < <(find "$config_dir" -maxdepth 1 -type d ! -name "." -exec basename {} \; 2>/dev/null | sort)
@@ -151,9 +166,6 @@ _dots_completion() {
         local completions=()
         if [[ -z "$cur" || "ls" == "$cur"* ]]; then
             completions+=("ls")
-        fi
-        if [[ -z "$cur" || "help" == "$cur"* ]]; then
-            completions+=("help")
         fi
         # Add .config as a special option
         if [[ -z "$cur" || ".config" == "$cur"* ]]; then

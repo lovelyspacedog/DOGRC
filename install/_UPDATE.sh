@@ -36,9 +36,19 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 __UPDATE_CHANGELOG="$(cat <<'EOF'
 Changes in this update:
 
-Changes since 0.1.1:
-  • Added --yes flag to drcupdate for auto-update without confirmation
-  • Enhanced drcupdate documentation with --yes flag usage and examples
+Changes since 0.1.3:
+  • Added enable_update_check configuration option to control automatic update checks
+  • Made update check conditional in .bashrc based on enable_update_check setting
+  • Standardized --help/-h flag support across all plugin functions (delegates to drchelp)
+  • Enhanced bashrc.sh with new --edit options:
+    - --edit dogrc or -e dogrc: opens ~/DOGRC/.bashrc
+    - --edit preamble or -e preamble: opens ~/DOGRC/config/preamble.sh
+    - --edit config or -e config: opens ~/DOGRC/config/DOGRC.json
+  • Improved weather.sh with help flag support and added Orlando to city completions
+  • Changed analyze-file.sh and dots.sh from "help" argument to standardized --help/-h flags
+  • Fixed slashback.sh to properly pass arguments to wrapper functions
+  • Updated drchelp.sh documentation for multiple functions (analyze-file, weather, bashrc)
+  • Added help flag completion (--help, -h) to all bash completion functions
 
 Changes since 0.1.2:
   • Added comprehensive tab completion for multiple utilities:

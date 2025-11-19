@@ -13,6 +13,17 @@ source "${__CORE_DIR}/dependency_check.sh"
 
 # Message of the day (shoo to remove, make to edit)
 motd() {
+  # Handle help flags (case-insensitive) - delegate to drchelp
+  if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+    if declare -f drchelp >/dev/null 2>&1; then
+      drchelp motd
+      return 0
+    else
+      echo "Error: drchelp not available" >&2
+      return 1
+    fi
+  fi
+  
   # Show help if no argument provided or if help is requested
   case "${1^^}" in
   "SHOO")
@@ -97,6 +108,12 @@ _motd_completion() {
     words=("${COMP_WORDS[@]}")
     cword=$COMP_CWORD
 
+    # If current word starts with a dash, complete with help flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--help -h" -- "$cur"))
+        return 0
+    fi
+    
     # Complete with subcommands (compgen handles prefix matching automatically)
     COMPREPLY=($(compgen -W "print make shoo" -- "$cur"))
     return 0

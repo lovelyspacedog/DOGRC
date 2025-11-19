@@ -179,6 +179,17 @@ __navto_add_destination() {
 }
 
 navto() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp navto
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     # Handle removal flag early
     if [[ "${1:-}" == "--remove" || "${1:-}" == "-r" || "${1:-}" == "--delete" || "${1:-}" == "-d" ]]; then
         shift
@@ -358,7 +369,7 @@ _navto_completion() {
 
     # If current word starts with a dash, complete with flags
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=($(compgen -W "--remove -r --delete -d" -- "$cur"))
+        COMPREPLY=($(compgen -W "--help -h --remove -r --delete -d" -- "$cur"))
         return 0
     fi
 

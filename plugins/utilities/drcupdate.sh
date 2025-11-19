@@ -53,6 +53,17 @@ compare_versions() {
 
 # Check if a DOGRC update is available
 drcupdate() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp drcupdate
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     # Parse arguments first to check for --return-only
     local silent=false
     local ignore_this_version=false
@@ -358,7 +369,7 @@ _drcupdate_completion() {
     # 1. Current word starts with a dash, OR
     # 2. Current word is empty (after a space)
     if [[ "$cur" == -* ]] || [[ -z "$cur" ]]; then
-        COMPREPLY=($(compgen -W "--silent -s --ignore-this-version --ignore --return-only --yes -y" -- "$cur"))
+        COMPREPLY=($(compgen -W "--help -h --silent -s --ignore-this-version --ignore --return-only --yes -y" -- "$cur"))
         return 0
     fi
 

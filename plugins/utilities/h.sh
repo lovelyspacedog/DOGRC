@@ -12,6 +12,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 h() {
+    # Handle help flags (case-insensitive) - delegate to drchelp
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp h
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     ensure_commands_present --caller "h" grep || {
         return $?
     }

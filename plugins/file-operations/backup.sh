@@ -13,6 +13,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 backup() {
+    # Handle help flags (case-insensitive)
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp backup
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     ensure_commands_present --caller "backup" cp date basename mkdir || {
         return $?
     }
@@ -135,7 +146,7 @@ _backup_completion() {
     if [[ "$has_directory_flag" == "true" ]]; then
         # Only complete flags if current word starts with dash
         if [[ "$cur" == -* ]]; then
-            COMPREPLY=($(compgen -W "--store -s" -- "$cur"))
+            COMPREPLY=($(compgen -W "--store -s --help -h" -- "$cur"))
             return 0
         fi
         # No completion needed after --directory flag
@@ -144,7 +155,7 @@ _backup_completion() {
 
     # If current word starts with a dash, complete with flags
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=($(compgen -W "--store -s --directory --dir -d --" -- "$cur"))
+        COMPREPLY=($(compgen -W "--store -s --directory --dir -d --help -h --" -- "$cur"))
         return 0
     fi
 

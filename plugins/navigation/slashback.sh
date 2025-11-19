@@ -12,6 +12,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 __slashback() {
+    # Handle help flags (case-insensitive)
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--help" ]] || [[ "${1,,}" == "-h" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp slashback
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     local depth=${#FUNCNAME[1]}    # caller's name: '/', '//', etc.
     local target="."
     
@@ -22,12 +33,12 @@ __slashback() {
     cd "$target"
 }
 
-function /()    { __slashback; }
-function //()   { __slashback; }
-function ///()  { __slashback; }
-function ////() { __slashback; }
-function /////(){ __slashback; }
-function //////(){ __slashback; }
+function /()    { __slashback "$@"; }
+function //()   { __slashback "$@"; }
+function ///()  { __slashback "$@"; }
+function ////() { __slashback "$@"; }
+function /////(){ __slashback "$@"; }
+function //////(){ __slashback "$@"; }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     if [[ $# -eq 0 ]]; then

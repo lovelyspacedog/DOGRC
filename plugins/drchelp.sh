@@ -299,7 +299,7 @@ analyze-file - File Analysis Tool
 Provide detailed file analysis and information.
 
 Usage: analyze-file <file>
-       analyze-file help
+       analyze-file --help|-h
 
 Description:
   - Analyzes files and provides comprehensive information
@@ -310,9 +310,12 @@ Description:
   - Provides human-readable output with formatting and emojis
   - Detects file types: text, executable, archive, image, video, audio
 
+Options:
+  --help, -h    Show this help message
+
 Behavior:
   - Without arguments: shows usage help and returns error
-  - With "help" argument: shows detailed help and returns success
+  - With --help or -h: shows detailed help and returns success
   - With file path: analyzes the file and displays comprehensive information
   - Returns error if file doesn't exist
   - Returns error if required dependencies are missing
@@ -345,7 +348,7 @@ Examples:
   analyze-file script.sh           # Analyze shell script
   analyze-file image.jpg           # Analyze image file
   analyze-file archive.tar.gz      # Analyze archive file
-  analyze-file help                # Show help message
+  analyze-file --help              # Show help message
 
 Note: The function provides different analysis based on detected file type.
       Text files get detailed line/word/character counts, while binary files
@@ -903,6 +906,7 @@ weather - Weather Information Display
 Display weather information for your location or a specified location.
 
 Usage: weather [mode] [flags] [location...]
+       weather --help|-h
        weather help
 
 Description:
@@ -919,6 +923,7 @@ Modes:
   help        Show help message
 
 Flags:
+  --help, -h        Show this help message
   --location, -l    Specify a custom location (passes remaining args to wttr)
   --wttr, -w        Pass remaining arguments directly to wttr function
 
@@ -941,6 +946,7 @@ Dependencies:
 
 Examples:
   weather                    # Show help
+  weather --help             # Show help message
   weather current            # Current weather for auto-detected location
   weather forecast           # 3-day forecast for auto-detected location
   weather current --wttr "Orlando" n    # Current weather for Orlando with format 'n'
@@ -952,7 +958,7 @@ Note: The function uses wttr.in service for weather data. When using
       to the wttr() function, allowing you to use any wttr.in format options.
       The auto-detection feature requires internet connectivity to query
       ipinfo.io. Tab completion is available for modes (current, forecast, help),
-      flags (--location, -l, --wttr, -w), and 50 major cities (33 USA cities
+      flags (--help, -h, --location, -l, --wttr, -w), and 50 major cities (33 USA cities
       and 17 international cities) when using location flags. See also wttr()
       for direct access to wttr.in service.
 EOF
@@ -1654,21 +1660,31 @@ bashrc - Edit .bashrc File or DOGRC Directory
 
 Quick access to edit your .bashrc file or open the DOGRC directory in Neovim.
 
-Usage: bashrc [--root|-r|--edit|-e]
+Usage: bashrc [--root|-r|--edit|-e [dogrc|preamble|config]]
 
 Description:
   - Opens ~/.bashrc in nvim for editing (default behavior)
   - Can open the DOGRC directory in nvim with --root flag
+  - Can open ~/DOGRC/.bashrc with --edit dogrc or -e dogrc
+  - Can open ~/DOGRC/config/preamble.sh with --edit preamble or -e preamble
+  - Can open ~/DOGRC/config/DOGRC.json with --edit config or -e config
   - Provides convenient shortcuts for editing bash configuration
   - Simple one-command access to your shell configuration
 
 Options:
-  --root, -r    Open the DOGRC directory in nvim instead of ~/.bashrc
-  --edit, -e    Explicitly open ~/.bashrc in nvim (same as no argument)
+  --help, -h                    Show this help message
+  --root, -r                    Open the DOGRC directory in nvim instead of ~/.bashrc
+  --edit, -e                    Explicitly open ~/.bashrc in nvim (same as no argument)
+  --edit dogrc, -e dogrc        Open ~/DOGRC/.bashrc in nvim
+  --edit preamble, -e preamble  Open ~/DOGRC/config/preamble.sh in nvim
+  --edit config, -e config      Open ~/DOGRC/config/DOGRC.json in nvim
 
 Behavior:
   - Without arguments: opens ~/.bashrc in nvim editor
   - With --edit or -e: opens ~/.bashrc in nvim editor (explicit)
+  - With --edit dogrc or -e dogrc: opens ~/DOGRC/.bashrc in nvim editor
+  - With --edit preamble or -e preamble: opens ~/DOGRC/config/preamble.sh in nvim editor
+  - With --edit config or -e config: opens ~/DOGRC/config/DOGRC.json in nvim editor
   - With --root or -r: opens the DOGRC directory in nvim
   - Returns nvim's exit code
   - Returns error if nvim is not available
@@ -1679,16 +1695,19 @@ Dependencies:
 
 Examples:
   bashrc              # Open ~/.bashrc in nvim
-  bashrc --edit       # Open ~/.bashrc in nvim (explicit)
-  bashrc -e           # Open ~/.bashrc in nvim (explicit, short form)
-  bashrc --root       # Open DOGRC directory in nvim
-  bashrc -r           # Open DOGRC directory in nvim (short form)
+  bashrc --help       # Show help message
+  bashrc -e dogrc     # Open ~/DOGRC/.bashrc in nvim
+  bashrc -e preamble  # Open ~/DOGRC/config/preamble.sh in nvim
+  bashrc -e config    # Open ~/DOGRC/config/DOGRC.json in nvim
+  bashrc -r           # Open DOGRC directory in nvim
 
 Note: This is a convenience function for quickly editing your .bashrc file or
       accessing the DOGRC directory. After making changes to .bashrc, you'll
       need to source the file or start a new shell session for changes to
       take effect. The --root flag is useful for editing DOGRC configuration
-      files and plugins.
+      files and plugins. Use --edit dogrc to edit the DOGRC project's .bashrc
+      file directly. Use --edit preamble to edit the DOGRC preamble configuration.
+      Use --edit config to edit the DOGRC JSON configuration file.
 EOF
                 return 0
                 ;;
@@ -2071,7 +2090,7 @@ Note: This function is designed for kitty terminal emulator. After calling
 EOF
                 return 0
                 ;;
-            drchelp|help|--help|-h)
+            drchelp|help|--help|--HELP|-h|-H)
                 # Show default help message
                 ;;
             *)

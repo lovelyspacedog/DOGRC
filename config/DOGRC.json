@@ -1,5 +1,6 @@
 {
-    "version": "0.1.3",
+    "version": "0.1.4",
+    "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
     "enable_blesh": true,

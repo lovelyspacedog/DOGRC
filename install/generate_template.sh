@@ -151,16 +151,17 @@ EOF
         cat <<'EOF'
 {
     "version": "REPLACE",
+    "enable_update_check": true,
+    "enable_user_plugins": true,
     "enable_aliases": true,
-    "enable_automotd": true,
     "enable_blesh": true,
-    "enable_drchelp": true,
     "enable_hyprland_wlcopy": true,
     "enable_shell_mommy": true,
     "enable_starship": true,
-    "enable_user_plugins": true,
     "enable_vimkeys": true,
-    "enable_zoxide": true
+    "enable_drchelp": true,
+    "enable_zoxide": true,
+    "enable_automotd": true
 }
 EOF
         ;;

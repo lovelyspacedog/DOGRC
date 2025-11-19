@@ -12,6 +12,17 @@ fi
 source "${__CORE_DIR}/dependency_check.sh"
 
 cd() {
+    # Handle drchelp flags (preserve builtin --help)
+    [[ "$1" == "--drchelp" ]] || [[ "$1" == "--drc" ]] && {
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp cd
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    }
+    
     if [[ -z "$1" ]]; then
         builtin cd "${HOME}"
     else
@@ -21,6 +32,17 @@ cd() {
 }
 
 cdd() {
+    # Handle help flags
+    [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] && {
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp cdd
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    }
+    
     [[ -d "$1" ]] && {
         builtin cd "$1" || {
             echo "Error: Failed to change to directory $1" >&2
@@ -39,6 +61,17 @@ cdd() {
 }
 
 zd() {
+    # Handle help flags
+    [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]] && {
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp zd
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    }
+    
     # Try zoxide first if available
     if command -v z >/dev/null 2>&1; then
         if z "$@"; then

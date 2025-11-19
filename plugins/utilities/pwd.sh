@@ -13,6 +13,17 @@ source "${__CORE_DIR}/dependency_check.sh"
 
 # Copy the current directory to the clipboard if the first argument is "c" or "C"
 pwd() {
+    # Handle drchelp flags (preserve builtin --help, case-insensitive)
+    if [[ -n "${1:-}" ]] && { [[ "${1,,}" == "--drchelp" ]] || [[ "${1,,}" == "--drc" ]]; }; then
+        if declare -f drchelp >/dev/null 2>&1; then
+            drchelp pwd
+            return 0
+        else
+            echo "Error: drchelp not available" >&2
+            return 1
+        fi
+    fi
+    
     [[ -n "$1" && "${1:0:1}" =~ [Cc] ]] && {
         ensure_commands_present --caller "pwd clipboard" wl-copy || {
             return $?
