@@ -107,12 +107,11 @@ DOGRC/
 │   ├── _INSTALL.sh        # Installation script
 │   ├── _UPDATE.sh         # Update script
 │   └── generate_template.sh # Template generator
-└── testing/
-    └── unit-tests/        # Unit tests for plugins
-        ├── test-archive.sh
-        ├── test-backup.sh
-        ├── test-mkcd.sh
-        └── test-swap.sh
+└── unit-tests/            # Unit tests for plugins
+    ├── test-archive.sh
+    ├── test-backup.sh
+    ├── test-mkcd.sh
+    └── test-swap.sh
 ```
 
 ## Configuration
@@ -289,7 +288,7 @@ Automatic update checks can be enabled/disabled via `enable_update_check` in `DO
 DOGRC includes unit tests for core file operations plugins:
 
 ```bash
-cd ~/DOGRC/testing/unit-tests
+cd ~/DOGRC/unit-tests
 ./test-archive.sh         # Test archive.sh (extract, compress)
 ./test-backup.sh          # Test backup.sh
 ./test-mkcd.sh            # Test mkcd.sh
@@ -372,7 +371,7 @@ Plugins should:
 ### Unit Testing
 
 To create unit tests:
-1. Create test file in `testing/unit-tests/test-<plugin>.sh`
+1. Create test file in `unit-tests/test-<plugin>.sh`
 2. Follow the pattern from existing test files
 3. Use `print_msg` function for consistent output
 4. Include cleanup steps
