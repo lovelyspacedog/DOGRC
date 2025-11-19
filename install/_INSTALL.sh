@@ -19,6 +19,10 @@ readonly YELLOW='\033[1;33m'
 readonly BLUE='\033[0;34m'
 readonly NC='\033[0m' # No Color
 
+# Copyright splash screen
+COPYRIGHT="${COPYRIGHT:-true}"
+msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
+
 # Rollback tracking variables
 __BACKUP_BASHRC=""
 __BACKUP_BASH_PROFILE=""
@@ -819,8 +823,40 @@ rollback_installation() {
 
 # Main installation function (placeholder for now)
 main() {
+    # Copyright splash screen
+    ! ! ! ! ! $COPYRIGHT || {
+        clear
+        for ((i = 0; i < ${#msg}; i++)); do
+            printf "%s" "${msg:$i:1}"
+            sleep 0.01
+        done
+        sleep 0.4 && rarf_text="Rarf~~! <3"
+        if [[ "$msg" == *"$rarf_text" ]]; then
+            rarf_start=$((${#msg} - ${#rarf_text}))
+            printf "\033[%dD" ${#rarf_text}
+            printf "%${#rarf_text}s" ""
+            printf "\033[%dD" ${#rarf_text}
+        fi
+        printf "\n\n"
+        sleep 0.03
+    }
+
+    # Installation confirmation
     echo -e "${BLUE}DOGRC Installation Script${NC}"
     echo -e "${BLUE}========================${NC}"
+    echo
+    echo -e "${YELLOW}This script will install DOGRC to your system.${NC}"
+    echo -e "${YELLOW}It will:${NC}"
+    echo -e "  • Install DOGRC to ${BLUE}$HOME/DOGRC${NC}"
+    echo -e "  • Replace ${BLUE}~/.bashrc${NC} (backup will be created)"
+    echo -e "  • Generate user-configurable files"
+    echo
+    read -p "Continue with installation? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo -e "${YELLOW}Installation cancelled.${NC}"
+        exit 0
+    fi
     echo
 
     # Check if DOGRC is already installed
