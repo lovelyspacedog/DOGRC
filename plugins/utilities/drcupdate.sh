@@ -345,6 +345,36 @@ drcupdate() {
     fi
 }
 
+# Bash completion function for drcupdate
+_drcupdate_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Complete with flags if:
+    # 1. Current word starts with a dash, OR
+    # 2. Current word is empty (after a space)
+    if [[ "$cur" == -* ]] || [[ -z "$cur" ]]; then
+        COMPREPLY=($(compgen -W "--silent -s --ignore-this-version --ignore --return-only --yes -y" -- "$cur"))
+        return 0
+    fi
+
+    # No completion for non-flag arguments (drcupdate doesn't take positional args)
+    return 0
+}
+
+# Register the completion function
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _drcupdate_completion drcupdate 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     drcupdate "$@"
     exit $?

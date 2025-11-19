@@ -44,6 +44,50 @@ swap() {
     fi
 }
 
+# Bash completion function for swap
+_swap_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # If we're on the second argument, exclude the first file from completions
+    if [[ $cword -eq 2 ]]; then
+        local first_file="${words[1]}"
+        # Complete with files, but exclude the first file if it's a valid path
+        compopt -o default
+        # Get all file completions
+        local files
+        mapfile -t files < <(compgen -f -- "$cur" 2>/dev/null)
+        local completions=()
+        local file
+        for file in "${files[@]}"; do
+            # Exclude the first file from second argument completions
+            if [[ "$file" != "$first_file" ]]; then
+                completions+=("$file")
+            fi
+        done
+        COMPREPLY=("${completions[@]}")
+        return 0
+    fi
+
+    # For first argument, complete with files (default completion)
+    compopt -o default
+    COMPREPLY=()
+    return 0
+}
+
+# Register the completion function
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _swap_completion swap 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     swap "$@"
     exit $?

@@ -36,15 +36,26 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 __UPDATE_CHANGELOG="$(cat <<'EOF'
 Changes in this update:
 
-Changes since 0.1.0:
-  • Added drcupdate utility for checking and auto-updating DOGRC
-  • Added automatic update check on shell startup
-  • Enhanced documentation with drcupdate help entries
-  • Improved version comparison and update workflow
-
 Changes since 0.1.1:
   • Added --yes flag to drcupdate for auto-update without confirmation
   • Enhanced drcupdate documentation with --yes flag usage and examples
+
+Changes since 0.1.2:
+  • Added comprehensive tab completion for multiple utilities:
+    - drcupdate: flag completion (--silent, --ignore-this-version, --return-only, --yes)
+    - motd: subcommand completion (print, make, shoo)
+    - backup: file/directory path completion with flag support
+    - timer: command completion (CLEAR, LIST) and timer name completion
+    - fastnote: command completion (LIST, CLEAR, OPEN, DELETE, CAT) and note number completion with previews
+    - extract: archive file type filtering completion
+    - compress: file/directory and format completion
+    - swap: file path completion with smart exclusion (prevents swapping file with itself)
+    - openthis: file path completion
+    - weather: mode/flag/city completion with 50 major cities (33 USA + 17 international)
+    - wttr: city completion with 50 major cities
+  • Enhanced fastnote with CAT command for printing note contents
+  • Enhanced fastnote list to display note previews (60 character truncation)
+  • Updated all documentation in drchelp.sh to reflect new tab completion features
 EOF
 )"
 

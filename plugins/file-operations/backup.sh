@@ -112,6 +112,64 @@ backup() {
     fi
 }
 
+# Bash completion function for backup
+_backup_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Check if --directory or -d flag is already present
+    local has_directory_flag=false
+    local i
+    for ((i=1; i < cword; i++)); do
+        if [[ "${words[i]}" == "--directory" ]] || [[ "${words[i]}" == "--dir" ]] || [[ "${words[i]}" == "-d" ]]; then
+            has_directory_flag=true
+            break
+        fi
+    done
+
+    # If --directory flag is present, no file path is needed
+    if [[ "$has_directory_flag" == "true" ]]; then
+        # Only complete flags if current word starts with dash
+        if [[ "$cur" == -* ]]; then
+            COMPREPLY=($(compgen -W "--store -s" -- "$cur"))
+            return 0
+        fi
+        # No completion needed after --directory flag
+        return 0
+    fi
+
+    # If current word starts with a dash, complete with flags
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--store -s --directory --dir -d --" -- "$cur"))
+        return 0
+    fi
+
+    # If previous word is --, complete with files
+    if [[ "$prev" == "--" ]]; then
+        compopt -o default
+        COMPREPLY=()
+        return 0
+    fi
+
+    # Otherwise, complete with files (default file completion)
+    compopt -o default
+    COMPREPLY=()
+    return 0
+}
+
+# Register the completion function
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _backup_completion backup 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     backup "$@"
     exit $?

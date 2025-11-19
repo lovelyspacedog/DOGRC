@@ -172,6 +172,159 @@ weather() {
     esac
 }
 
+# Bash completion function for weather
+_weather_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Major cities for completion (includes more USA cities)
+    local major_cities=(
+        # USA cities
+        "New York" "Los Angeles" "Chicago" "Houston" "Phoenix"
+        "Philadelphia" "San Antonio" "San Diego" "Dallas" "San Jose"
+        "Austin" "Jacksonville" "San Francisco" "Indianapolis" "Columbus"
+        "Fort Worth" "Charlotte" "Seattle" "Denver" "Washington"
+        "Boston" "El Paso" "Detroit" "Nashville" "Portland"
+        "Oklahoma City" "Las Vegas" "Memphis" "Louisville" "Baltimore"
+        "Milwaukee" "Albuquerque" "Tucson" "Fresno" "Sacramento"
+        # International cities
+        "London" "Tokyo" "Paris" "Sydney" "Berlin"
+        "Moscow" "Dubai" "Singapore" "Toronto" "Mumbai"
+        "Barcelona" "Rome" "Amsterdam" "Hong Kong" "Seoul"
+        "Bangkok" "Istanbul"
+    )
+
+    # Check if we're completing after a location flag
+    local has_location_flag=false
+    local i
+    for ((i=1; i < cword; i++)); do
+        if [[ "${words[i]}" == "--location" ]] || [[ "${words[i]}" == "-l" ]] || \
+           [[ "${words[i]}" == "--wttr" ]] || [[ "${words[i]}" == "-w" ]]; then
+            has_location_flag=true
+            break
+        fi
+    done
+
+    # If we have a location flag, complete with city names
+    if [[ "$has_location_flag" == "true" ]]; then
+        local city_completions=()
+        local city
+        for city in "${major_cities[@]}"; do
+            # Case-insensitive matching
+            if [[ -z "$cur" ]] || [[ "${city,,}" == "${cur,,}"* ]]; then
+                city_completions+=("$city")
+            fi
+        done
+        COMPREPLY=("${city_completions[@]}")
+        return 0
+    fi
+
+    # Check if current word starts with a dash (flag)
+    if [[ "$cur" == -* ]]; then
+        COMPREPLY=($(compgen -W "--location -l --wttr -w" -- "$cur"))
+        return 0
+    fi
+
+    # Check if previous word is a mode or flag
+    if [[ "$prev" == "current" ]] || [[ "$prev" == "forecast" ]] || \
+       [[ "$prev" == "help" ]] || [[ "$prev" == "--location" ]] || \
+       [[ "$prev" == "-l" ]] || [[ "$prev" == "--wttr" ]] || \
+       [[ "$prev" == "-w" ]]; then
+        # If previous was a flag, complete with cities
+        if [[ "$prev" == "--location" ]] || [[ "$prev" == "-l" ]] || \
+           [[ "$prev" == "--wttr" ]] || [[ "$prev" == "-w" ]]; then
+            local city_completions=()
+            local city
+            for city in "${major_cities[@]}"; do
+                if [[ -z "$cur" ]] || [[ "${city,,}" == "${cur,,}"* ]]; then
+                    city_completions+=("$city")
+                fi
+            done
+            COMPREPLY=("${city_completions[@]}")
+            return 0
+        fi
+        # Otherwise, no completion needed
+        return 0
+    fi
+
+    # Default: complete with modes and flags only (not cities directly)
+    local mode_completions=()
+    local flag_completions=()
+
+    # Complete modes
+    local cur_lower="${cur,,}"
+    if [[ -z "$cur" ]] || [[ "current" == "$cur_lower"* ]]; then
+        mode_completions+=("current")
+    fi
+    if [[ -z "$cur" ]] || [[ "forecast" == "$cur_lower"* ]]; then
+        mode_completions+=("forecast")
+    fi
+    if [[ -z "$cur" ]] || [[ "help" == "$cur_lower"* ]]; then
+        mode_completions+=("help")
+    fi
+
+    # Complete flags
+    if [[ "$cur" == -* ]]; then
+        flag_completions=($(compgen -W "--location -l --wttr -w" -- "$cur"))
+    fi
+
+    COMPREPLY=("${mode_completions[@]}" "${flag_completions[@]}")
+    return 0
+}
+
+# Bash completion function for wttr
+_wttr_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Major cities for completion (includes more USA cities)
+    local major_cities=(
+        # USA cities
+        "New York" "Los Angeles" "Chicago" "Houston" "Phoenix"
+        "Philadelphia" "San Antonio" "San Diego" "Dallas" "San Jose"
+        "Austin" "Jacksonville" "San Francisco" "Indianapolis" "Columbus"
+        "Fort Worth" "Charlotte" "Seattle" "Denver" "Washington"
+        "Boston" "El Paso" "Detroit" "Nashville" "Portland"
+        "Oklahoma City" "Las Vegas" "Memphis" "Louisville" "Baltimore"
+        "Milwaukee" "Albuquerque" "Tucson" "Fresno" "Sacramento"
+        # International cities
+        "London" "Tokyo" "Paris" "Sydney" "Berlin"
+        "Moscow" "Dubai" "Singapore" "Toronto" "Mumbai"
+        "Barcelona" "Rome" "Amsterdam" "Hong Kong" "Seoul"
+        "Bangkok" "Istanbul"
+    )
+
+    # Complete with city names
+    local city_completions=()
+    local city
+    for city in "${major_cities[@]}"; do
+        # Case-insensitive matching
+        if [[ -z "$cur" ]] || [[ "${city,,}" == "${cur,,}"* ]]; then
+            city_completions+=("$city")
+        fi
+    done
+    COMPREPLY=("${city_completions[@]}")
+    return 0
+}
+
+# Register the completion functions
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _weather_completion weather 2>/dev/null || true
+        complete -F _wttr_completion wttr 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     weather "$@"
     exit $?

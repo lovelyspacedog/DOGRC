@@ -135,6 +135,63 @@ timer() {
     fi
 }
 
+# Bash completion function for timer
+_timer_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Build list of completions: commands first, then timer names
+    local command_completions=()
+    local timer_completions=()
+    
+    # Add commands first (case-insensitive matching)
+    local cur_upper="${cur^^}"
+    if [[ -z "$cur" ]] || [[ "CLEAR" == "$cur_upper"* ]]; then
+        command_completions+=("CLEAR")
+    fi
+    if [[ -z "$cur" ]] || [[ "LIST" == "$cur_upper"* ]]; then
+        command_completions+=("LIST")
+    fi
+    
+    # Extract timer names from /tmp/timer-*.txt files
+    shopt -s nullglob
+    local timer_files=()
+    local file
+    for file in /tmp/timer-*.txt; do
+        [[ -f "$file" ]] || continue
+        timer_files+=("$file")
+    done
+    shopt -u nullglob
+    
+    # Extract timer names from filenames
+    local name
+    for file in "${timer_files[@]}"; do
+        name="${file#/tmp/timer-}"
+        name="${name%.txt}"
+        # Only add if it matches the current prefix (case-insensitive)
+        if [[ -z "$cur" ]] || [[ "${name,,}" == "${cur,,}"* ]]; then
+            timer_completions+=("$name")
+        fi
+    done
+    
+    # Combine: commands first, then timer names
+    COMPREPLY=("${command_completions[@]}" "${timer_completions[@]}")
+    return 0
+}
+
+# Register the completion function
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _timer_completion timer 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     timer "$@"
     exit $?

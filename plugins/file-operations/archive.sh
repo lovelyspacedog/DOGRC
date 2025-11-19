@@ -233,6 +233,65 @@ compress() {
     fi
 }
 
+# Bash completion function for extract
+_extract_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Complete with archive files (supported extensions)
+    # Filter files by supported archive extensions
+    compopt -o filenames
+    local files
+    mapfile -t files < <(compgen -f -- "$cur" 2>/dev/null)
+    local completions=()
+    local file
+    for file in "${files[@]}"; do
+        # Check if file matches supported archive extensions
+        case "$file" in
+            *.tar.bz2|*.tar.gz|*.bz2|*.rar|*.gz|*.tar|*.tbz2|*.tgz|*.zip|*.Z|*.7z)
+                completions+=("$file")
+                ;;
+        esac
+    done
+    COMPREPLY=("${completions[@]}")
+    return 0
+}
+
+# Bash completion function for compress
+_compress_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # If we're on the second argument, complete with supported formats
+    if [[ $cword -eq 2 ]]; then
+        COMPREPLY=($(compgen -W "tar.bz2 tbz2 tar.gz tgz bz2 rar gz tar zip Z 7z" -- "$cur"))
+        return 0
+    fi
+
+    # Otherwise, complete with files and directories (default completion)
+    compopt -o default
+    COMPREPLY=()
+    return 0
+}
+
+# Register the completion functions
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _extract_completion extract 2>/dev/null || true
+        complete -F _compress_completion compress 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     if [[ $# -eq 0 ]]; then
         echo "Usage: $0 {extract|compress} [arguments...]" >&2

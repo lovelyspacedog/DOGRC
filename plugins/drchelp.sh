@@ -75,6 +75,7 @@ Examples:
 Note: The timestamp ensures backups are unique and sortable. Directory backups
       preserve the entire structure and exclude the backup directory itself to
       avoid recursive copying. Use --store to keep all backups in a central location.
+      Tab completion is available for flags and file/directory paths.
 EOF
                 return 0
                 ;;
@@ -137,7 +138,9 @@ Examples:
 Note: This function is the opposite of extract(). It creates archives from
       files or directories. The original files are preserved (not deleted).
       Default format is gz for files and tar.gz for directories. Use the
-      second argument to specify a different format.
+      second argument to specify a different format. Tab completion is
+      available for file/directory paths (first argument) and supported
+      archive formats (second argument).
 EOF
                 return 0
                 ;;
@@ -948,7 +951,10 @@ Note: The function uses wttr.in service for weather data. When using
       --location or --wttr flags, all remaining arguments are passed directly
       to the wttr() function, allowing you to use any wttr.in format options.
       The auto-detection feature requires internet connectivity to query
-      ipinfo.io. See also wttr() for direct access to wttr.in service.
+      ipinfo.io. Tab completion is available for modes (current, forecast, help),
+      flags (--location, -l, --wttr, -w), and 50 major cities (33 USA cities
+      and 17 international cities) when using location flags. See also wttr()
+      for direct access to wttr.in service.
 EOF
                 return 0
                 ;;
@@ -999,8 +1005,17 @@ Examples:
 
 Note: This is a direct wrapper around wttr.in service. All wttr.in format
       options and parameters are supported. The function automatically handles
-      URL encoding of parameters. For a more user-friendly interface with
-      auto-detection and formatted output, see weather() function.
+      URL encoding of parameters. Tab completion is available with 50 major
+      cities (33 USA cities including New York, Los Angeles, Chicago, Houston,
+      Phoenix, Philadelphia, San Antonio, San Diego, Dallas, San Jose, Austin,
+      Jacksonville, San Francisco, Indianapolis, Columbus, Fort Worth, Charlotte,
+      Seattle, Denver, Washington, Boston, El Paso, Detroit, Nashville, Portland,
+      Oklahoma City, Las Vegas, Memphis, Louisville, Baltimore, Milwaukee,
+      Albuquerque, Tucson, Fresno, Sacramento; and 17 international cities
+      including London, Tokyo, Paris, Sydney, Berlin, Moscow, Dubai, Singapore,
+      Toronto, Mumbai, Barcelona, Rome, Amsterdam, Hong Kong, Seoul, Bangkok,
+      Istanbul). For a more user-friendly interface with auto-detection and
+      formatted output, see weather() function.
 EOF
                 return 0
                 ;;
@@ -1130,7 +1145,8 @@ Note: The function uses the same version comparison algorithm as _UPDATE.sh for
       or ignore specific repository versions. The --silent flag is useful for
       automated checks that run on shell startup without cluttering output.
       The update script must be run from the git repository directory, not from
-      ~/DOGRC/ (which is the installation directory).
+      ~/DOGRC/ (which is the installation directory). Tab completion is
+      available for all flags.
 EOF
                 return 0
                 ;;
@@ -1202,27 +1218,32 @@ Description:
   - Provides a simple scratchpad system for temporary notes
 
 Commands:
-  list            List all available notes
+  list            List all available notes with previews
   clear           Remove all notes (prompts for confirmation, defaults to N)
   <number>        Open/edit a note by number (default action)
-  <number> delete Delete a note by number
   <number> open   Open/edit a note by number (explicit)
+  <number> cat    Print note contents to stdout
+  <number> delete Delete a note by number
 
 Behavior:
   - Without arguments: opens note 0 (creates if it doesn't exist)
-  - "fastnote list": lists all available notes
+  - "fastnote list": lists all available notes with first-line previews (truncated to 60 chars)
   - "fastnote clear": removes all notes after confirmation (prompts with [y/N], defaults to N)
   - "fastnote <n>": opens note number n in editor (creates if needed)
+  - "fastnote <n> open": explicitly opens note number n in editor (creates if needed)
+  - "fastnote <n> cat": prints note contents to stdout (does not create if missing)
   - "fastnote <n> delete": deletes note number n
   - Creates ~/.fastnotes directory automatically if it doesn't exist
   - Uses \$EDITOR environment variable (defaults to nvim)
   - Clear command shows count of notes that will be deleted
   - Clear command requires explicit confirmation (y or yes, case-insensitive)
+  - Tab completion available for commands (LIST, CLEAR) and note numbers with previews
 
 Dependencies:
   - mkdir (for creating directory)
   - touch (for creating note files)
-  - basename, sed (for listing notes)
+  - basename, sed, head (for listing notes with previews)
+  - cat (for printing note contents)
   - rm (for deleting notes)
   - read (for confirmation prompts)
   - Editor specified in \$EDITOR (default: nvim)
@@ -1233,16 +1254,20 @@ Files:
 Examples:
   fastnote              # Open note 0
   fastnote 1            # Open note 1
-  fastnote list         # List all notes
-  fastnote 2 delete     # Delete note 2
+  fastnote list         # List all notes with previews
+  fastnote 2 cat        # Print contents of note 2
   fastnote 5 open       # Explicitly open note 5
+  fastnote 2 delete     # Delete note 2
   fastnote clear        # Remove all notes (prompts for confirmation)
 
 Note: Note numbers must be positive integers or zero. The function will
-      create note files automatically if they don't exist when opened.
-      The "clear" command prompts for confirmation before deleting all notes,
-      and defaults to "N" (no) for safety. Only "y" or "yes" (case-insensitive)
-      will proceed with deletion.
+      create note files automatically if they don't exist when opened (but not
+      for "cat" command). The "list" command shows previews of the first line
+      of each note (truncated to 60 characters). Tab completion is available
+      for commands (shown in uppercase: LIST, CLEAR) and note numbers with
+      previews. The "clear" command prompts for confirmation before deleting
+      all notes, and defaults to "N" (no) for safety. Only "y" or "yes"
+      (case-insensitive) will proceed with deletion.
 EOF
                 return 0
                 ;;
@@ -1342,7 +1367,9 @@ Examples:
 
 Note: The function automatically detects the archive type from the file extension
       and uses the appropriate extraction tool. Unsupported formats will
-      display an error message. See also compress() for creating archives.
+      display an error message. Tab completion is available and filters to
+      only show supported archive file types (.tar.bz2, .tar.gz, .bz2, .rar,
+      .gz, .tar, .tbz2, .tgz, .zip, .Z, .7z). See also compress() for creating archives.
 EOF
                 return 0
                 ;;
@@ -1432,7 +1459,8 @@ Examples:
 Note: This works in conjunction with automotd.sh (if implemented), which can
       automatically generate daily fortunes. The motd.txt file can also be
       manually created or edited. The "print" command is typically called
-      automatically when starting a new shell session.
+      automatically when starting a new shell session. Tab completion is
+      available for subcommands (print, make, shoo).
 EOF
                 return 0
                 ;;
@@ -1520,9 +1548,10 @@ Note: The function automatically detects file type and handles it appropriately.
       kitty window), even if they have execute permission. Executables that are
       not script files are run in a new detached kitty terminal window. All other
       files and URLs are opened with their default applications via xdg-open.
-      All operations are non-blocking and run in the background. This is
-      particularly useful for quickly opening files, editing scripts, or running
-      executables without blocking your terminal session.
+      All operations are non-blocking and run in the background. Tab completion
+      is available for file paths, which naturally includes files with common
+      extensions. This is particularly useful for quickly opening files, editing
+      scripts, or running executables without blocking your terminal session.
 EOF
                 return 0
                 ;;
@@ -1879,7 +1908,10 @@ Note: The swap operation is atomic - if any step fails, the operation
       is aborted. The temporary file uses the process ID ($$) to ensure
       uniqueness and avoid conflicts with other swap operations. The
       function warns about different extensions to help catch potential
-      mistakes, but still proceeds with the swap.
+      mistakes, but still proceeds with the swap. Tab completion is
+      available for file paths. For the second argument, the first file
+      is automatically excluded from completions to prevent swapping a
+      file with itself.
 EOF
                 return 0
                 ;;
@@ -1938,7 +1970,8 @@ Note: Timer names are automatically sanitized for filesystem safety. Spaces
       a timer already exists, calling it again will show the elapsed time
       and prompt to reset. The "list" command shows all active timers with
       their current elapsed times. The "clear" command removes all timer
-      files after confirmation.
+      files after confirmation. Tab completion is available for commands
+      (CLEAR, LIST) and timer names.
 EOF
                 return 0
                 ;;

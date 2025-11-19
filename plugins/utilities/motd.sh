@@ -88,6 +88,29 @@ EOF
   esac
 }
 
+# Bash completion function for motd
+_motd_completion() {
+    local cur prev words cword
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    words=("${COMP_WORDS[@]}")
+    cword=$COMP_CWORD
+
+    # Complete with subcommands (compgen handles prefix matching automatically)
+    COMPREPLY=($(compgen -W "print make shoo" -- "$cur"))
+    return 0
+}
+
+# Register the completion function
+# Only register if we're in an interactive shell and bash-completion is available
+if [[ -n "${BASH_VERSION:-}" ]] && [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    # Check if complete command is available (bash-completion)
+    if command -v complete >/dev/null 2>&1; then
+        complete -F _motd_completion motd 2>/dev/null || true
+    fi
+fi
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   motd "$@"
   exit $?
