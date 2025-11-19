@@ -193,8 +193,13 @@ compress() {
                 return $?
             }
             bzip2 -k "$input"
+            local bzip2_result=$?
             # bzip2 creates input.bz2, so we need to rename if different
-            [[ "$output" != "${input}.bz2" ]] && mv "${input}.bz2" "$output"
+            if [[ $bzip2_result -eq 0 ]] && [[ "$output" != "${input}.bz2" ]]; then
+                mv "${input}.bz2" "$output"
+                local bzip2_result=$?
+            fi
+            result=$bzip2_result
             ;;
         rar)
             ensure_commands_present --caller "compress" rar || {
@@ -207,8 +212,13 @@ compress() {
                 return $?
             }
             gzip -k "$input"
+            local gzip_result=$?
             # gzip creates input.gz, so we need to rename if different
-            [[ "$output" != "${input}.gz" ]] && mv "${input}.gz" "$output"
+            if [[ $gzip_result -eq 0 ]] && [[ "$output" != "${input}.gz" ]]; then
+                mv "${input}.gz" "$output"
+                local gzip_result=$?
+            fi
+            result=$gzip_result
             ;;
         tar)
             ensure_commands_present --caller "compress" tar || {
@@ -244,7 +254,11 @@ compress() {
             ;;
     esac
 
-    local result=$?
+    # result is set in the case statement above for gz and bz2 formats
+    # For other formats, capture it here
+    if [[ -z "${result:-}" ]]; then
+        local result=$?
+    fi
 
     if [[ $result -eq 0 ]]; then
         echo "Created: $output"
