@@ -35,8 +35,6 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 # Update changelog (current release changes only)
 __UPDATE_CHANGELOG="$(cat <<'EOF'
 Changes in this update (version 0.1.5):
-In nvim, type :q <enter> to quit.
-Remove this message by typing "motd shoo" in terminal.
 
 ### New Features
 - **Unit Test Runner**: Added comprehensive test runner with tmux interface
@@ -861,6 +859,8 @@ main() {
     local motd_file="$HOME/motd.txt"
     cat > "$motd_file" <<EOF
 🎉 DOGRC has been successfully updated!
+   Enter :q <enter> to exit the MOTD.
+   Type 'motd shoo' in terminal to remove this message.
 
 Update Details:
   • Previous version: $old_version
