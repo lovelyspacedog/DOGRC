@@ -32,40 +32,134 @@ readonly NC='\033[0m' # No Color
 COPYRIGHT="${COPYRIGHT:-true}"
 msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
-# Update changelog (hardcoded at top of script)
+# Update changelog (loaded from install/changelog.txt)
 __UPDATE_CHANGELOG="$(cat <<'EOF'
-Changes in this update:
+# DOGRC Changelog
 
-Changes since 0.1.3:
-  • Added enable_update_check configuration option to control automatic update checks
-  • Made update check conditional in .bashrc based on enable_update_check setting
-  • Standardized --help/-h flag support across all plugin functions (delegates to drchelp)
-  • Enhanced bashrc.sh with new --edit options:
-    - --edit dogrc or -e dogrc: opens ~/DOGRC/.bashrc
-    - --edit preamble or -e preamble: opens ~/DOGRC/config/preamble.sh
-    - --edit config or -e config: opens ~/DOGRC/config/DOGRC.json
-  • Improved weather.sh with help flag support and added Orlando to city completions
-  • Changed analyze-file.sh and dots.sh from "help" argument to standardized --help/-h flags
-  • Fixed slashback.sh to properly pass arguments to wrapper functions
-  • Updated drchelp.sh documentation for multiple functions (analyze-file, weather, bashrc)
-  • Added help flag completion (--help, -h) to all bash completion functions
+## [0.1.5] - 2025-11-20
 
-Changes since 0.1.2:
-  • Added comprehensive tab completion for multiple utilities:
-    - drcupdate: flag completion (--silent, --ignore-this-version, --return-only, --yes)
-    - motd: subcommand completion (print, make, shoo)
-    - backup: file/directory path completion with flag support
-    - timer: command completion (CLEAR, LIST) and timer name completion
-    - fastnote: command completion (LIST, CLEAR, OPEN, DELETE, CAT) and note number completion with previews
-    - extract: archive file type filtering completion
-    - compress: file/directory and format completion
-    - swap: file path completion with smart exclusion (prevents swapping file with itself)
-    - openthis: file path completion
-    - weather: mode/flag/city completion with 50 major cities (33 USA + 17 international)
-    - wttr: city completion with 50 major cities
-  • Enhanced fastnote with CAT command for printing note contents
-  • Enhanced fastnote list to display note previews (60 character truncation)
-  • Updated all documentation in drchelp.sh to reflect new tab completion features
+### New Features
+- **Unit Test Runner**: Added comprehensive test runner with tmux interface
+  - Real-time progress tracking with split pane display (overview + live test output)
+  - Elapsed time tracking for suite and individual tests
+  - Auto-close after 5 seconds when tests complete
+  - 'q' key binding to quit early
+  - Helper functions for real-time test progress updates
+
+- **Unit Test Infrastructure**: Added comprehensive unit test suite
+  - Added `_TEST-ALL.sh`: Main test runner script
+  - Added `_test-results-helper.sh`: Helper functions for test results
+  - Added unit tests for all 25 plugins with real-time progress tracking
+  - Enhanced test-weather.sh with N/A test handling (excludes N/A from percentage)
+
+- **prepfile Utility**: Deprecated prepsh, added prepfile with multi-language support
+  - Supports multiple programming languages (bash, python, rust, go, javascript, typescript, C, C++, java, ruby, perl, php, lua, zsh, fish)
+  - Automatic file extension handling
+  - Makes script files executable automatically
+
+- **runtests Plugin**: Added new utility plugin to run unit test suite
+  - Full drchelp documentation integration
+  - Help flags delegate to drchelp
+
+### Enhancements
+- **motd.sh**: Added pager support for long messages (>20 lines)
+  - Shows preview for long messages
+  - Opens full content in read-only pager
+  - Updated drchelp documentation
+
+- **compress()**: Fixed exit code capture for gz and bz2 formats
+
+- **Installation**: Added optional unit-tests installation prompt in _INSTALL.sh
+
+- **Documentation**: 
+  - Regenerated README.md based on current project state
+  - Added comprehensive comparison report between DOGRC and BASHRC
+  - Enhanced drchelp documentation for all utilities
+
+### Testing
+- Added comprehensive unit tests for all plugins:
+  - analyze-file.sh
+  - available.sh
+  - calc.sh
+  - cd-cdd-zd.sh
+  - cpuinfo.sh
+  - cpx.sh
+  - dots.sh
+  - drcfortune.sh
+  - drchelp.sh (future-proof tests)
+  - drcupdate.sh
+  - drcversion.sh
+  - fastnote.sh
+  - genpassword.sh
+  - motd.sh
+  - navto.sh
+  - pokefetch.sh
+  - prepfile.sh
+  - slashback.sh
+  - timer.sh
+  - weather.sh
+
+### Infrastructure
+- Moved unit-tests from testing/unit-tests to root level
+- Added runtests.sh to plugin check in _INSTALL.sh
+
+---
+
+## [0.1.4] - 2025-11-19
+
+### New Features
+- **Standardized Help Flags**: All plugins now support --help and -h flags consistently
+- **Update Check Configuration**: Added enable_update_check configuration option
+
+### Enhancements
+- **Tab Completion**: Added comprehensive tab completion for utilities
+- **fastnote**: Enhanced with improved functionality
+
+### Documentation
+- Added comprehensive comparison report between DOGRC and BASHRC
+
+**Note**: Version 0.1.3 was skipped. The version jumped directly from 0.1.2 to 0.1.4.
+
+---
+
+## [0.1.2] - 2025-11-19
+
+### New Features
+- **drcupdate Utility**: Added auto-update feature with version checking
+  - Checks for available DOGRC updates
+  - Semantic version comparison
+  - Version masking support via version.fake file
+  - --yes flag for automatic updates
+
+### Enhancements
+- **drcversion**: Fixed to check config/version.fake instead of core/version.fake
+- **Update Script**: Added _UPDATE.sh script for upgrading DOGRC
+- **Installation**: Enhanced _INSTALL.sh with copyright splash screen
+- **Security**: Added security checks and unique exit codes to install scripts
+- **Update Process**: Restore config/navto.json during update
+
+### Bug Fixes
+- Fixed user-plugins directory creation
+- Fixed installation script: added main() call and improved error handling
+- Made all scripts executable (chmod +x)
+
+---
+
+## [0.1.1] - 2025-11-19
+
+### Documentation
+- Updated changelog
+
+---
+
+## [0.1.0] - 2025-11-19
+
+### Initial Release
+- DOGRC alpha release
+- Core plugin system
+- Configuration management
+- Installation scripts
+- Basic utilities and plugins
 EOF
 )"
 
