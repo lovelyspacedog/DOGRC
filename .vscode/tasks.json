@@ -10,7 +10,7 @@
                 "runOn": "folderOpen"
             },
             "presentation": {
-                "reveal": "silent",
+                "reveal": "always",
                 "panel": "dedicated",
                 "showReuseMessage": false,
                 "clear": false
