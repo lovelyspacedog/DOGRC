@@ -1430,10 +1430,14 @@ Description:
   - Allows you to create or edit the message of the day
   - Can remove the message of the day file
   - Provides a simple way to show daily messages when starting shell sessions
+  - Automatically uses a pager for long messages (over 20 lines)
 
 Commands:
   (no args)      Show help message
   print          Display the current message of the day
+                 - If file is 20 lines or less: displays full content
+                 - If file is over 20 lines: shows preview (first 5 lines) then
+                   opens full content in a pager (read-only)
   make           Create or edit the message of the day
                  - If stdin is piped, writes stdin to ~/motd.txt
                  - If no stdin is piped, opens ~/motd.txt in \$EDITOR
@@ -1441,23 +1445,29 @@ Commands:
 
 Behavior:
   - Without arguments: shows help message
-  - "motd print": displays ~/motd.txt if it exists (with a 1 second pause)
+  - "motd print": 
+     * Files ≤20 lines: displays full content with 1 second pause
+     * Files >20 lines: shows preview (first 5 lines with "..."), then opens
+       full content in a pager with header (date/time and separator line)
+     * Pager selection (in order): nvim (plugins disabled), \$EDITOR, \$PAGER, less
+     * Content is piped through pager (read-only, cannot be modified)
   - "motd make": when data is piped in, writes to ~/motd.txt (creates/overwrites)
                  otherwise opens ~/motd.txt in editor (creates if it doesn't exist)
   - "motd shoo": deletes ~/motd.txt file
   - Commands are case-insensitive
 
 Dependencies:
-  - cat (for displaying message)
+  - cat, head, wc (for displaying message and line counting)
   - rm (for removing file)
   - Editor specified in \$EDITOR (default: nvim)
+  - Pager: nvim, \$EDITOR, \$PAGER, or less (for long messages)
 
 Files:
   - ~/motd.txt - The message of the day file
 
 Examples:
   motd              # Show help message
-  motd print        # Display current message
+  motd print        # Display current message (uses pager if >20 lines)
   motd make         # Edit/create message in editor
   echo "Hello" | motd make   # Create/overwrite message from stdin
   motd shoo         # Delete message file
@@ -1465,8 +1475,10 @@ Examples:
 Note: This works in conjunction with automotd.sh (if implemented), which can
       automatically generate daily fortunes. The motd.txt file can also be
       manually created or edited. The "print" command is typically called
-      automatically when starting a new shell session. Tab completion is
-      available for subcommands (print, make, shoo).
+      automatically when starting a new shell session. For long messages (>20
+      lines), a preview is shown followed by the full content in a read-only
+      pager. When nvim is used as the pager, plugins are disabled for faster
+      startup. Tab completion is available for subcommands (print, make, shoo).
 EOF
                 return 0
                 ;;

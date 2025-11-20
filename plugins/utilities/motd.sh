@@ -61,17 +61,60 @@ motd() {
     return
     ;;
   "PRINT")
-    ensure_commands_present --caller "motd print" cat || {
+    ensure_commands_present --caller "motd print" cat head wc || {
       return $?
     }
     [[ -f "$HOME/motd.txt" ]] && {
-      printf "\nMESSAGE OF THE DAY:\n"
-      if ! cat "$HOME/motd.txt"; then
-        echo "Error: failed to display message of the day"
-        return 1
+      local line_count
+      line_count=$(wc -l < "$HOME/motd.txt" 2>/dev/null || echo "0")
+      
+      if [[ $line_count -gt 20 ]]; then
+        # File is over 20 lines - show preview then open in pager
+        printf "\nMESSAGE OF THE DAY (preview):\n"
+        if ! head -5 "$HOME/motd.txt"; then
+          echo "Error: failed to display message of the day preview"
+          return 1
+        fi
+        printf "...\n\n"
+        
+        # Determine pager: nvim -> $EDITOR -> $PAGER -> less
+        local pager=""
+        local pager_args=()
+        if command -v nvim >/dev/null 2>&1; then
+          pager="nvim"
+          pager_args=("-u" "NONE" "-R" "-")  # -u NONE: no config/plugins, -R: read-only, -: read from stdin
+        elif [[ -n "${EDITOR:-}" ]] && command -v "$EDITOR" >/dev/null 2>&1; then
+          pager="$EDITOR"
+        elif [[ -n "${PAGER:-}" ]] && command -v "$PAGER" >/dev/null 2>&1; then
+          pager="$PAGER"
+        elif command -v less >/dev/null 2>&1; then
+          pager="less"
+        else
+          echo "Error: no suitable pager found (tried: nvim, \$EDITOR, \$PAGER, less)" >&2
+          return 1
+        fi
+        
+        ensure_commands_present --caller "motd print (pager)" "$pager" || {
+          return $?
+        }
+        
+        # Pipe content through pager with prepended header (read-only)
+        if [[ "$pager" == "nvim" ]]; then
+          (printf "MESSAGE OF THE DAY:\n%s\n%s\n\n" "$(date '+%Y-%m-%d %H:%M:%S %Z')" "$(for i in {1..60}; do printf "-"; done)"; cat "$HOME/motd.txt") | "$pager" "${pager_args[@]}"
+        else
+          (printf "MESSAGE OF THE DAY:\n%s\n%s\n\n" "$(date '+%Y-%m-%d %H:%M:%S %Z')" "$(for i in {1..60}; do printf "-"; done)"; cat "$HOME/motd.txt") | "$pager"
+        fi
+        return $?
+      else
+        # File is 20 lines or less - display normally
+        printf "\nMESSAGE OF THE DAY:\n"
+        if ! cat "$HOME/motd.txt"; then
+          echo "Error: failed to display message of the day"
+          return 1
+        fi
+        printf "\n"
+        sleep 1
       fi
-      printf "\n"
-      sleep 1
     }
     return 0
     ;;
