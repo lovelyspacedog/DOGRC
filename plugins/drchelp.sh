@@ -2043,16 +2043,30 @@ runtests - Run DOGRC Unit Test Suite
 
 Launch the DOGRC unit test suite in a tmux session with real-time progress tracking.
 
-Usage: runtests
+Usage: runtests [--ci] [--quiet|-q] [--fail-fast|-f]
        runtests --help|-h
 
 Description:
-  - Runs all DOGRC unit tests in a tmux session with split panes
+  - Runs all DOGRC unit tests in a tmux session with split panes (default)
+  - CI mode (--ci): runs tests without tmux, suitable for CI/CD environments
   - Displays real-time overview of test progress and results
   - Shows live output from currently running tests
   - Tracks elapsed time for individual tests and overall suite
   - Automatically closes after tests complete (with 5 second delay)
   - Provides comprehensive test results summary
+
+Modes:
+  Interactive Mode (default):
+    - Uses tmux with split panes for visual display
+    - Real-time progress tracking with overview pane
+    - Press 'q' to quit at any time
+  
+  CI Mode (--ci):
+    - Non-interactive mode suitable for CI/CD
+    - No tmux dependency required
+    - Supports --quiet and --fail-fast flags
+    - Returns proper exit codes (0=pass, 1=fail, 2=no tests)
+    - Minimal output option available
 
 Display:
   Left Pane (Overview):
@@ -2067,18 +2081,32 @@ Display:
     - Final summary after all tests complete
     - Shows total score, percentage, and elapsed time
 
-Controls:
+Options:
+  --ci              Run in CI mode (non-interactive, no tmux)
+  --quiet, -q       Minimal output (CI mode only, shows only summary)
+  --fail-fast, -f   Stop on first test failure (CI mode only)
+  --help, -h        Show this help message
+
+Controls (Interactive Mode):
   - Press 'q' to quit the test session at any time
   - Session automatically closes 5 seconds after all tests complete
   - Overview is displayed in terminal after session closes
 
 Behavior:
-  - Creates a new tmux session named "dogrc-tests"
-  - Splits window into two panes (40% left, 60% right)
-  - Runs all test files from unit-tests/ directory
-  - Updates overview in real-time as tests progress
-  - Captures and displays final overview when session closes
-  - Cleans up temporary files and tmux session on exit
+  Interactive Mode (default):
+    - Creates a new tmux session named "dogrc-tests"
+    - Splits window into two panes (40% left, 60% right)
+    - Runs all test files from unit-tests/ directory
+    - Updates overview in real-time as tests progress
+    - Captures and displays final overview when session closes
+    - Cleans up temporary files and tmux session on exit
+  
+  CI Mode (--ci):
+    - Delegates to _test-all-fb.sh test runner
+    - Runs tests sequentially without tmux
+    - Supports --quiet for minimal output
+    - Supports --fail-fast to stop on first failure
+    - Returns exit code 0 if all tests pass, 1 if any fail, 2 if no tests found
 
 Test Results:
   - Each test writes results to a .results file
@@ -2087,26 +2115,41 @@ Test Results:
   - Final summary shows overall pass rate and statistics
 
 Dependencies:
-  - tmux (required for test runner interface)
+  - tmux (required for interactive mode only, not needed for --ci)
   - bash (for running test scripts)
   - All test dependencies (varies by test)
 
 Files:
-  - unit-tests/_TEST-ALL.sh - Main test runner script
+  - unit-tests/_TEST-ALL.sh - Main test runner script (interactive mode)
+  - unit-tests/_test-all-fb.sh - CI-friendly test runner (used with --ci)
   - unit-tests/test-*.sh - Individual test scripts
   - unit-tests/*.results - Test result files (created during run)
   - /tmp/dogrc_*_$$.txt - Temporary files (cleaned up on exit)
 
 Examples:
-  runtests              # Run all unit tests in tmux session
-  runtests --help       # Show this help message
+  runtests                    # Run all unit tests in tmux session (interactive)
+  runtests --ci               # Run tests in CI mode (non-interactive)
+  runtests --ci --quiet       # Run tests in CI mode with minimal output
+  runtests --ci --fail-fast   # Run tests in CI mode, stop on first failure
+  runtests --ci -q -f         # Combine CI flags (quiet + fail-fast)
+  runtests --help             # Show this help message
 
-Note: The test runner requires tmux to be installed. If tmux is not available,
-      the function will display an error message. The session automatically
-      closes 5 seconds after all tests complete, giving you time to review
-      the final results. You can press 'q' at any time to quit early. The
-      overview pane updates every second with the latest test progress. All
-      temporary files are automatically cleaned up when the session ends.
+CI/CD Usage:
+  # GitHub Actions / GitLab CI / Jenkins
+  bash unit-tests/_TEST-ALL.sh --ci --quiet
+  
+  # With fail-fast for faster feedback
+  bash unit-tests/_TEST-ALL.sh --ci --quiet --fail-fast
+
+Note: Interactive mode requires tmux to be installed. If tmux is not available
+      and --ci is not specified, the function will display an error message.
+      Use --ci flag for CI/CD environments or when tmux is not available.
+      CI mode delegates to _test-all-fb.sh which provides proper exit codes
+      for automated testing. The session automatically closes 5 seconds after
+      all tests complete in interactive mode, giving you time to review the
+      final results. You can press 'q' at any time to quit early in interactive
+      mode. The overview pane updates every second with the latest test progress.
+      All temporary files are automatically cleaned up when the session ends.
 EOF
                 return 0
                 ;;

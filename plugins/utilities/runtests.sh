@@ -30,6 +30,35 @@ runtests() {
         fi
     fi
     
+    # Check if --ci flag is present (skip tmux check for CI mode)
+    # Make check case-insensitive and handle variations
+    local ci_mode=false
+    for arg in "$@"; do
+        # Check for --ci (case-insensitive)
+        if [[ "${arg,,}" == "--ci" ]] || [[ "$arg" == "--ci" ]]; then
+            ci_mode=true
+            break
+        fi
+    done
+    
+    # If CI mode, delegate directly to _test-all-fb.sh
+    if [[ "$ci_mode" == "true" ]]; then
+        local ci_runner="${__DOGRC_DIR}/unit-tests/_test-all-fb.sh"
+        if [[ ! -f "$ci_runner" ]]; then
+            echo "Error: CI test runner not found at $ci_runner" >&2
+            return 1
+        fi
+        # Pass through all arguments except --ci
+        local args=()
+        for a in "$@"; do
+            [[ "$a" != "--ci" ]] && args+=("$a")
+        done
+        # Execute CI runner directly (no need for exec in function context)
+        # This should NOT call _TEST-ALL.sh or open tmux
+        bash "$ci_runner" "${args[@]}"
+        return $?
+    fi
+    
     local test_runner="${__DOGRC_DIR}/unit-tests/_TEST-ALL.sh"
     
     if [[ ! -f "$test_runner" ]]; then
@@ -37,10 +66,10 @@ runtests() {
         return 1
     fi
     
-    # Check if tmux is available
+    # Check if tmux is available (only for interactive mode)
     if ! command -v tmux >/dev/null 2>&1; then
-        echo "Error: tmux is required to run tests" >&2
-        echo "Please install tmux to use the test runner" >&2
+        echo "Error: tmux is required to run tests in interactive mode" >&2
+        echo "Please install tmux to use the test runner, or use --ci flag for CI mode" >&2
         return 1
     fi
     

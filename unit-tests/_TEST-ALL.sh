@@ -3,9 +3,53 @@
 # DOGRC Unit Test Runner
 # Runs all unit tests in tmux with split panes showing overview and execution
 # Each test writes its results to a .results file that is read by the overview
+#
+# Usage:
+#   ./_TEST-ALL.sh          # Interactive mode with tmux (default)
+#   ./_TEST-ALL.sh --ci     # CI mode (delegates to _test-all-fb.sh)
+#   ./_TEST-ALL.sh --ci --quiet --fail-fast  # CI mode with options
 
 readonly __UNIT_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
+
+# Check for --ci flag and delegate to _test-all-fb.sh if present
+# Make check case-insensitive and handle variations
+CI_MODE=false
+for arg in "$@"; do
+    # Check for --ci (case-insensitive)
+    if [[ "${arg,,}" == "--ci" ]] || [[ "$arg" == "--ci" ]]; then
+        CI_MODE=true
+        break
+    fi
+done
+
+if [[ "$CI_MODE" == "true" ]]; then
+    # Delegate to the CI-friendly test runner
+    ci_runner="${__UNIT_TESTS_DIR}/_test-all-fb.sh"
+    if [[ ! -f "$ci_runner" ]]; then
+        echo "Error: CI test runner not found: $ci_runner" >&2
+        exit 1
+    fi
+    # Pass through all arguments except --ci
+    args=()
+    for a in "$@"; do
+        [[ "$a" != "--ci" ]] && args+=("$a")
+    done
+    # Use exec to replace this process - CRITICAL: script must not continue past this point
+    # If exec fails for any reason, exit immediately
+    # DEBUG: About to exec to _test-all-fb.sh - this should prevent tmux from starting
+    exec bash "$ci_runner" "${args[@]}"
+    # If we reach here, exec failed - exit immediately to prevent tmux from starting
+    echo "ERROR: exec failed! CI mode detected but exec did not work. Aborting to prevent tmux." >&2
+    exit 1
+fi
+
+# Safety check: If CI_MODE is still true here, something went wrong with exec
+# Exit immediately to prevent any tmux code from running
+if [[ "$CI_MODE" == "true" ]]; then
+    echo "Error: CI mode detected but exec failed - aborting to prevent tmux" >&2
+    exit 1
+fi
 
 # Colors
 readonly RED='\033[0;31m'
@@ -737,5 +781,10 @@ INITLEFT
     fi
 }
 
-# Run main function
-main
+# Run main function (only if not in CI mode)
+if [[ "$CI_MODE" != "true" ]]; then
+    main
+else
+    echo "Error: CI mode active - main() should not be called" >&2
+    exit 1
+fi
