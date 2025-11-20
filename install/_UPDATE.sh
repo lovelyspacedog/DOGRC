@@ -32,11 +32,11 @@ readonly NC='\033[0m' # No Color
 COPYRIGHT="${COPYRIGHT:-true}"
 msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
-# Update changelog (loaded from install/changelog.txt)
+# Update changelog (current release changes only)
 __UPDATE_CHANGELOG="$(cat <<'EOF'
-# DOGRC Changelog
-
-## [0.1.5] - 2025-11-20
+Changes in this update (version 0.1.5):
+In nvim, type :q <enter> to quit.
+Remove this message by typing "motd shoo" in terminal.
 
 ### New Features
 - **Unit Test Runner**: Added comprehensive test runner with tmux interface
@@ -77,89 +77,11 @@ __UPDATE_CHANGELOG="$(cat <<'EOF'
   - Enhanced drchelp documentation for all utilities
 
 ### Testing
-- Added comprehensive unit tests for all plugins:
-  - analyze-file.sh
-  - available.sh
-  - calc.sh
-  - cd-cdd-zd.sh
-  - cpuinfo.sh
-  - cpx.sh
-  - dots.sh
-  - drcfortune.sh
-  - drchelp.sh (future-proof tests)
-  - drcupdate.sh
-  - drcversion.sh
-  - fastnote.sh
-  - genpassword.sh
-  - motd.sh
-  - navto.sh
-  - pokefetch.sh
-  - prepfile.sh
-  - slashback.sh
-  - timer.sh
-  - weather.sh
+- Added comprehensive unit tests for all 25 plugins with real-time progress tracking
 
 ### Infrastructure
 - Moved unit-tests from testing/unit-tests to root level
 - Added runtests.sh to plugin check in _INSTALL.sh
-
----
-
-## [0.1.4] - 2025-11-19
-
-### New Features
-- **Standardized Help Flags**: All plugins now support --help and -h flags consistently
-- **Update Check Configuration**: Added enable_update_check configuration option
-
-### Enhancements
-- **Tab Completion**: Added comprehensive tab completion for utilities
-- **fastnote**: Enhanced with improved functionality
-
-### Documentation
-- Added comprehensive comparison report between DOGRC and BASHRC
-
-**Note**: Version 0.1.3 was skipped. The version jumped directly from 0.1.2 to 0.1.4.
-
----
-
-## [0.1.2] - 2025-11-19
-
-### New Features
-- **drcupdate Utility**: Added auto-update feature with version checking
-  - Checks for available DOGRC updates
-  - Semantic version comparison
-  - Version masking support via version.fake file
-  - --yes flag for automatic updates
-
-### Enhancements
-- **drcversion**: Fixed to check config/version.fake instead of core/version.fake
-- **Update Script**: Added _UPDATE.sh script for upgrading DOGRC
-- **Installation**: Enhanced _INSTALL.sh with copyright splash screen
-- **Security**: Added security checks and unique exit codes to install scripts
-- **Update Process**: Restore config/navto.json during update
-
-### Bug Fixes
-- Fixed user-plugins directory creation
-- Fixed installation script: added main() call and improved error handling
-- Made all scripts executable (chmod +x)
-
----
-
-## [0.1.1] - 2025-11-19
-
-### Documentation
-- Updated changelog
-
----
-
-## [0.1.0] - 2025-11-19
-
-### Initial Release
-- DOGRC alpha release
-- Core plugin system
-- Configuration management
-- Installation scripts
-- Basic utilities and plugins
 EOF
 )"
 
@@ -779,12 +701,21 @@ main() {
         fi
     fi
     
-    # Check for recommended dependencies to determine if "continue anyway" prompt will appear
-    # This helps us provide the correct number of inputs to the install script
+    # Run installation script non-interactively
+    # Input format: 
+    #   - "y" (continue installation) - always needed (line 922)
+    #   - "y" (continue with missing recommended deps if prompted) - only if recommended deps missing (line 215)
+    #   - "y/n" (include unit-tests) - always needed (line 957)
+    # 
+    # Note: We need to provide all inputs even if some prompts might not appear,
+    # because the script reads from stdin and will consume input in order.
+    # Using printf with explicit newlines to ensure proper handling with read -n 1.
+    
+    # Check for recommended dependencies using the same logic as _INSTALL.sh
     local missing_recommended=false
     local recommended_commands=("nvim" "pokemon-colorscripts" "fastfetch" "yay" "flatpak")
     for cmd in "${recommended_commands[@]}"; do
-        # Special handling for pokemon-colorscripts (might not be in PATH)
+        # Special handling for pokemon-colorscripts (file check, not command)
         if [[ "$cmd" == "pokemon-colorscripts" ]]; then
             if ! command -v "$cmd" >/dev/null 2>&1; then
                 missing_recommended=true
@@ -798,25 +729,30 @@ main() {
         fi
     done
     
-    # Run installation script non-interactively
-    # Input format: 
-    #   - "y" (continue installation) - always needed
-    #   - "y" (continue with missing recommended deps if prompted) - only if recommended deps missing
-    #   - "y/n" (include unit-tests) - always needed
+    # Build input string with explicit newlines
+    # Each prompt uses read -n 1, so we need "y\n" or "n\n" for each
+    local install_input="y"$'\n'  # First prompt: continue installation
+    
+    # Add "continue anyway" input if recommended deps are missing
     if [[ "$missing_recommended" == true ]]; then
-        # Recommended deps missing: provide "y" for continue anyway, then unit-tests answer
-        if ! printf "y\ny\n${include_unit_tests}\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
-            echo -e "${RED}ERROR: Installation failed${NC}" >&2
-            rollback_update
-            exit 8  # Exit code 8: Installation failed
-        fi
-    else
-        # Recommended deps present: skip "continue anyway" prompt, go straight to unit-tests
-        if ! printf "y\n${include_unit_tests}\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
+        install_input+="y"$'\n'  # Second prompt: continue anyway with missing recommended deps
+    fi
+    
+    # Add unit-tests answer (always needed) - ensure it's "y" or "n"
+    if [[ "$include_unit_tests" != "y" ]] && [[ "$include_unit_tests" != "n" ]]; then
+        # Default to "n" if not set properly
+        include_unit_tests="n"
+    fi
+    install_input+="${include_unit_tests}"$'\n'
+    
+    # Debug: Show what we're sending (commented out for production)
+    # echo "DEBUG: Sending input: $(printf '%q' "$install_input")" >&2
+    
+    # Run installation with all inputs
+    if ! printf "%s" "$install_input" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
         echo -e "${RED}ERROR: Installation failed${NC}" >&2
         rollback_update
         exit 8  # Exit code 8: Installation failed
-        fi
     fi
     
     echo -e "  ${GREEN}✓${NC} Installation completed"
