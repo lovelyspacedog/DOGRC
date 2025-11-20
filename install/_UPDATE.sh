@@ -640,11 +640,89 @@ main() {
         }
     fi
     
+    # Determine unit-tests preference
+    local include_unit_tests="n"
+    
+    # Check if this is an upgrade from 0.1.4 or lower to 0.1.5 or higher
+    # In this case, unit-tests are new, so we should prompt the user
+    local should_prompt_for_unit_tests=false
+    
+    # Check if old version is < 0.1.5 (compare_versions returns 1 if 0.1.5 > old_version)
+    compare_versions "0.1.5" "$old_version"
+    local old_is_below_1_5=$?
+    
+    # Check if new version is >= 0.1.5 (compare_versions returns 1 if new_version > 0.1.5, 0 if equal)
+    compare_versions "$new_version" "0.1.5"
+    local new_is_at_least_1_5=$?
+    
+    # If old version is < 0.1.5 and new version is >= 0.1.5, prompt user
+    if [[ $old_is_below_1_5 -eq 1 ]] && ([[ $new_is_at_least_1_5 -eq 1 ]] || [[ $new_is_at_least_1_5 -eq 0 ]]); then
+        should_prompt_for_unit_tests=true
+    fi
+    
+    if [[ "$should_prompt_for_unit_tests" == true ]]; then
+        # Special case: upgrading to first version with unit-tests
+        echo -e "  ${BLUE}Unit-tests are now available in DOGRC 0.1.5+${NC}"
+        echo -e "  ${YELLOW}They can be used to verify DOGRC functionality.${NC}"
+        echo
+        read -p "Include unit-tests directory in installation? [y/N] " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            include_unit_tests="y"
+            echo -e "  ${GREEN}Unit-tests will be included.${NC}"
+        else
+            include_unit_tests="n"
+            echo -e "  ${YELLOW}Unit-tests will be excluded.${NC}"
+        fi
+        echo
+    else
+        # Normal case: check backup for existing preference
+        if [[ "$__DOGRC_BACKED_UP" == true ]] && [[ -n "$__BACKUP_DOGRC" ]] && [[ -d "$__BACKUP_DOGRC" ]]; then
+            if [[ -d "${__BACKUP_DOGRC}/unit-tests" ]] && [[ -n "$(ls -A "${__BACKUP_DOGRC}/unit-tests" 2>/dev/null)" ]]; then
+                include_unit_tests="y"
+                echo -e "  ${BLUE}Detected unit-tests in backup, will include in new installation${NC}"
+            fi
+        fi
+    fi
+    
+    # Check for recommended dependencies to determine if "continue anyway" prompt will appear
+    # This helps us provide the correct number of inputs to the install script
+    local missing_recommended=false
+    local recommended_commands=("nvim" "pokemon-colorscripts" "fastfetch" "yay" "flatpak")
+    for cmd in "${recommended_commands[@]}"; do
+        # Special handling for pokemon-colorscripts (might not be in PATH)
+        if [[ "$cmd" == "pokemon-colorscripts" ]]; then
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                missing_recommended=true
+                break
+            fi
+        else
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                missing_recommended=true
+                break
+            fi
+        fi
+    done
+    
     # Run installation script non-interactively
-    if ! printf "y\ny\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
-        echo -e "${RED}ERROR: Installation failed${NC}" >&2
-        rollback_update
-        exit 8  # Exit code 8: Installation failed
+    # Input format: 
+    #   - "y" (continue installation) - always needed
+    #   - "y" (continue with missing recommended deps if prompted) - only if recommended deps missing
+    #   - "y/n" (include unit-tests) - always needed
+    if [[ "$missing_recommended" == true ]]; then
+        # Recommended deps missing: provide "y" for continue anyway, then unit-tests answer
+        if ! printf "y\ny\n${include_unit_tests}\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
+            echo -e "${RED}ERROR: Installation failed${NC}" >&2
+            rollback_update
+            exit 8  # Exit code 8: Installation failed
+        fi
+    else
+        # Recommended deps present: skip "continue anyway" prompt, go straight to unit-tests
+        if ! printf "y\n${include_unit_tests}\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
+            echo -e "${RED}ERROR: Installation failed${NC}" >&2
+            rollback_update
+            exit 8  # Exit code 8: Installation failed
+        fi
     fi
     
     echo -e "  ${GREEN}✓${NC} Installation completed"
