@@ -166,11 +166,41 @@ bind '"\C-k":kill-line'          # Kill line (Ctrl + k)
 bind '"\C-w":backward-kill-word' # Backward kill word (Ctrl + w)
 bind '"\C-y":yank-last-arg'      # Yank last argument (Ctrl + y)
 
+# Function to check if a plugin is disabled
+is_plugin_disabled() {
+    local plugin_file="$1"
+    local disabled_file="${__CONFIG_DIR}/disabled.json"
+    
+    # If disabled.json doesn't exist, plugin is not disabled
+    [[ -f "$disabled_file" ]] || return 1
+    
+    # Convert absolute plugin path to relative path from __DOGRC_DIR
+    # e.g., /home/user/DOGRC/plugins/example.sh -> plugins/example.sh
+    local plugin_relative_path
+    plugin_relative_path=$(realpath --relative-to="${__DOGRC_DIR}" "$plugin_file" 2>/dev/null || echo "${plugin_file#${__DOGRC_DIR}/}")
+    
+    # Normalize path separators (in case realpath isn't available)
+    plugin_relative_path="${plugin_relative_path//\\//}"
+    
+    # Check if plugin is in the disabled list
+    if command -v jq >/dev/null 2>&1; then
+        # Use jq to check if the path exists in the array
+        jq -e --arg path "$plugin_relative_path" \
+            '.do_not_source_these_plugins[]? == $path' \
+            "$disabled_file" >/dev/null 2>&1
+    else
+        # Fallback: grep-based check (less robust but works without jq)
+        grep -q "\"$plugin_relative_path\"" "$disabled_file" 2>/dev/null
+    fi
+}
+
 # Plugins and aliases (load last so they can use blesh, shell-mommy, starship, etc.)
 # Source all .sh files in __PLUGINS_DIR and subdirectories except user plugins
 while IFS= read -r -d '' plugin_file; do
     # Exclude files in user-plugins subdirectory
     [[ "$plugin_file" == "${__PLUGINS_DIR}/user-plugins/"* ]] && continue
+    # Skip if plugin is disabled
+    is_plugin_disabled "$plugin_file" && continue
     [[ -f "$plugin_file" ]] && source "$plugin_file"
 done < <(find "${__PLUGINS_DIR}" -maxdepth 2 -name "*.sh" -type f -print0 2>/dev/null)
 
@@ -178,6 +208,8 @@ done < <(find "${__PLUGINS_DIR}" -maxdepth 2 -name "*.sh" -type f -print0 2>/dev
 if [[ "${enable_user_plugins:-true}" == true ]]; then
     # Source all .sh files in user-plugins directory (but not subdirectories)
     while IFS= read -r -d '' user_plugin_file; do
+        # Skip if plugin is disabled
+        is_plugin_disabled "$user_plugin_file" && continue
         [[ -f "$user_plugin_file" ]] && source "$user_plugin_file"
     done < <(find "${__USER_PLUGINS_DIR}" -maxdepth 1 -type f -name "*.sh" -print0 2>/dev/null)
 fi
@@ -207,3 +239,18 @@ type motd >/dev/null 2>&1 && motd print
 [[ "${enable_update_check:-false}" == true ]] && {
     [[ -x "${__PLUGINS_DIR}/utilities/drcupdate.sh" ]] && "${__PLUGINS_DIR}/utilities/drcupdate.sh" --silent || true
 }
+
+## POST
+# Remove aliases defined in disabled.json/do_not_source_these_aliases
+if [[ -f "${__CONFIG_DIR}/disabled.json" ]]; then
+    while IFS= read -r alias_name; do
+        unalias "$alias_name" 2>/dev/null || true
+    done < <(jq -r '.do_not_source_these_aliases[]' "${__CONFIG_DIR}/disabled.json" 2>/dev/null)
+fi
+
+# Remove functions defined in disabled.json/do_not_enable_these_functions
+if [[ -f "${__CONFIG_DIR}/disabled.json" ]]; then
+    while IFS= read -r function_name; do
+        unset -f "$function_name" 2>/dev/null || true
+    done < <(jq -r '.do_not_enable_these_functions[]' "${__CONFIG_DIR}/disabled.json" 2>/dev/null)
+fi

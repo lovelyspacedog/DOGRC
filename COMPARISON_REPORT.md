@@ -280,13 +280,16 @@ ensure_commands_present [--caller NAME] command1 command2 ...
   - Can be called automatically on shell startup (if enabled)
   - Uses semantic version comparison
   - Separate from update script (just checks, doesn't install)
+  - Supports version masking via `config/version.fake` file
+  - `--ignore-this-version` flag automatically creates `version.fake` with remote version
 
 **Key Differences:**
 - BRC: Single update script that both checks and installs
 - DOGRC: Separated concerns - `drcupdate` checks, `_UPDATE.sh` installs
 - BRC uses date-based versioning (`0.YYYY.MM.DD`)
 - DOGRC uses semantic versioning (`0.1.5`)
-- BRC has version masking feature (not in DOGRC)
+- Both support version masking: BRC uses `version.mask`, DOGRC uses `config/version.fake`
+- DOGRC's `drcupdate` has `--ignore-this-version` flag to automatically create `version.fake`
 
 ---
 
@@ -385,7 +388,7 @@ ensure_commands_present [--caller NAME] command1 command2 ...
 | Standardized help flags | ❌ | ✅ |
 | Directory variables | ❌ | ✅ |
 | Structured config directory | ❌ | ✅ |
-| Version masking | ✅ | ❌ |
+| Version masking | ✅ (`version.mask`) | ✅ (`config/version.fake`) |
 | Manual plugin control | ✅ | ❌ |
 | Date-based versioning | ✅ | ❌ |
 | Semantic versioning | ❌ | ✅ |
@@ -437,7 +440,6 @@ If migrating from BRC to DOGRC:
 ### Trade-offs:
 - ❌ Less manual control over plugin loading order
 - ❌ More complex directory structure (may be harder for some users)
-- ❌ No version masking feature (present in BRC)
 
 **Overall Assessment:** DOGRC is a more mature, maintainable, and scalable system. The automatic plugin discovery and organized structure make it easier to maintain and extend. The addition of unit tests significantly improves code quality and reliability.
 
