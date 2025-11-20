@@ -731,6 +731,8 @@ main() {
     
     # Build input string with explicit newlines
     # Each prompt uses read -n 1, so we need "y\n" or "n\n" for each
+    # Note: We always pass "n" for unit-tests here, then copy the directory manually after installation
+    # This avoids input piping issues with read -n 1
     local install_input="y"$'\n'  # First prompt: continue installation
     
     # Add "continue anyway" input if recommended deps are missing
@@ -738,17 +740,13 @@ main() {
         install_input+="y"$'\n'  # Second prompt: continue anyway with missing recommended deps
     fi
     
-    # Add unit-tests answer (always needed) - ensure it's "y" or "n"
-    if [[ "$include_unit_tests" != "y" ]] && [[ "$include_unit_tests" != "n" ]]; then
-        # Default to "n" if not set properly
-        include_unit_tests="n"
-    fi
-    install_input+="${include_unit_tests}"$'\n'
+    # Always pass "n" for unit-tests - we'll copy the directory manually after installation if needed
+    install_input+="n"$'\n'
     
     # Debug: Show what we're sending (commented out for production)
     # echo "DEBUG: Sending input: $(printf '%q' "$install_input")" >&2
     
-    # Run installation with all inputs
+    # Run installation with all inputs (always excluding unit-tests for now)
     if ! printf "%s" "$install_input" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
         echo -e "${RED}ERROR: Installation failed${NC}" >&2
         rollback_update
@@ -758,6 +756,27 @@ main() {
     echo -e "  ${GREEN}✓${NC} Installation completed"
     echo
     sleep 0.5
+    
+    # Copy unit-tests directory manually if requested
+    # This avoids input piping issues with read -n 1 in _INSTALL.sh
+    if [[ "$include_unit_tests" == "y" ]]; then
+        local source_unit_tests="${INSTALL_DIR}/unit-tests"
+        local dest_unit_tests="${INSTALLED_DOGRC}/unit-tests"
+        
+        if [[ -d "$source_unit_tests" ]]; then
+            echo -e "${BLUE}Copying unit-tests directory...${NC}"
+            if cp -r "$source_unit_tests" "$dest_unit_tests" 2>/dev/null; then
+                # Set executable permissions on test scripts
+                find "$dest_unit_tests" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+                echo -e "  ${GREEN}✓${NC} Copied unit-tests directory"
+            else
+                echo -e "  ${YELLOW}⚠${NC} Failed to copy unit-tests directory" >&2
+            fi
+            echo
+        else
+            echo -e "  ${YELLOW}⚠${NC} Source unit-tests directory not found: $source_unit_tests" >&2
+        fi
+    fi
     
     # Merge user aliases
     echo -e "${BLUE}Merging user customizations...${NC}"
