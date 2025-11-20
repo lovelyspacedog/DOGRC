@@ -719,9 +719,9 @@ main() {
     else
         # Recommended deps present: skip "continue anyway" prompt, go straight to unit-tests
         if ! printf "y\n${include_unit_tests}\n" | COPYRIGHT=false bash "$install_script" 2>/dev/null; then
-            echo -e "${RED}ERROR: Installation failed${NC}" >&2
-            rollback_update
-            exit 8  # Exit code 8: Installation failed
+        echo -e "${RED}ERROR: Installation failed${NC}" >&2
+        rollback_update
+        exit 8  # Exit code 8: Installation failed
         fi
     fi
     

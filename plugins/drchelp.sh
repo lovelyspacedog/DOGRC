@@ -1811,48 +1811,79 @@ Note: The function overrides the builtin pwd command. When using the clipboard
 EOF
                 return 0
                 ;;
-            prepsh)
+            prepfile)
                 cat <<EOF
-prepsh - Prepare New Shell Script
+prepfile - Prepare New File with Language Templates
 
-Create a new executable shell script file with proper shebang and optional editing.
+Create a new file with appropriate template based on language type.
 
-Usage: prepsh [filename]
+Usage: prepfile [--type] [filename]
+       prepfile [filename] [--type]
 
 Description:
-  - Creates a new shell script file with #!/usr/bin/env bash shebang
-  - Automatically makes the file executable
+  - Creates a new file with language-specific template
+  - Supports multiple programming languages and file types
+  - Automatically adds appropriate file extension
+  - Makes script files executable automatically
   - Optionally opens the file in your default editor
-  - Automatically appends .sh extension if not provided
   - Prevents overwriting existing files
+  - Defaults to bash script if no type specified
+
+Supported Types:
+  --bash, --sh          Bash shell script (default)
+  --python, --py        Python script
+  --rust, --rs          Rust source file
+  --go                  Go source file
+  --javascript, --js    JavaScript file
+  --typescript, --ts    TypeScript file
+  --c                   C source file
+  --cpp, --c++          C++ source file
+  --java                Java source file
+  --ruby, --rb          Ruby script
+  --perl, --pl          Perl script
+  --php                 PHP script
+  --lua                 Lua script
+  --zsh                 Zsh shell script
+  --fish                Fish shell script
 
 Behavior:
-  - Without arguments: creates "main.sh"
-  - With filename: creates the specified file (adds .sh if missing)
+  - Without arguments: creates "main.sh" (bash template)
+  - Type flag can appear before or after filename
+  - Automatically adds appropriate extension if not present
   - Checks if file already exists before creating
-  - Makes file executable with chmod +x
+  - Makes script files executable (bash, python, ruby, etc.)
   - Prompts to open in editor (y/n)
   - Uses \$EDITOR environment variable (defaults to nvim)
 
 File Naming:
-  - "prepsh" → creates "main.sh"
-  - "prepsh myscript" → creates "myscript.sh"
-  - "prepsh test.sh" → creates "test.sh" (extension preserved)
+  - "prepfile" → creates "main.sh"
+  - "prepfile --python app" → creates "app.py"
+  - "prepfile script --go" → creates "script.go"
+  - "prepfile --rust main.rs" → creates "main.rs" (extension preserved)
+
+Templates:
+  Each language type includes an appropriate empty template:
+  - Scripts: include shebang line
+  - Compiled languages: include main function/entry point
+  - TypeScript: empty file (no shebang needed)
 
 Dependencies:
-  - chmod (for making file executable)
+  - chmod (for making files executable)
   - Editor specified in \$EDITOR (default: nvim, for optional editing)
 
 Examples:
-  prepsh                    # Create main.sh
-  prepsh myscript           # Create myscript.sh
-  prepsh test.sh            # Create test.sh
-  prepsh deploy             # Create deploy.sh
+  prepfile                          # Create main.sh (bash)
+  prepfile --python app             # Create app.py
+  prepfile script --go              # Create script.go
+  prepfile --rust main              # Create main.rs
+  prepfile --cpp program            # Create program.cpp
+  prepfile --java Main              # Create Main.java
+  prepfile test --ruby              # Create test.rb
 
-Note: The function prevents accidental overwriting of existing files. If a file
-      with the same name already exists, it will display an error and return 1.
-      The file is created with executable permissions and a proper bash shebang.
-      After creation, you can choose to immediately edit it in your default editor.
+Note: The function prevents accidental overwriting of existing files. Type flags
+      can appear anywhere in the arguments. Script files (bash, python, ruby, etc.)
+      are automatically made executable. Compiled language files (C, C++, Rust, Go,
+      Java) are not made executable as they need to be compiled first.
 EOF
                 return 0
                 ;;
@@ -2159,7 +2190,7 @@ Utilities:
   n                  - Quick Neovim launcher
   openthis           - Smart file and URL opener
   notifywhendone     - Command completion notifications
-  prepsh             - Prepare new shell script
+  prepfile           - Prepare new file with language templates
   pwd                - Print working directory with clipboard support
   silent             - Run command silently
   timer              - Named timer management
@@ -2211,7 +2242,7 @@ _drchelp_completion() {
         "notifywhendone"
         "openthis"
         "pokefetch"
-        "prepsh"
+        "prepfile"
         "pwd"
         "silent"
         "slashback"

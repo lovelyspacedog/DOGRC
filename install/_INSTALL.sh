@@ -321,26 +321,26 @@ copy_dogrc_files() {
     if command -v rsync >/dev/null 2>&1; then
         echo -e "  ${BLUE}Using rsync to copy files...${NC}"
         if [[ "$__INCLUDE_UNIT_TESTS" == true ]]; then
-            if rsync -av --exclude='.git' --exclude='*.backup.*' "$source_dir/" "$install_dir/" 2>/dev/null; then
-                echo -e "  ${GREEN}✓${NC} Successfully copied DOGRC files using rsync"
-            else
-                echo -e "  ${YELLOW}rsync failed, trying cp...${NC}"
-                # Fall back to cp
+        if rsync -av --exclude='.git' --exclude='*.backup.*' "$source_dir/" "$install_dir/" 2>/dev/null; then
+            echo -e "  ${GREEN}✓${NC} Successfully copied DOGRC files using rsync"
+        else
+            echo -e "  ${YELLOW}rsync failed, trying cp...${NC}"
+            # Fall back to cp
                 # Enable dotglob to include hidden files
                 local old_dotglob
                 shopt -q dotglob && old_dotglob=1 || old_dotglob=0
                 shopt -s dotglob
                 
                 # Copy all files including hidden ones
-                if ! cp -r "$source_dir"/* "$source_dir"/.[!.]* "$install_dir/" 2>/dev/null; then
+            if ! cp -r "$source_dir"/* "$source_dir"/.[!.]* "$install_dir/" 2>/dev/null; then
                     [[ $old_dotglob -eq 0 ]] && shopt -u dotglob
-                    echo -e "  ${RED}✗${NC} Failed to copy files" >&2
-                    return 1
-                fi
+                echo -e "  ${RED}✗${NC} Failed to copy files" >&2
+                return 1
+            fi
                 
                 # Restore dotglob state
                 [[ $old_dotglob -eq 0 ]] && shopt -u dotglob
-                echo -e "  ${GREEN}✓${NC} Successfully copied DOGRC files using cp"
+            echo -e "  ${GREEN}✓${NC} Successfully copied DOGRC files using cp"
             fi
         else
             if rsync -av --exclude='.git' --exclude='*.backup.*' --exclude='unit-tests' "$source_dir/" "$install_dir/" 2>/dev/null; then
@@ -381,11 +381,11 @@ copy_dogrc_files() {
         
         # Copy all files including hidden ones, excluding unit-tests if needed
         if [[ "$__INCLUDE_UNIT_TESTS" == true ]]; then
-            if ! cp -r "$source_dir"/* "$install_dir/" 2>/dev/null; then
-                # Restore dotglob state
-                [[ $old_dotglob -eq 0 ]] && shopt -u dotglob
-                echo -e "  ${RED}✗${NC} Failed to copy files" >&2
-                return 1
+        if ! cp -r "$source_dir"/* "$install_dir/" 2>/dev/null; then
+            # Restore dotglob state
+            [[ $old_dotglob -eq 0 ]] && shopt -u dotglob
+            echo -e "  ${RED}✗${NC} Failed to copy files" >&2
+            return 1
             fi
         else
             # Copy everything except unit-tests
@@ -742,7 +742,7 @@ verify_installation() {
         "plugins/utilities/n.sh"
         "plugins/utilities/notifywhendone.sh"
         "plugins/utilities/openthis.sh"
-        "plugins/utilities/prepsh.sh"
+        "plugins/utilities/prepfile.sh"
         "plugins/utilities/pwd.sh"
         "plugins/utilities/silent.sh"
         "plugins/utilities/timer.sh"

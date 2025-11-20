@@ -26,6 +26,7 @@ alias please="sudo"
 alias plugins="cd $__PLUGINS_DIR && eza --tree || tree || ls -R"
 alias aliases="cat $__CORE_DIR/aliases.sh"
 alias pls="sudo"
+alias prepsh="prepfile --bash"
 alias ports="netstat -tulanp"
 alias s="sudo"
 alias speedtest='curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.py | python3 -'
