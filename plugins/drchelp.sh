@@ -2037,6 +2037,79 @@ Note: Timer names are automatically sanitized for filesystem safety. Spaces
 EOF
                 return 0
                 ;;
+            runtests)
+                cat <<EOF
+runtests - Run DOGRC Unit Test Suite
+
+Launch the DOGRC unit test suite in a tmux session with real-time progress tracking.
+
+Usage: runtests
+       runtests --help|-h
+
+Description:
+  - Runs all DOGRC unit tests in a tmux session with split panes
+  - Displays real-time overview of test progress and results
+  - Shows live output from currently running tests
+  - Tracks elapsed time for individual tests and overall suite
+  - Automatically closes after tests complete (with 5 second delay)
+  - Provides comprehensive test results summary
+
+Display:
+  Left Pane (Overview):
+    - Real-time status of all unit tests
+    - Test name, status (PASSED/FAILED/RUNNING/PENDING), score, percentage
+    - Individual test elapsed times
+    - Overall suite statistics (total passed, percentage, elapsed time)
+    - Color-coded status indicators
+
+  Right Pane (Test Output):
+    - Live output from the currently running test
+    - Final summary after all tests complete
+    - Shows total score, percentage, and elapsed time
+
+Controls:
+  - Press 'q' to quit the test session at any time
+  - Session automatically closes 5 seconds after all tests complete
+  - Overview is displayed in terminal after session closes
+
+Behavior:
+  - Creates a new tmux session named "dogrc-tests"
+  - Splits window into two panes (40% left, 60% right)
+  - Runs all test files from unit-tests/ directory
+  - Updates overview in real-time as tests progress
+  - Captures and displays final overview when session closes
+  - Cleans up temporary files and tmux session on exit
+
+Test Results:
+  - Each test writes results to a .results file
+  - Results include: status, score, total tests, percentage
+  - Overview aggregates results from all tests
+  - Final summary shows overall pass rate and statistics
+
+Dependencies:
+  - tmux (required for test runner interface)
+  - bash (for running test scripts)
+  - All test dependencies (varies by test)
+
+Files:
+  - unit-tests/_TEST-ALL.sh - Main test runner script
+  - unit-tests/test-*.sh - Individual test scripts
+  - unit-tests/*.results - Test result files (created during run)
+  - /tmp/dogrc_*_$$.txt - Temporary files (cleaned up on exit)
+
+Examples:
+  runtests              # Run all unit tests in tmux session
+  runtests --help       # Show this help message
+
+Note: The test runner requires tmux to be installed. If tmux is not available,
+      the function will display an error message. The session automatically
+      closes 5 seconds after all tests complete, giving you time to review
+      the final results. You can press 'q' at any time to quit early. The
+      overview pane updates every second with the latest test progress. All
+      temporary files are automatically cleaned up when the session ends.
+EOF
+                return 0
+                ;;
             update)
                 cat <<EOF
 update - System Update Automation
@@ -2192,6 +2265,7 @@ Utilities:
   notifywhendone     - Command completion notifications
   prepfile           - Prepare new file with language templates
   pwd                - Print working directory with clipboard support
+  runtests           - Run DOGRC unit test suite
   silent             - Run command silently
   timer              - Named timer management
   update             - System update automation
@@ -2244,6 +2318,7 @@ _drchelp_completion() {
         "pokefetch"
         "prepfile"
         "pwd"
+        "runtests"
         "silent"
         "slashback"
         "swap"

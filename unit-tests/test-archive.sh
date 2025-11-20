@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=36  # Tests 1-34 plus 2 summary tests with "*"
 printf "Running unit tests for archive.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/file-operations/archive.sh" ]]; then
     if print_msg 3 "Can I find archive.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find archive.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/file-operations/archive.sh" 2>/dev/null; then
     if print_msg 4 "Can I source archive.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source archive.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f extract >/dev/null 2>&1; then
     if print_msg 5 "Is extract function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is extract function defined?" false
@@ -81,6 +107,9 @@ fi
 if declare -f compress >/dev/null 2>&1; then
     if print_msg 6 "Is compress function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is compress function defined?" false
@@ -90,6 +119,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 cd "${__UNIT_TESTS_DIR}" || {
     printf "Error: Failed to change directory to unit-tests.\n" >&2
@@ -106,6 +138,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if extract --help >/dev/null 2>&1; then
         if print_msg 7 "Does extract --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does extract --help work?" false
@@ -120,6 +155,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if extract -h >/dev/null 2>&1; then
         if print_msg 8 "Does extract -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does extract -h work?" false
@@ -134,6 +172,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if compress --help >/dev/null 2>&1; then
         if print_msg 9 "Does compress --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does compress --help work?" false
@@ -148,6 +189,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if compress -h >/dev/null 2>&1; then
         if print_msg 10 "Does compress -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does compress -h work?" false
@@ -164,6 +208,9 @@ test_content="This is a test file for archiving.\nLine 2 of test file.\nEnd of t
 if printf "${test_content}" > "${__UNIT_TESTS_DIR}/test_file.txt"; then
     if print_msg 11 "Can I create test_file.txt?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Can I create test_file.txt?" false
@@ -173,12 +220,18 @@ fi
 
 print_msg "*" "Did I create test files?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 printf "\nTesting extract error handling...\n"
 
 if ! extract 2>/dev/null; then
     if print_msg 12 "Does extract error on missing arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does extract error on missing arguments?" false
@@ -187,6 +240,9 @@ fi
 if ! extract "nonexistent.tar.gz" 2>/dev/null; then
     if print_msg 13 "Does extract error on non-existent file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does extract error on non-existent file?" false
@@ -196,6 +252,9 @@ printf "test" > "unsupported.txt"
 if ! extract "unsupported.txt" 2>/dev/null; then
     if print_msg 14 "Does extract error on unsupported format?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does extract error on unsupported format?" false
@@ -207,6 +266,9 @@ printf "\nTesting compress error handling...\n"
 if ! compress 2>/dev/null; then
     if print_msg 15 "Does compress error on missing arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does compress error on missing arguments?" false
@@ -215,6 +277,9 @@ fi
 if ! compress "nonexistent.txt" 2>/dev/null; then
     if print_msg 16 "Does compress error on non-existent file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does compress error on non-existent file?" false
@@ -223,6 +288,9 @@ fi
 if ! compress "test_file.txt" "unsupported" 2>/dev/null; then
     if print_msg 17 "Does compress error on unsupported format?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does compress error on unsupported format?" false
@@ -235,6 +303,9 @@ if command -v gzip >/dev/null 2>&1; then
         if [[ -f "test_file.txt.gz" ]]; then
             if print_msg 18 "Does compress create .gz file by default?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 18 "Does compress create .gz file by default?" false
             fi
@@ -256,6 +327,9 @@ if command -v gzip >/dev/null 2>&1; then
         if [[ -f "test_file2.txt.gz" ]]; then
             if print_msg 19 "Does compress create .gz file with explicit format?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 19 "Does compress create .gz file with explicit format?" false
             fi
@@ -280,6 +354,9 @@ if command -v gunzip >/dev/null 2>&1 && [[ -f "test_file.txt.gz" ]]; then
         if [[ -f "test_file.txt" ]] && [[ ! -f "test_file.txt.gz" ]]; then
             if print_msg 20 "Does extract .gz file work correctly?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 20 "Does extract .gz file work correctly?" false
             fi
@@ -306,6 +383,9 @@ if command -v tar >/dev/null 2>&1; then
         if [[ -f "test_dir.tar.gz" ]]; then
             if print_msg 21 "Does compress create .tar.gz for directory?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 21 "Does compress create .tar.gz for directory?" false
             fi
@@ -327,6 +407,9 @@ if command -v tar >/dev/null 2>&1 && [[ -f "test_dir.tar.gz" ]]; then
         if [[ -d "test_dir" ]] && [[ -f "test_dir/file1.txt" ]]; then
             if print_msg 22 "Does extract .tar.gz file work correctly?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 22 "Does extract .tar.gz file work correctly?" false
             fi
@@ -352,6 +435,9 @@ if command -v gzip >/dev/null 2>&1; then
         if [[ $exit_code -eq 0 ]]; then
             if print_msg 23 "Does compress return 0 on success?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 23 "Does compress return 0 on success?" false
@@ -376,6 +462,9 @@ if command -v gunzip >/dev/null 2>&1 && command -v gzip >/dev/null 2>&1; then
             if [[ $exit_code -eq 0 ]]; then
                 if print_msg 24 "Does extract return 0 on success?" true; then
                     ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
                 fi
             else
                 print_msg 24 "Does extract return 0 on success?" false
@@ -399,6 +488,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]]; then
     if print_msg 25 "Does compress return non-zero on error?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does compress return non-zero on error?" false
@@ -409,6 +501,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]]; then
     if print_msg 26 "Does extract return non-zero on error?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does extract return non-zero on error?" false
@@ -420,6 +515,9 @@ if command -v complete >/dev/null 2>&1; then
     if complete -p extract >/dev/null 2>&1; then
         if print_msg 27 "Is extract completion function registered?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Is extract completion function registered?" false
@@ -434,6 +532,9 @@ if command -v complete >/dev/null 2>&1; then
     if complete -p compress >/dev/null 2>&1; then
         if print_msg 28 "Is compress completion function registered?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Is compress completion function registered?" false
@@ -452,6 +553,9 @@ if command -v gzip >/dev/null 2>&1; then
     if echo "$output" | grep -q "Created:"; then
         if print_msg 29 "Does compress output success message?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Does compress output success message?" false
@@ -467,6 +571,9 @@ error_output=$(compress "nonexistent.txt" 2>&1)
 if echo "$error_output" | grep -q "Error:"; then
     if print_msg 30 "Does compress output error message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does compress output error message?" false
@@ -476,6 +583,9 @@ error_output=$(extract "nonexistent.tar.gz" 2>&1)
 if echo "$error_output" | grep -q "Error:" || echo "$error_output" | grep -q "cannot be extracted"; then
     if print_msg 31 "Does extract output error message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 31 "Does extract output error message?" false
@@ -489,6 +599,9 @@ if command -v gzip >/dev/null 2>&1; then
     if ! compress "test_exists.txt" "gz" >/dev/null 2>&1; then
         if print_msg 32 "Does compress error when output already exists?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 32 "Does compress error when output already exists?" false
@@ -507,6 +620,9 @@ if command -v tar >/dev/null 2>&1 && command -v bzip2 >/dev/null 2>&1; then
         if [[ -f "test_format.tar.bz2" ]]; then
             if print_msg 33 "Does compress handle format alias (tbz2)?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 33 "Does compress handle format alias (tbz2)?" false
             fi
@@ -531,6 +647,9 @@ if command -v gzip >/dev/null 2>&1; then
         if [[ "$preserved_content" == "$original_content" ]]; then
             if print_msg 34 "Does compress preserve original file?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             else
                 print_msg 34 "Does compress preserve original file?" false
             fi
@@ -547,8 +666,16 @@ else
     fi
 fi
 
-total_tests=36  # Tests 1-34 plus 2 summary tests with "*"
 percentage=$((score * 100 / total_tests))
+
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

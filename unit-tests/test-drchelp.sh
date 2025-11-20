@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=38  # Tests 1-5, "*", 6-37
 printf "Running unit tests for drchelp.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
     if print_msg 3 "Can I find drchelp.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find drchelp.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/drchelp.sh" 2>/dev/null; then
     if print_msg 4 "Can I source drchelp.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source drchelp.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f drchelp >/dev/null 2>&1; then
     if print_msg 5 "Is drchelp function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is drchelp function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -112,6 +141,9 @@ if drchelp >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 6 "Does drchelp run without errors?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does drchelp run without errors?" false
@@ -126,6 +158,9 @@ if drchelp >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 7 "Does drchelp return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does drchelp return 0 on success?" false
@@ -139,6 +174,9 @@ output=$(drchelp 2>&1)
 if [[ -n "$output" ]]; then
     if print_msg 8 "Does drchelp produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Does drchelp produce output?" false
@@ -149,6 +187,9 @@ output=$(drchelp 2>&1)
 if echo "$output" | grep -q "Usage: drchelp"; then
     if print_msg 9 "Does drchelp default help show usage?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does drchelp default help show usage?" false
@@ -159,6 +200,9 @@ output=$(drchelp 2>&1)
 if echo "$output" | grep -qi "available functions"; then
     if print_msg 10 "Does drchelp default help show available functions section?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does drchelp default help show available functions section?" false
@@ -171,6 +215,9 @@ output=$(drchelp backup 2>&1)
 if echo "$output" | grep -q "backup" && echo "$output" | grep -q "Usage:"; then
     if print_msg 11 "Does drchelp show help for known function (backup)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does drchelp show help for known function (backup)?" false
@@ -181,6 +228,9 @@ output=$(drchelp calc 2>&1)
 if echo "$output" | grep -q "calc" && echo "$output" | grep -q "Usage:"; then
     if print_msg 12 "Does drchelp show help for known function (calc)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does drchelp show help for known function (calc)?" false
@@ -191,6 +241,9 @@ output=$(drchelp cpx 2>&1)
 if echo "$output" | grep -q "cpx" && echo "$output" | grep -q "Usage:"; then
     if print_msg 13 "Does drchelp show help for known function (cpx)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does drchelp show help for known function (cpx)?" false
@@ -201,6 +254,9 @@ output=$(drchelp motd 2>&1)
 if echo "$output" | grep -q "motd" && echo "$output" | grep -q "Usage:"; then
     if print_msg 14 "Does drchelp show help for known function (motd)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does drchelp show help for known function (motd)?" false
@@ -211,6 +267,9 @@ output=$(drchelp drcfortune 2>&1)
 if echo "$output" | grep -q "drcfortune" && echo "$output" | grep -q "Usage:"; then
     if print_msg 15 "Does drchelp show help for known function (drcfortune)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does drchelp show help for known function (drcfortune)?" false
@@ -221,6 +280,9 @@ output=$(drchelp pokefetch 2>&1)
 if echo "$output" | grep -q "pokefetch" && echo "$output" | grep -q "Usage:"; then
     if print_msg 16 "Does drchelp show help for known function (pokefetch)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does drchelp show help for known function (pokefetch)?" false
@@ -236,6 +298,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 17 "Does drchelp return 1 for unknown function?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does drchelp return 1 for unknown function?" false
@@ -247,6 +312,9 @@ output=$(drchelp nonexistent_function 2>&1)
 if echo "$output" | grep -q "No manual entry found for: nonexistent_function"; then
     if print_msg 18 "Does drchelp show error message for unknown function?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does drchelp show error message for unknown function?" false
@@ -257,6 +325,9 @@ output=$(drchelp unknown_function 2>&1)
 if echo "$output" | grep -q "Run 'drchelp' without arguments"; then
     if print_msg 19 "Does drchelp suggest running without arguments for unknown function?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does drchelp suggest running without arguments for unknown function?" false
@@ -269,6 +340,9 @@ output=$(drchelp --help 2>&1)
 if echo "$output" | grep -q "Usage: drchelp"; then
     if print_msg 20 "Does drchelp --help show default help?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does drchelp --help show default help?" false
@@ -279,6 +353,9 @@ output=$(drchelp -h 2>&1)
 if echo "$output" | grep -q "Usage: drchelp"; then
     if print_msg 21 "Does drchelp -h show default help?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does drchelp -h show default help?" false
@@ -289,6 +366,9 @@ output=$(drchelp help 2>&1)
 if echo "$output" | grep -q "Usage: drchelp"; then
     if print_msg 22 "Does drchelp help show default help?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does drchelp help show default help?" false
@@ -299,6 +379,9 @@ output=$(drchelp drchelp 2>&1)
 if echo "$output" | grep -q "Usage: drchelp"; then
     if print_msg 23 "Does drchelp drchelp show default help?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does drchelp drchelp show default help?" false
@@ -312,6 +395,9 @@ output=$(drchelp BACKUP 2>&1)
 if [[ ${#output} -gt 0 ]]; then
     if print_msg 24 "Does drchelp handle case variations (BACKUP)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does drchelp handle case variations (BACKUP)?" false
@@ -323,6 +409,9 @@ output=$(drchelp CALC 2>&1)
 if [[ ${#output} -gt 0 ]]; then
     if print_msg 25 "Does drchelp handle case variations (CALC)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does drchelp handle case variations (CALC)?" false
@@ -336,6 +425,9 @@ output=$(drchelp 2>&1)
 if echo "$output" | grep -qE "^[A-Z][a-z]+:"; then
     if print_msg 26 "Does drchelp default help contain categories?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does drchelp default help contain categories?" false
@@ -347,6 +439,9 @@ output=$(drchelp 2>&1)
 if echo "$output" | grep -q "Examples:"; then
     if print_msg 27 "Does drchelp default help contain examples section?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does drchelp default help contain examples section?" false
@@ -358,6 +453,9 @@ output=$(drchelp 2>&1)
 if [[ ${#output} -gt 100 ]]; then
     if print_msg 28 "Does drchelp default help contain substantial content?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Does drchelp default help contain substantial content?" false
@@ -370,6 +468,9 @@ output=$(drchelp cd 2>&1)
 if echo "$output" | grep -q "cd" && echo "$output" | grep -q "Usage:"; then
     if print_msg 29 "Does drchelp handle function aliases (cd)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does drchelp handle function aliases (cd)?" false
@@ -380,6 +481,9 @@ output=$(drchelp slashback 2>&1)
 if echo "$output" | grep -q "slashback" && echo "$output" | grep -q "Usage:"; then
     if print_msg 30 "Does drchelp handle slashback functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does drchelp handle slashback functions?" false
@@ -393,6 +497,9 @@ if bash "${__PLUGINS_DIR}/drchelp.sh" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 31 "Can drchelp.sh be executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Can drchelp.sh be executed directly?" false
@@ -406,6 +513,9 @@ output=$(bash "${__PLUGINS_DIR}/drchelp.sh" 2>&1)
 if [[ -n "$output" ]] && echo "$output" | grep -q "Usage: drchelp"; then
     if print_msg 32 "Does drchelp.sh direct execution produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does drchelp.sh direct execution produce output?" false
@@ -416,6 +526,9 @@ output=$(bash "${__PLUGINS_DIR}/drchelp.sh" backup 2>&1)
 if echo "$output" | grep -q "backup" && echo "$output" | grep -q "Usage:"; then
     if print_msg 33 "Does drchelp.sh direct execution work with function name?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does drchelp.sh direct execution work with function name?" false
@@ -429,6 +542,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 34 "Does drchelp.sh return 1 for unknown function?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 34 "Does drchelp.sh return 1 for unknown function?" false
@@ -441,6 +557,9 @@ printf "\nTesting drchelp() function bash completion...\n"
 if declare -f _drchelp_completion >/dev/null 2>&1; then
     if print_msg 35 "Does drchelp bash completion function exist?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 35 "Does drchelp bash completion function exist?" false
@@ -455,6 +574,9 @@ if declare -f _drchelp_completion >/dev/null 2>&1; then
     if [[ ${#COMPREPLY[@]} -gt 0 ]]; then
         if print_msg 36 "Does drchelp bash completion return function names?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 36 "Does drchelp bash completion return function names?" false
@@ -473,6 +595,9 @@ if declare -f _drchelp_completion >/dev/null 2>&1; then
     if printf '%s\n' "${COMPREPLY[@]}" | grep -qE "^(backup|calc|cpx|motd)$"; then
         if print_msg 37 "Does drchelp bash completion include known functions?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 37 "Does drchelp bash completion include known functions?" false
@@ -481,8 +606,15 @@ else
     print_msg 37 "Does drchelp bash completion include known functions?" "N/A"
 fi
 
-total_tests=38  # Tests 1-5, "*", 6-37
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

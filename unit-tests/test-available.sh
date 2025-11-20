@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=28  # Tests 1-5, "*", 6-27
 printf "Running unit tests for available.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/available.sh" ]]; then
     if print_msg 3 "Can I find available.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find available.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/available.sh" 2>/dev/null; then
     if print_msg 4 "Can I source available.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source available.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f available >/dev/null 2>&1; then
     if print_msg 5 "Is available function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is available function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -122,6 +151,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if available --help >/dev/null 2>&1; then
         if print_msg 6 "Does available --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does available --help work?" false
@@ -133,6 +165,9 @@ else
     else
         if print_msg 6 "Does available --help work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -142,6 +177,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if available --HELP >/dev/null 2>&1; then
         if print_msg 7 "Does available --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does available --HELP work (case-insensitive)?" false
@@ -152,6 +190,9 @@ else
     else
         if print_msg 7 "Does available --HELP work (case-insensitive, no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -163,6 +204,9 @@ output=$(available 2>&1)
 if echo "$output" | grep -q "Functions available after sourcing ~/.bashrc"; then
     if print_msg 8 "Does available list functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Does available list functions?" false
@@ -174,6 +218,9 @@ if available >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 9 "Does available return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does available return 0 on success?" false
@@ -187,6 +234,9 @@ output=$(available 2>&1)
 if echo "$output" | grep -qE "^Functions available after sourcing"; then
     if print_msg 10 "Does available output contain header?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does available output contain header?" false
@@ -205,6 +255,9 @@ output=$(available 2>&1)
 if echo "$output" | grep -q "test_public_func" && ! echo "$output" | grep -q "_test_private_func"; then
     if print_msg 11 "Does available filter out private functions (default)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does available filter out private functions (default)?" false
@@ -215,6 +268,9 @@ output=$(available 2>&1)
 if echo "$output" | grep -q "test_public_func"; then
     if print_msg 12 "Does available show public functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does available show public functions?" false
@@ -227,6 +283,9 @@ output=$(available --hold 2>&1)
 if echo "$output" | grep -q "_test_private_func"; then
     if print_msg 13 "Does available --hold show all functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does available --hold show all functions?" false
@@ -237,6 +296,9 @@ output=$(available -h 2>&1)
 if echo "$output" | grep -q "_test_private_func"; then
     if print_msg 14 "Does available -h show all functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does available -h show all functions?" false
@@ -247,6 +309,9 @@ output=$(available --all 2>&1)
 if echo "$output" | grep -q "_test_private_func"; then
     if print_msg 15 "Does available --all show all functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does available --all show all functions?" false
@@ -257,6 +322,9 @@ output=$(available -a 2>&1)
 if echo "$output" | grep -q "_test_private_func"; then
     if print_msg 16 "Does available -a show all functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does available -a show all functions?" false
@@ -270,6 +338,9 @@ output=$(available 2>&1 | tail -n +2)
 if echo "$output" | head -1 | grep -qE "  .{1,30}  .{1,30}"; then
     if print_msg 17 "Does available format output in columns?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does available format output in columns?" false
@@ -281,6 +352,9 @@ output=$(available 2>&1)
 if echo "$output" | grep -qE "test_very_long.*\.\.\."; then
     if print_msg 18 "Does available truncate long function names?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does available truncate long function names?" false
@@ -293,6 +367,9 @@ output=$(available 2>&1)
 if echo "$output" | grep -qE "(Functions available|  [a-zA-Z_][a-zA-Z0-9_]*|  \(none\))"; then
     if print_msg 19 "Does available handle empty function list correctly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does available handle empty function list correctly?" false
@@ -305,6 +382,9 @@ output=$(available --unknown-option 2>&1)
 if echo "$output" | grep -q "ignoring unknown option" && echo "$output" | grep -q "Functions available"; then
     if print_msg 20 "Does available ignore unknown options?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does available ignore unknown options?" false
@@ -315,6 +395,9 @@ output=$(available --unknown1 --unknown2 2>&1)
 if echo "$output" | grep -q "Functions available"; then
     if print_msg 21 "Does available handle multiple unknown options?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does available handle multiple unknown options?" false
@@ -325,6 +408,9 @@ output=$(available 2>&1)
 if [[ -n "$output" ]] && echo "$output" | grep -q "Functions available"; then
     if print_msg 22 "Does available work with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does available work with no arguments?" false
@@ -335,6 +421,9 @@ output=$(available --hold --unknown 2>&1)
 if echo "$output" | grep -q "_test_private_func" && echo "$output" | grep -q "ignoring unknown option"; then
     if print_msg 23 "Does available handle hold flag with unknown option?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does available handle hold flag with unknown option?" false
@@ -343,24 +432,54 @@ fi
 printf "\nTesting available.sh direct script execution...\n"
 
 # Test 24: available.sh can be executed directly
-if bash "${__PLUGINS_DIR}/utilities/available.sh" >/dev/null 2>&1; then
-    exit_code=$?
-    if [[ $exit_code -eq 0 ]]; then
-        if print_msg 24 "Can available.sh be executed directly?" true; then
-            ((score++))
+# Use timeout to prevent hanging on interactive shell commands
+if command -v timeout >/dev/null 2>&1; then
+    if timeout 10 bash "${__PLUGINS_DIR}/utilities/available.sh" >/dev/null 2>&1; then
+        exit_code=$?
+        if [[ $exit_code -eq 0 ]]; then
+            if print_msg 24 "Can available.sh be executed directly?" true; then
+                ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+            fi
+        else
+            print_msg 24 "Can available.sh be executed directly?" false
         fi
     else
         print_msg 24 "Can available.sh be executed directly?" false
     fi
 else
-    print_msg 24 "Can available.sh be executed directly?" false
+    if bash "${__PLUGINS_DIR}/utilities/available.sh" >/dev/null 2>&1; then
+        exit_code=$?
+        if [[ $exit_code -eq 0 ]]; then
+            if print_msg 24 "Can available.sh be executed directly?" true; then
+                ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+            fi
+        else
+            print_msg 24 "Can available.sh be executed directly?" false
+        fi
+    else
+        print_msg 24 "Can available.sh be executed directly?" false
+    fi
 fi
 
 # Test 25: available.sh direct execution shows functions
-output=$(bash "${__PLUGINS_DIR}/utilities/available.sh" 2>&1)
+# Use timeout to prevent hanging on interactive shell commands
+if command -v timeout >/dev/null 2>&1; then
+    output=$(timeout 10 bash "${__PLUGINS_DIR}/utilities/available.sh" 2>&1)
+else
+    output=$(bash "${__PLUGINS_DIR}/utilities/available.sh" 2>&1)
+fi
 if echo "$output" | grep -q "Functions available after sourcing ~/.bashrc"; then
     if print_msg 25 "Does available.sh direct execution show functions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does available.sh direct execution show functions?" false
@@ -369,27 +488,49 @@ fi
 # Test 26: available.sh direct execution with --help
 # When run directly, drchelp may not be available in the script's context
 # The script should handle this gracefully (return error if drchelp not available)
-output=$(bash "${__PLUGINS_DIR}/utilities/available.sh" --help 2>&1)
+if command -v timeout >/dev/null 2>&1; then
+    output=$(timeout 10 bash "${__PLUGINS_DIR}/utilities/available.sh" --help 2>&1)
+else
+    output=$(bash "${__PLUGINS_DIR}/utilities/available.sh" --help 2>&1)
+fi
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 26 "Does available.sh --help work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does available.sh --help work when executed directly?" false
 fi
 
 # Test 27: available.sh direct execution with --hold
-output=$(bash "${__PLUGINS_DIR}/utilities/available.sh" --hold 2>&1)
+if command -v timeout >/dev/null 2>&1; then
+    output=$(timeout 10 bash "${__PLUGINS_DIR}/utilities/available.sh" --hold 2>&1)
+else
+    output=$(bash "${__PLUGINS_DIR}/utilities/available.sh" --hold 2>&1)
+fi
 if echo "$output" | grep -q "Functions available after sourcing ~/.bashrc"; then
     if print_msg 27 "Does available.sh --hold work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does available.sh --hold work when executed directly?" false
 fi
 
-total_tests=28  # Tests 1-5, "*", 6-27
 percentage=$((score * 100 / total_tests))
+
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

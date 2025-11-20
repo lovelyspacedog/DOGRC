@@ -52,7 +52,13 @@ __navto_remove_destination() {
         printf "  \e[1mName:\e[0m %s\n" "$name"
         printf "  \e[1mPath:\e[0m %s\n" "$path"
         local confirm
-        read -r -p $'\n\e[1mProceed with removal?\e[0m [y/N]: ' confirm
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -r -p $'\n\e[1mProceed with removal?\e[0m [y/N]: ' confirm
+        else
+            # Non-interactive: read from stdin directly (don't redirect, just read)
+            read -t 10 -r confirm 2>/dev/null || confirm="N"
+        fi
         case "${confirm:-N}" in
             [Yy]* ) ;;
             * ) printf "\e[2mCancelled.\e[0m\n"; return 1 ;;
@@ -112,7 +118,13 @@ __navto_add_destination() {
     local name path confirm
     printf "\e[1mEnter display name for '\e[1;36m%s\e[0m\e[1m': \e[0m" "$add_key"
     while true; do
-        read -r name
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -r name
+        else
+            # Non-interactive: read from stdin directly (don't redirect, just read)
+            read -t 10 -r name 2>/dev/null || name=""
+        fi
         if [[ -z "$name" ]]; then
             printf "\e[1;31mError:\e[0m Name cannot be empty. Please enter a valid name:\n"
             continue
@@ -127,7 +139,13 @@ __navto_add_destination() {
 
     printf "\e[1mEnter path for '\e[1;36m%s\e[0m\e[1m' (you can use \$HOME): \e[0m" "$add_key"
     while true; do
-        read -r path
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -r path
+        else
+            # Non-interactive: read from stdin directly (don't redirect, just read)
+            read -t 10 -r path 2>/dev/null || path=""
+        fi
         if [[ -z "$path" ]]; then
             printf "\e[1;31mError:\e[0m Path cannot be empty. Please enter a valid path:\n"
             continue
@@ -148,7 +166,13 @@ __navto_add_destination() {
     printf "  \e[1mKey :\e[0m \e[1;36m%s\e[0m\n" "$add_key"
     printf "  \e[1mName:\e[0m %s\n" "$name"
     printf "  \e[1mPath:\e[0m %s\n" "$path"
-    read -r -p $'\n\e[1mProceed?\e[0m [y/N]: ' confirm
+    # Check if stdin is a terminal for interactive prompt
+    if [[ -t 0 ]]; then
+        read -r -p $'\n\e[1mProceed?\e[0m [y/N]: ' confirm
+    else
+        # Non-interactive: read from stdin directly (don't redirect, just read)
+        read -t 10 -r confirm 2>/dev/null || confirm="N"
+    fi
     case "${confirm:-N}" in
         [Yy]* ) ;;
         * ) printf "\e[2mCancelled.\e[0m\n"; return 1 ;;
@@ -224,7 +248,13 @@ navto() {
                 #printf "\n"
             else
                 printf "  \e[1;31m(destinations file not found: %s)\e[0m\n" "$json_file"
-                read -r -p $'\n\e[1mCreate a starter template now?\e[0m [y/N]: ' __mk
+                # Check if stdin is a terminal for interactive prompt
+                if [[ -t 0 ]]; then
+                    read -r -p $'\n\e[1mCreate a starter template now?\e[0m [y/N]: ' __mk
+                else
+                    # Non-interactive: read from stdin directly (don't redirect, just read)
+                    read -t 10 -r __mk 2>/dev/null || __mk="N"
+                fi
                 case "${__mk:-N}" in
                     [Yy]* )
                         if __navto_create_template "$json_file"; then
@@ -251,7 +281,13 @@ navto() {
     local json_file="${__CONFIG_DIR}/navto.json"
     if [[ ! -f "$json_file" ]]; then
         printf "\e[1;31mError:\e[0m destinations file not found: %s\n" "$json_file"
-        read -r -p $'\n\e[1mCreate a starter template now?\e[0m [y/N]: ' __mk
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -r -p $'\n\e[1mCreate a starter template now?\e[0m [y/N]: ' __mk
+        else
+            # Non-interactive: read from stdin directly (don't redirect, just read)
+            read -t 10 -r __mk 2>/dev/null || __mk="N"
+        fi
         case "${__mk:-N}" in
             [Yy]* )
                 if __navto_create_template "$json_file"; then
@@ -274,7 +310,13 @@ navto() {
 
     if [[ -z "$name" || -z "$path" ]]; then
         printf "\e[1;31mError:\e[0m destination not found for key: \e[1;36m%s\e[0m\n" "$key"
-        read -r -p "$(printf '\n\e[1mWould you like to add key \e[1;36m%s\e[0m?\e[0m [y/N]: ' "$ukey")" __ans
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -r -p "$(printf '\n\e[1mWould you like to add key \e[1;36m%s\e[0m?\e[0m [y/N]: ' "$ukey")" __ans
+        else
+            # Non-interactive: read from stdin directly (don't redirect, just read)
+            read -t 10 -r __ans 2>/dev/null || __ans="N"
+        fi
         case "${__ans:-N}" in
             [Yy]* )
                 if __navto_add_destination "$ukey"; then
@@ -296,7 +338,13 @@ navto() {
     # If destination directory no longer exists, confirm once here, then remove directly
     if [[ ! -d "$expanded_path" ]]; then
         printf "\e[1;31mError:\e[0m destination path no longer exists: %s\n" "$expanded_path"
-        read -r -p "$(printf '\n\e[1mWould you like to remove key \e[1;36m%s\e[0m from destinations? [y/N]: ' "$ukey")" __rm
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -r -p "$(printf '\n\e[1mWould you like to remove key \e[1;36m%s\e[0m from destinations? [y/N]: ' "$ukey")" __rm
+        else
+            # Non-interactive: read from stdin directly (don't redirect, just read)
+            read -t 10 -r __rm 2>/dev/null || __rm="N"
+        fi
         case "${__rm:-N}" in
             [Yy]* )
                 __navto_remove_destination "$ukey" --direct

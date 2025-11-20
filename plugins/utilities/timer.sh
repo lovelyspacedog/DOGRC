@@ -39,9 +39,15 @@ timer() {
     # Default to 'Timer' if no name provided
 
     if [[ "${1^^}" == "CLEAR" ]]; then
-        read -t 10 -n 1 -r -p "Are you sure you want to clear all timers? (y/N): " clear ||
-            clear="N"
-        printf "\n"
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -t 10 -n 1 -r -p "Are you sure you want to clear all timers? (y/N): " clear ||
+                clear="N"
+            printf "\n"
+        else
+            # Non-interactive: read from stdin directly
+            read -t 10 -n 1 -r clear < /dev/stdin 2>/dev/null || clear="N"
+        fi
         [[ "${clear^^}" == "Y" ]] && {
             if rm -f /tmp/timer-*.txt; then
                 printf "All timers cleared!\n"
@@ -131,8 +137,14 @@ timer() {
 
         printf "Elapsed Time for %s: %03d:%02d:%02d\n" "$safe_name" "$totalHours" "$totalMinutes" "$totalSeconds"
         sleep 1
-        read -n 1 -p "Would you like to reset the timer? (y/N): " reset
-        printf "\n"
+        # Check if stdin is a terminal for interactive prompt
+        if [[ -t 0 ]]; then
+            read -n 1 -p "Would you like to reset the timer? (y/N): " reset
+            printf "\n"
+        else
+            # Non-interactive: read from stdin directly
+            read -t 10 -n 1 -r reset < /dev/stdin 2>/dev/null || reset="N"
+        fi
         [[ "${reset^^}" == "Y" ]] && {
             if ! rm -f "$flagfile"; then
                 printf "Error: Could not delete %s. Timer for %s is still set.\n" "$flagfile" "$safe_name" >&2

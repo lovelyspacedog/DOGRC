@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=50  # Tests 1-49 plus 1 summary test with "*"
 printf "Running unit tests for analyze-file.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/information/analyze-file.sh" ]]; then
     if print_msg 3 "Can I find analyze-file.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find analyze-file.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/information/analyze-file.sh" 2>/dev/null; then
     if print_msg 4 "Can I source analyze-file.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source analyze-file.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f analyze-file >/dev/null 2>&1; then
     if print_msg 5 "Is analyze-file function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is analyze-file function defined?" false
@@ -81,6 +107,9 @@ fi
 if declare -f analyze_file >/dev/null 2>&1; then
     if print_msg 6 "Is analyze_file alias function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is analyze_file alias function defined?" false
@@ -88,6 +117,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -129,6 +161,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if analyze-file --help >/dev/null 2>&1; then
         if print_msg 7 "Does analyze-file --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does analyze-file --help work?" false
@@ -143,6 +178,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if analyze-file -h >/dev/null 2>&1; then
         if print_msg 8 "Does analyze-file -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does analyze-file -h work?" false
@@ -158,6 +196,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if analyze-file --HELP >/dev/null 2>&1; then
         if print_msg 9 "Does analyze-file --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does analyze-file --HELP work (case-insensitive)?" false
@@ -176,6 +217,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "Usage:"; then
     if print_msg 10 "Does analyze-file show usage when called with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does analyze-file show usage when called with no arguments?" false
@@ -185,6 +229,9 @@ fi
 if echo "$output" | grep -q "analyze-file <file>" && echo "$output" | grep -q "Description:"; then
     if print_msg 11 "Does usage message contain expected information?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does usage message contain expected information?" false
@@ -238,6 +285,9 @@ printf "\nTesting error handling...\n"
 if ! analyze-file "nonexistent_file_12345.txt" 2>/dev/null; then
     if print_msg 13 "Does analyze-file error on non-existent file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does analyze-file error on non-existent file?" false
@@ -248,6 +298,9 @@ error_output=$(analyze-file "nonexistent_file_12345.txt" 2>&1)
 if echo "$error_output" | grep -q "Error:" && echo "$error_output" | grep -q "nonexistent_file_12345.txt"; then
     if print_msg 14 "Does error message contain filename?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does error message contain filename?" false
@@ -259,6 +312,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 15 "Does analyze-file return 1 on error?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does analyze-file return 1 on error?" false
@@ -271,6 +327,9 @@ output=$(analyze-file "test_analyze_text.txt" 2>&1)
 if echo "$output" | grep -q "File:.*test_analyze_text.txt"; then
     if print_msg 16 "Does output contain file path?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does output contain file path?" false
@@ -280,6 +339,9 @@ fi
 if echo "$output" | grep -q "Size:"; then
     if print_msg 17 "Does output contain file size?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does output contain file size?" false
@@ -289,6 +351,9 @@ fi
 if echo "$output" | grep -q "Modified:"; then
     if print_msg 18 "Does output contain modified date?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does output contain modified date?" false
@@ -298,6 +363,9 @@ fi
 if echo "$output" | grep -q "Permissions:"; then
     if print_msg 19 "Does output contain permissions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does output contain permissions?" false
@@ -307,6 +375,9 @@ fi
 if echo "$output" | grep -q "Owner:"; then
     if print_msg 20 "Does output contain owner?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does output contain owner?" false
@@ -316,6 +387,9 @@ fi
 if echo "$output" | grep -q "Type:"; then
     if print_msg 21 "Does output contain file type?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does output contain file type?" false
@@ -327,6 +401,9 @@ printf "\nTesting text file analysis...\n"
 if echo "$output" | grep -q "Text File Analysis:"; then
     if print_msg 22 "Does text file show 'Text File Analysis' section?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does text file show 'Text File Analysis' section?" false
@@ -338,6 +415,9 @@ line_count=$(echo "$output" | grep -A 1 "Lines:" | grep "Lines:" | grep -oE '[0-
 if [[ -n "$line_count" ]] && [[ $line_count -ge 3 ]] && [[ $line_count -le 5 ]]; then
     if print_msg 23 "Does line count appear in output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does line count appear in output?" false
@@ -347,6 +427,9 @@ fi
 if echo "$output" | grep -q "Words:"; then
     if print_msg 24 "Does word count appear in output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does word count appear in output?" false
@@ -356,6 +439,9 @@ fi
 if echo "$output" | grep -q "Characters:"; then
     if print_msg 25 "Does character count appear in output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does character count appear in output?" false
@@ -365,6 +451,9 @@ fi
 if echo "$output" | grep -q "Characters (no spaces):"; then
     if print_msg 26 "Does 'Characters (no spaces)' count appear?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does 'Characters (no spaces)' count appear?" false
@@ -377,6 +466,9 @@ exec_output=$(analyze-file "test_analyze_executable.sh" 2>&1)
 if echo "$exec_output" | grep -q "Executable File:"; then
     if print_msg 27 "Does executable file show 'Executable File' section?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does executable file show 'Executable File' section?" false
@@ -386,6 +478,9 @@ fi
 if echo "$exec_output" | grep -q "Executable: Yes"; then
     if print_msg 28 "Does output show 'Executable: Yes'?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Does output show 'Executable: Yes'?" false
@@ -395,6 +490,9 @@ fi
 if echo "$exec_output" | grep -q "Shebang:" && echo "$exec_output" | grep -q "#!"; then
     if print_msg 29 "Does output detect shebang line?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does output detect shebang line?" false
@@ -405,6 +503,9 @@ no_shebang_output=$(analyze-file "test_analyze_no_shebang.sh" 2>&1)
 if echo "$no_shebang_output" | grep -q "Shebang:" && echo "$no_shebang_output" | grep -q "None"; then
     if print_msg 30 "Does output show 'None' when no shebang present?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does output show 'None' when no shebang present?" false
@@ -418,6 +519,9 @@ archive_output=$(analyze-file "test_analyze_archive.tar" 2>&1)
 if echo "$archive_output" | grep -q "Archive File:" || echo "$archive_output" | grep -qi "archive\|compressed"; then
     if print_msg 31 "Does analyze-file detect archive files?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 31 "Does analyze-file detect archive files?" false
@@ -429,6 +533,9 @@ image_output=$(analyze-file "test_analyze_image.jpg" 2>&1)
 if echo "$image_output" | grep -q "Image File:" || echo "$image_output" | grep -qi "image"; then
     if print_msg 32 "Does analyze-file detect image files?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does analyze-file detect image files?" false
@@ -440,6 +547,9 @@ video_output=$(analyze-file "test_analyze_video.mp4" 2>&1)
 if echo "$video_output" | grep -q "Video File:" || echo "$video_output" | grep -qi "video"; then
     if print_msg 33 "Does analyze-file detect video files?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does analyze-file detect video files?" false
@@ -451,6 +561,9 @@ audio_output=$(analyze-file "test_analyze_audio.mp3" 2>&1)
 if echo "$audio_output" | grep -q "Audio File:" || echo "$audio_output" | grep -qi "audio"; then
     if print_msg 34 "Does analyze-file detect audio files?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 34 "Does analyze-file detect audio files?" false
@@ -462,6 +575,9 @@ printf "\nTesting SHA256 hash generation...\n"
 if echo "$output" | grep -q "SHA256 Hash:"; then
     if print_msg 35 "Does output contain SHA256 hash section?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 35 "Does output contain SHA256 hash section?" false
@@ -472,6 +588,9 @@ hash_line=$(echo "$output" | grep -A 1 "SHA256 Hash:" | tail -1 | tr -d '[:space
 if [[ ${#hash_line} -eq 64 ]] && echo "$hash_line" | grep -qE '^[0-9a-f]{64}$'; then
     if print_msg 36 "Is SHA256 hash format valid (64 hex characters)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 36 "Is SHA256 hash format valid (64 hex characters)?" false
@@ -483,6 +602,9 @@ expected_hash=$(sha256sum "test_analyze_text.txt" 2>/dev/null | cut -d' ' -f1)
 if [[ -n "$expected_hash" ]] && echo "$output" | grep -q "$expected_hash"; then
     if print_msg 37 "Does SHA256 hash match expected value?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 37 "Does SHA256 hash match expected value?" false
@@ -494,6 +616,9 @@ printf "\nTesting additional file information...\n"
 if echo "$output" | grep -q "Inode:"; then
     if print_msg 38 "Does output contain inode number?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 38 "Does output contain inode number?" false
@@ -503,6 +628,9 @@ fi
 if echo "$output" | grep -q "Hard links:"; then
     if print_msg 39 "Does output contain hard link count?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 39 "Does output contain hard link count?" false
@@ -512,6 +640,9 @@ fi
 if echo "$output" | grep -q "Device:"; then
     if print_msg 40 "Does output contain device number?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 40 "Does output contain device number?" false
@@ -523,6 +654,9 @@ printf "\nTesting output formatting...\n"
 if echo "$output" | grep -qE '📊|📏|📅|🔐|👤|📄|📝|⚡|📦|🖼️|🎬|🎵|🔒|📋'; then
     if print_msg 41 "Does output contain emoji/icons?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 41 "Does output contain emoji/icons?" false
@@ -532,6 +666,9 @@ fi
 if echo "$output" | grep -qE $'\033\[|\[0-9]+m'; then
     if print_msg 42 "Does output contain color codes (ANSI escape sequences)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 42 "Does output contain color codes (ANSI escape sequences)?" false
@@ -541,6 +678,9 @@ fi
 if echo "$output" | grep -q "FILE ANALYSIS" && echo "$output" | grep -q "================"; then
     if print_msg 43 "Does output have proper section headers?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 43 "Does output have proper section headers?" false
@@ -553,6 +693,9 @@ empty_output=$(analyze-file "test_analyze_empty.txt" 2>&1)
 if [[ $? -eq 0 ]] && echo "$empty_output" | grep -q "test_analyze_empty.txt"; then
     if print_msg 44 "Does analyze-file handle empty files?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 44 "Does analyze-file handle empty files?" false
@@ -563,6 +706,9 @@ spaces_output=$(analyze-file "test analyze file with spaces.txt" 2>&1)
 if [[ $? -eq 0 ]] && echo "$spaces_output" | grep -q "test analyze file with spaces.txt"; then
     if print_msg 45 "Does analyze-file work with files containing spaces?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 45 "Does analyze-file work with files containing spaces?" false
@@ -574,6 +720,9 @@ abs_output=$(analyze-file "$abs_path" 2>&1)
 if [[ $? -eq 0 ]] && echo "$abs_output" | grep -q "$abs_path"; then
     if print_msg 46 "Does analyze-file work with absolute paths?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 46 "Does analyze-file work with absolute paths?" false
@@ -585,6 +734,9 @@ if analyze-file "test_analyze_text.txt" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 47 "Does analyze-file return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 47 "Does analyze-file return 0 on success?" false
@@ -600,6 +752,9 @@ alias_output=$(analyze_file "test_analyze_text.txt" 2>&1)
 if [[ $? -eq 0 ]] && echo "$alias_output" | grep -q "test_analyze_text.txt"; then
     if print_msg 48 "Does analyze_file alias function work?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 48 "Does analyze_file alias function work?" false
@@ -614,13 +769,24 @@ alias_hash=$(echo "$alias_output2" | grep -v "Modified:" | sha256sum | cut -d' '
 if [[ "$main_hash" == "$alias_hash" ]]; then
     if print_msg 49 "Does alias produce same output as main function?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 49 "Does alias produce same output as main function?" false
 fi
 
-total_tests=50  # Tests 1-49 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

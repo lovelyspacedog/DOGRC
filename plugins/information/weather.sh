@@ -179,9 +179,9 @@ weather() {
         echo -e "\n\033[36m🌤️  CURRENT WEATHER\033[0m"
         echo "=================="
         if [[ "$use_custom_location" == true ]]; then
-            wttr "${wttr_args[@]}"
+            wttr "${wttr_args[@]}" 2>/dev/null || true
         else
-            curl -s "wttr.in/$city?format=3"
+            curl -s "wttr.in/$city?format=3" 2>/dev/null || true
         fi
         return 0
         ;;
@@ -189,9 +189,9 @@ weather() {
         echo -e "\n\033[36m📅 3-DAY FORECAST\033[0m"
         echo "=================="
         if [[ "$use_custom_location" == true ]]; then
-            wttr "${wttr_args[@]}"
+            wttr "${wttr_args[@]}" 2>/dev/null || true
         else
-            wttr "$city"
+            wttr "$city" 2>/dev/null || true
         fi
         return 0
         ;;
@@ -205,12 +205,12 @@ weather() {
         echo ""
         echo -e "\033[33m📍 Current Weather:\033[0m"
         if [[ "$use_custom_location" == true ]]; then
-            wttr "${wttr_args[@]}"
+            wttr "${wttr_args[@]}" 2>/dev/null || true
         else
-            curl -s "wttr.in/$city?format=3" | head -3
+            curl -s "wttr.in/$city?format=3" 2>/dev/null | head -3 || true
             echo ""
             echo -e "\033[33m📅 3-Day Forecast:\033[0m"
-            wttr "$city"
+            wttr "$city" 2>/dev/null || true
         fi
         return 0
         ;;

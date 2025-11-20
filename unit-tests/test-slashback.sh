@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=28  # Tests 1-27 plus 1 summary test with "*"
 printf "Running unit tests for slashback.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/navigation/slashback.sh" ]]; then
     if print_msg 3 "Can I find slashback.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find slashback.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/navigation/slashback.sh" 2>/dev/null; then
     if print_msg 4 "Can I source slashback.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source slashback.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f __slashback >/dev/null 2>&1; then
     if print_msg 5 "Is __slashback function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is __slashback function defined?" false
@@ -79,6 +105,9 @@ fi
 if declare -f "/" >/dev/null 2>&1; then
     if print_msg 6 "Is / function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is / function defined?" false
@@ -87,6 +116,9 @@ fi
 if declare -f "//" >/dev/null 2>&1; then
     if print_msg 7 "Is // function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 7 "Is // function defined?" false
@@ -95,6 +127,9 @@ fi
 if declare -f "///" >/dev/null 2>&1; then
     if print_msg 8 "Is /// function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Is /// function defined?" false
@@ -102,6 +137,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -149,6 +187,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if "/" --help >/dev/null 2>&1; then
         if print_msg 9 "Does / --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does / --help work?" false
@@ -164,6 +205,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if "/" -h >/dev/null 2>&1; then
         if print_msg 10 "Does / -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does / -h work?" false
@@ -179,6 +223,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if "//" --help >/dev/null 2>&1; then
         if print_msg 11 "Does // --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does // --help work?" false
@@ -197,6 +244,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 12 "Does / go up 1 directory level?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does / go up 1 directory level?" false
@@ -208,6 +258,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 13 "Does // go up 2 directory levels?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does // go up 2 directory levels?" false
@@ -219,6 +272,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3/level4" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 14 "Does /// go up 3 directory levels?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does /// go up 3 directory levels?" false
@@ -230,6 +286,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3/level4/level5" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 15 "Does //// go up 4 directory levels?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does //// go up 4 directory levels?" false
@@ -241,6 +300,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3/level4/level5/level6" || 
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 16 "Does ///// go up 5 directory levels?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does ///// go up 5 directory levels?" false
@@ -252,6 +314,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3/level4/level5/level6/leve
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 17 "Does ////// go up 6 directory levels?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does ////// go up 6 directory levels?" false
@@ -263,6 +328,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}" ]]; then
     if print_msg 18 "Does / go from level1 to test root?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does / go from level1 to test root?" false
@@ -274,6 +342,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}" ]]; then
     if print_msg 19 "Does // go from level2 to test root?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does // go from level2 to test root?" false
@@ -289,6 +360,9 @@ original_pwd=$(pwd)
 if [[ "$(pwd)" == "$original_pwd" ]] || [[ "$(pwd)" == "$(dirname "$original_pwd")" ]]; then
     if print_msg 20 "Does / handle being at root directory gracefully?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does / handle being at root directory gracefully?" false
@@ -301,6 +375,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}/level1" ]]; then
     if print_msg 21 "Do multiple / calls work in sequence?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Do multiple / calls work in sequence?" false
@@ -313,6 +390,9 @@ builtin cd "${TEST_SLASHBACK_DIR}/level1/level2/level3" || exit 91
 if [[ "$(pwd)" == "${TEST_SLASHBACK_DIR}" ]]; then
     if print_msg 22 "Does // followed by / work correctly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does // followed by / work correctly?" false
@@ -325,6 +405,9 @@ if "/" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 23 "Does / return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 23 "Does / return 0 on success?" false
@@ -341,6 +424,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "Usage:"; then
     if print_msg 24 "Does script show usage when run with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does script show usage when run with no arguments?" false
@@ -355,6 +441,9 @@ if bash "${__PLUGINS_DIR}/navigation/slashback.sh" "/" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 25 "Does script execute function when given function name?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 25 "Does script execute function when given function name?" false
@@ -369,6 +458,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "Error:" && echo "$output" | grep -q "Unknown function"; then
     if print_msg 26 "Does script show error for unknown function name?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does script show error for unknown function name?" false
@@ -383,6 +475,9 @@ if bash "${__PLUGINS_DIR}/navigation/slashback.sh" "//" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 27 "Does script execute // function correctly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Does script execute // function correctly?" false
@@ -391,8 +486,15 @@ else
     print_msg 27 "Does script execute // function correctly?" false
 fi
 
-total_tests=28  # Tests 1-27 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

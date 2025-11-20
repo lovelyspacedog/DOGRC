@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=27  # Tests 1-5, "*", 6-26
 printf "Running unit tests for cpx.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/cpx.sh" ]]; then
     if print_msg 3 "Can I find cpx.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find cpx.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/cpx.sh" 2>/dev/null; then
     if print_msg 4 "Can I source cpx.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source cpx.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f cpx >/dev/null 2>&1; then
     if print_msg 5 "Is cpx function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is cpx function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -158,6 +187,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cpx --help >/dev/null 2>&1; then
         if print_msg 6 "Does cpx --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does cpx --help work?" false
@@ -168,6 +200,9 @@ else
     else
         if print_msg 6 "Does cpx --help work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -177,6 +212,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cpx -h >/dev/null 2>&1; then
         if print_msg 7 "Does cpx -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does cpx -h work?" false
@@ -187,6 +225,9 @@ else
     else
         if print_msg 7 "Does cpx -h work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -196,6 +237,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cpx --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does cpx --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does cpx --HELP work (case-insensitive)?" false
@@ -206,6 +250,9 @@ else
     else
         if print_msg 8 "Does cpx --HELP work (case-insensitive, no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -220,6 +267,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 9 "Does cpx error when file doesn't exist?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does cpx error when file doesn't exist?" false
@@ -246,6 +296,9 @@ if cpx >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does cpx use default filename main.cpp?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does cpx use default filename main.cpp?" false
@@ -273,6 +326,9 @@ if cpx test.cpp >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 11 "Does cpx accept custom filename?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does cpx accept custom filename?" false
@@ -303,6 +359,9 @@ if [[ "$GXX_AVAILABLE" == true ]]; then
     if [[ $? -eq 0 ]]; then
         if print_msg 12 "Does cpx compile C++ file?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does cpx compile C++ file?" false
@@ -312,6 +371,9 @@ else
     if [[ "$MOCK_GXX_CALLED" == true ]]; then
         if print_msg 12 "Does cpx compile C++ file (mocked)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does cpx compile C++ file (mocked)?" false
@@ -336,6 +398,9 @@ output=$(cpx execute_test.cpp 2>&1)
 if echo "$output" | grep -q "Execution test"; then
     if print_msg 13 "Does cpx execute compiled program?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does cpx execute compiled program?" false
@@ -357,6 +422,9 @@ output=$(cpx exitcode_test.cpp 2>&1)
 if echo "$output" | grep -q "Exit Code: 5"; then
     if print_msg 14 "Does cpx capture and display exit code?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does cpx capture and display exit code?" false
@@ -378,6 +446,9 @@ output=$(cpx exitcode0_test.cpp 2>&1)
 if echo "$output" | grep -q "Exit Code: 0"; then
     if print_msg 15 "Does cpx display exit code 0?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does cpx display exit code 0?" false
@@ -402,6 +473,9 @@ cpx cleanup_test.cpp >/dev/null 2>&1
 if [[ ! -f a.out ]]; then
     if print_msg 16 "Does cpx remove a.out after execution?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does cpx remove a.out after execution?" false
@@ -417,6 +491,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 17 "Does cpx return 1 when file doesn't exist?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does cpx return 1 when file doesn't exist?" false
@@ -428,6 +505,9 @@ output=$(cpx nonexistent_file.cpp 2>&1)
 if echo "$output" | grep -q "Error: File nonexistent_file.cpp does not exist"; then
     if print_msg 18 "Does cpx show error message when file doesn't exist?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does cpx show error message when file doesn't exist?" false
@@ -450,6 +530,9 @@ if [[ "$GXX_AVAILABLE" == true ]]; then
         if [[ $exit_code -eq 2 ]]; then
             if print_msg 19 "Does cpx return 2 when compilation fails?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 19 "Does cpx return 2 when compilation fails?" false
@@ -468,6 +551,9 @@ else
         if [[ $exit_code -eq 2 ]]; then
             if print_msg 19 "Does cpx return 2 when compilation fails (mocked)?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 19 "Does cpx return 2 when compilation fails (mocked)?" false
@@ -493,6 +579,9 @@ if [[ "$GXX_AVAILABLE" == true ]]; then
     if echo "$output" | grep -q "Error: Failed to compile"; then
         if print_msg 20 "Does cpx show error message when compilation fails?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Does cpx show error message when compilation fails?" false
@@ -507,6 +596,9 @@ else
     if echo "$output" | grep -q "Error: Failed to compile"; then
         if print_msg 20 "Does cpx show error message when compilation fails (mocked)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Does cpx show error message when compilation fails (mocked)?" false
@@ -536,6 +628,9 @@ output=$(cpx nonzero_exit.cpp 2>&1)
 if echo "$output" | grep -q "Exit Code: 7"; then
     if print_msg 21 "Does cpx handle program with non-zero exit code?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does cpx handle program with non-zero exit code?" false
@@ -577,6 +672,9 @@ output=$(cpx stdout_test.cpp 2>&1)
 if echo "$output" | grep -q "Output line 1" && echo "$output" | grep -q "Output line 2"; then
     if print_msg 22 "Does cpx handle program that outputs to stdout?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does cpx handle program that outputs to stdout?" false
@@ -616,6 +714,9 @@ output=$(cpx stderr_test.cpp 2>&1)
 if echo "$output" | grep -q "Error message"; then
     if print_msg 23 "Does cpx handle program that outputs to stderr?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does cpx handle program that outputs to stderr?" false
@@ -640,6 +741,9 @@ if bash "${__PLUGINS_DIR}/utilities/cpx.sh" direct_test.cpp >/dev/null 2>&1; the
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 24 "Can cpx.sh be executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 24 "Can cpx.sh be executed directly?" false
@@ -681,6 +785,9 @@ output=$(bash -c "cd '$TEST_DIR' && source <(declare -f g++); export MOCK_GXX_AR
 if echo "$output" | grep -q "Direct execution test"; then
     if print_msg 25 "Does cpx.sh direct execution produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does cpx.sh direct execution produce output?" false
@@ -691,13 +798,23 @@ output=$(bash "${__PLUGINS_DIR}/utilities/cpx.sh" --help 2>&1)
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 26 "Does cpx.sh --help work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does cpx.sh --help work when executed directly?" false
 fi
 
-total_tests=27  # Tests 1-5, "*", 6-26
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

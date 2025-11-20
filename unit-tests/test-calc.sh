@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=32  # Tests 1-31 plus 1 summary test with "*"
 printf "Running unit tests for calc.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/calc.sh" ]]; then
     if print_msg 3 "Can I find calc.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find calc.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/calc.sh" 2>/dev/null; then
     if print_msg 4 "Can I source calc.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source calc.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f calc >/dev/null 2>&1; then
     if print_msg 5 "Is calc function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is calc function defined?" false
@@ -80,6 +106,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -109,6 +138,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if calc --help >/dev/null 2>&1; then
         if print_msg 6 "Does calc --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does calc --help work?" false
@@ -124,6 +156,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if calc -h >/dev/null 2>&1; then
         if print_msg 7 "Does calc -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does calc -h work?" false
@@ -139,6 +174,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if calc --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does calc --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does calc --HELP work (case-insensitive)?" false
@@ -157,6 +195,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "Usage:"; then
     if print_msg 9 "Does calc show usage when called with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does calc show usage when called with no arguments?" false
@@ -166,6 +207,9 @@ fi
 if echo "$output" | grep -q "calc <expression>" && echo "$output" | grep -q "Example:"; then
     if print_msg 10 "Does usage message contain expected information?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does usage message contain expected information?" false
@@ -179,6 +223,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "5" ]]; then
         if print_msg 11 "Does calc perform simple addition (2 + 3)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does calc perform simple addition (2 + 3)?" false
@@ -195,6 +242,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "6" ]]; then
         if print_msg 12 "Does calc perform simple subtraction (10 - 4)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does calc perform simple subtraction (10 - 4)?" false
@@ -211,6 +261,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "12" ]]; then
         if print_msg 13 "Does calc perform simple multiplication (3 * 4)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does calc perform simple multiplication (3 * 4)?" false
@@ -227,6 +280,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "5" ]]; then
         if print_msg 14 "Does calc perform simple division (15 / 3)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does calc perform simple division (15 / 3)?" false
@@ -243,6 +299,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "6.2" ]]; then
         if print_msg 15 "Does calc perform decimal arithmetic (2.5 + 3.7)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does calc perform decimal arithmetic (2.5 + 3.7)?" false
@@ -259,6 +318,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "14" ]]; then
         if print_msg 16 "Does calc handle order of operations (2 + 3 * 4)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 16 "Does calc handle order of operations (2 + 3 * 4)?" false
@@ -275,6 +337,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "20" ]]; then
         if print_msg 17 "Does calc handle parentheses ((2 + 3) * 4)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does calc handle parentheses ((2 + 3) * 4)?" false
@@ -291,6 +356,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "8" ]]; then
         if print_msg 18 "Does calc handle power operation (2 ^ 3)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 18 "Does calc handle power operation (2 ^ 3)?" false
@@ -309,6 +377,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "5" ]] && [[ "$result" != "5.0" ]]; then
         if print_msg 19 "Does calc remove trailing zeros (10 / 2 = 5, not 5.0)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 19 "Does calc remove trailing zeros (10 / 2 = 5, not 5.0)?" false
@@ -326,6 +397,9 @@ if command -v bc >/dev/null 2>&1; then
     if echo "$result" | grep -qE '^3\.3+'; then
         if print_msg 20 "Does calc preserve significant decimals (10 / 3)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Does calc preserve significant decimals (10 / 3)?" false
@@ -342,6 +416,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "5" ]] && [[ "$result" != "5." ]]; then
         if print_msg 21 "Does calc remove trailing decimal point (5.0 = 5)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 21 "Does calc remove trailing decimal point (5.0 = 5)?" false
@@ -363,12 +440,18 @@ if command -v bc >/dev/null 2>&1; then
     if echo "$output" | grep -q "Error:"; then
         if print_msg 22 "Does calc return error for invalid expression?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         # If no error message, check if bc actually failed (empty output or exit code)
         if [[ -z "$output" ]] || [[ $exit_code -ne 0 ]]; then
             if print_msg 22 "Does calc return error for invalid expression?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 22 "Does calc return error for invalid expression?" false
@@ -387,6 +470,9 @@ if command -v bc >/dev/null 2>&1; then
     if echo "$output" | grep -q "Error:" || echo "$output" | grep -q "Invalid expression" || [[ -z "$output" ]]; then
         if print_msg 23 "Does calc show error message for invalid expression?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 23 "Does calc show error message for invalid expression?" false
@@ -402,6 +488,9 @@ if command -v bc >/dev/null 2>&1; then
     # bc is available, dependency check should pass
     if print_msg 24 "Does calc check for bc dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 24 "Does calc check for bc dependency?" false; then
@@ -420,6 +509,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ $exit_code -ge 0 ]]; then
         if print_msg 25 "Does calc return non-zero exit code on error?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 25 "Does calc return non-zero exit code on error?" false
@@ -437,6 +529,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 26 "Does calc return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 26 "Does calc return 0 on success?" false
@@ -455,6 +550,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "0" ]]; then
         if print_msg 27 "Does calc handle zero (0)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Does calc handle zero (0)?" false
@@ -471,6 +569,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "-2" ]]; then
         if print_msg 28 "Does calc handle negative numbers (-5 + 3)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does calc handle negative numbers (-5 + 3)?" false
@@ -487,6 +588,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "2000000" ]]; then
         if print_msg 29 "Does calc handle large numbers (1000000 * 2)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Does calc handle large numbers (1000000 * 2)?" false
@@ -503,6 +607,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ "$result" == "14" ]]; then
         if print_msg 30 "Does calc handle expressions with spaces?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 30 "Does calc handle expressions with spaces?" false
@@ -522,6 +629,9 @@ if command -v bc >/dev/null 2>&1; then
     if [[ $exit_code -ge 0 ]]; then
         if print_msg 31 "Does calc handle division by zero gracefully?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Does calc handle division by zero gracefully?" false
@@ -532,7 +642,16 @@ else
     fi
 fi
 
-total_tests=32  # Tests 1-31 plus 1 summary test with "*"
+percentage=$((score * 100 / total_tests))
+
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 percentage=$((score * 100 / total_tests))
 
 printf "\n"

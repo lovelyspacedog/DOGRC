@@ -4,6 +4,11 @@ readonly __UNIT_TESTS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
+
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
 readonly __CONFIG_DIR="$(cd "${__TESTING_DIR}/config" && pwd)"
 
 print_msg() {
@@ -26,12 +31,21 @@ print_msg() {
 }
 
 score=0
+total_tests=41  # Tests 1-40 plus 1 summary test with "*"
 printf "Running unit tests for navto.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -42,6 +56,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -52,6 +69,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/navigation/navto.sh" ]]; then
     if print_msg 3 "Can I find navto.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find navto.sh?" false
@@ -62,6 +82,9 @@ fi
 if source "${__PLUGINS_DIR}/navigation/navto.sh" 2>/dev/null; then
     if print_msg 4 "Can I source navto.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source navto.sh?" false
@@ -72,6 +95,9 @@ fi
 if declare -f navto >/dev/null 2>&1; then
     if print_msg 5 "Is navto function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is navto function defined?" false
@@ -82,6 +108,9 @@ fi
 if declare -f __navto_remove_destination >/dev/null 2>&1; then
     if print_msg 6 "Is __navto_remove_destination function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is __navto_remove_destination function defined?" false
@@ -90,6 +119,9 @@ fi
 if declare -f __navto_create_template >/dev/null 2>&1; then
     if print_msg 7 "Is __navto_create_template function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 7 "Is __navto_create_template function defined?" false
@@ -97,6 +129,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 cd "${__UNIT_TESTS_DIR}" || {
     printf "Error: Failed to change directory to unit-tests.\n" >&2
@@ -172,6 +207,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if navto --help >/dev/null 2>&1; then
         if print_msg 8 "Does navto --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does navto --help work?" false
@@ -186,6 +224,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if navto -h >/dev/null 2>&1; then
         if print_msg 9 "Does navto -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does navto -h work?" false
@@ -207,6 +248,9 @@ if __navto_create_template "$test_navto_json" >/dev/null 2>&1; then
     if [[ -f "$test_navto_json" ]]; then
         if print_msg 10 "Does __navto_create_template create JSON file?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does __navto_create_template create JSON file?" false
@@ -221,6 +265,9 @@ if [[ -f "$test_navto_json" ]]; then
         if jq -e 'has("X") and has("D") and has("T")' "$test_navto_json" >/dev/null 2>&1; then
             if print_msg 11 "Does template contain default destinations?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 11 "Does template contain default destinations?" false
@@ -239,6 +286,9 @@ if __navto_create_template "$test_navto_json" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 12 "Does __navto_create_template return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does __navto_create_template return 0 on success?" false
@@ -264,6 +314,9 @@ if command -v jq >/dev/null 2>&1; then
     if echo "$list_output" | grep -q "T1" || echo "$list_output" | grep -q "Test Dir 1"; then
         if print_msg 13 "Does navto list destinations when JSON exists?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does navto list destinations when JSON exists?" false
@@ -279,6 +332,9 @@ rm -f "$test_navto_json" 2>/dev/null || true
 if echo "n" | navto 2>&1 | grep -q "destinations file not found" || echo "n" | navto 2>&1 | grep -q "Create a starter template"; then
     if print_msg 14 "Does navto prompt to create template when JSON missing?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does navto prompt to create template when JSON missing?" false
@@ -289,6 +345,9 @@ if echo "y" | navto 2>&1 | grep -q "Created template" || echo "y" | navto 2>&1 |
     if [[ -f "$test_navto_json" ]]; then
         if print_msg 15 "Does navto create template when user confirms?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does navto create template when user confirms?" false
@@ -314,6 +373,9 @@ if navto T1 >/dev/null 2>&1; then
     if [[ "$current_dir" == "$test_dir1" ]]; then
         if print_msg 16 "Does navto navigate to existing destination?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         if print_msg 16 "Does navto navigate to existing destination?" false; then
@@ -332,6 +394,9 @@ if navto t1 >/dev/null 2>&1; then
     if [[ "$current_dir" == "$test_dir1" ]]; then
         if print_msg 17 "Does navto handle case-insensitive keys?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does navto handle case-insensitive keys?" false
@@ -348,6 +413,9 @@ if navto T2 >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 18 "Does navto return 0 on successful navigation?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 18 "Does navto return 0 on successful navigation?" false
@@ -366,6 +434,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]]; then
     if print_msg 19 "Does navto error on non-existent destination?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does navto error on non-existent destination?" false
@@ -376,6 +447,9 @@ cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
 if echo "n" | navto NONEXISTENT 2>&1 | grep -q "destination not found" || echo "n" | navto NONEXISTENT 2>&1 | grep -q "NONEXISTENT"; then
     if print_msg 20 "Does navto show error message for non-existent destination?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does navto show error message for non-existent destination?" false
@@ -392,11 +466,16 @@ cat > "$test_navto_json" <<EOF
 EOF
 
 # Test remove with existing key (cancel)
-if echo "n" | navto --remove T1 2>&1 | grep -q "Cancelled" || echo "n" | navto --remove T1 2>&1 | grep -q "Cancelled"; then
+# Read commands are non-blocking, no timeout needed
+cancel_output=$(echo "n" | navto --remove T1 2>&1)
+if echo "$cancel_output" | grep -q "Cancelled"; then
     if command -v jq >/dev/null 2>&1; then
         if jq -e 'has("T1")' "$test_navto_json" >/dev/null 2>&1; then
             if print_msg 21 "Does navto preserve destination when removal cancelled?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 21 "Does navto preserve destination when removal cancelled?" false
@@ -411,11 +490,15 @@ else
 fi
 
 # Test remove with existing key (confirm)
+# Read commands are non-blocking, no timeout needed
 if echo "y" | navto --remove T1 >/dev/null 2>&1; then
     if command -v jq >/dev/null 2>&1; then
         if ! jq -e 'has("T1")' "$test_navto_json" >/dev/null 2>&1; then
             if print_msg 22 "Does navto remove destination when confirmed?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 22 "Does navto remove destination when confirmed?" false
@@ -430,18 +513,28 @@ else
 fi
 
 # Test remove with non-existent key
-if navto --remove NONEXISTENT 2>&1 | grep -q "No destination found" || navto --remove NONEXISTENT 2>&1 | grep -q "NONEXISTENT"; then
+# Read commands are non-blocking, no timeout needed
+output=$(navto --remove NONEXISTENT 2>&1)
+if echo "$output" | grep -q "No destination found" || echo "$output" | grep -q "NONEXISTENT"; then
     if print_msg 23 "Does navto show error for non-existent key in remove?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does navto show error for non-existent key in remove?" false
 fi
 
 # Test remove flags
-if navto -r T2 2>&1 | grep -q "About to remove" || echo "n" | navto -r T2 2>&1 | grep -q "About to remove" || echo "n" | navto -r T2 2>&1 | grep -q "Cancelled"; then
+# Read commands are non-blocking, no timeout needed
+short_output=$(echo "n" | navto -r T2 2>&1)
+if echo "$short_output" | grep -q "About to remove" || echo "$short_output" | grep -q "Cancelled"; then
     if print_msg 24 "Does navto -r work (short form for remove)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does navto -r work (short form for remove)?" false
@@ -462,6 +555,9 @@ EOF
         if [[ "$current_dir" == "$HOME" ]]; then
             if print_msg 25 "Does navto expand \$HOME in paths?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 25 "Does navto expand \$HOME in paths?" false
@@ -483,6 +579,9 @@ expanded_tilde_eval=$(eval echo "$expanded_tilde")
 if [[ "$expanded_tilde_eval" == "$HOME/test" ]] || [[ "$expanded_tilde" == "\$HOME/test" ]]; then
     if print_msg 26 "Does navto convert ~ to \$HOME?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does navto convert ~ to \$HOME?" false
@@ -503,6 +602,9 @@ EOF
     if jq -e --arg k "$upper_key" 'has($k)' "$test_navto_json" >/dev/null 2>&1; then
         if print_msg 27 "Does navto convert keys to uppercase in JSON?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Does navto convert keys to uppercase in JSON?" false
@@ -521,6 +623,9 @@ if [[ ! -f "$test_navto_json" ]]; then
     if echo "n" | navto T1 2>&1 | grep -q "destinations file not found" || echo "n" | navto T1 2>&1 | grep -q "Error"; then
         if print_msg 28 "Does navto detect missing JSON file on navigation?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does navto detect missing JSON file on navigation?" false
@@ -535,6 +640,9 @@ if command -v jq >/dev/null 2>&1; then
     if ! jq . "$test_navto_json" >/dev/null 2>&1; then
         if print_msg 29 "Does navto detect invalid JSON?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Does navto detect invalid JSON?" false
@@ -552,6 +660,9 @@ if command -v jq >/dev/null 2>&1; then
         if echo "n" | navto T1 2>&1 | grep -q "destination not found" || echo "n" | navto T1 2>&1 | grep -q "T1"; then
             if print_msg 30 "Does navto handle empty JSON file?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 30 "Does navto handle empty JSON file?" false
@@ -577,6 +688,9 @@ if command -v jq >/dev/null 2>&1; then
         if jq -e 'has("NEWKEY")' "$test_navto_json" >/dev/null 2>&1; then
             if print_msg 31 "Does navto add destination to JSON?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 31 "Does navto add destination to JSON?" false
@@ -604,6 +718,9 @@ EOF
         if jq -e 'has("EXISTING") and has("NEW")' "$test_navto_json" >/dev/null 2>&1; then
             if print_msg 32 "Does navto preserve existing destinations when adding?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 32 "Does navto preserve existing destinations when adding?" false
@@ -625,6 +742,9 @@ extracted_key="${test_key_name%% - *}"
 if [[ "$extracted_key" == "TESTKEY" ]]; then
     if print_msg 33 "Does navto extract key from 'key - name' format?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does navto extract key from 'key - name' format?" false
@@ -636,6 +756,9 @@ if command -v complete >/dev/null 2>&1; then
     if complete -p navto >/dev/null 2>&1; then
         if print_msg 34 "Is navto completion function registered?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 34 "Is navto completion function registered?" false
@@ -654,6 +777,9 @@ if __navto_create_template "${test_navto_json}.return_test" >/dev/null 2>&1; the
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 35 "Does navto return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 35 "Does navto return 0 on success?" false
@@ -670,6 +796,9 @@ template_output=$(__navto_create_template "${test_navto_json}.output_test" 2>&1)
 if echo "$template_output" | grep -q "Created template" || echo "$template_output" | grep -q "✅"; then
     if print_msg 36 "Does navto output success messages?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 36 "Does navto output success messages?" false
@@ -682,6 +811,9 @@ printf "\nTesting dependencies...\n"
 if command -v jq >/dev/null 2>&1; then
     if print_msg 37 "Does navto check for jq dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 37 "Does navto check for jq dependency?" false; then
@@ -701,6 +833,9 @@ EOF
     if jq -e 'has(".")' "$test_navto_json" >/dev/null 2>&1; then
         if print_msg 38 "Does navto handle special characters in keys?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 38 "Does navto handle special characters in keys?" false
@@ -724,6 +859,9 @@ EOF
     if [[ -d "$expanded_space" ]]; then
         if print_msg 39 "Does navto handle paths with spaces?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 39 "Does navto handle paths with spaces?" false
@@ -746,6 +884,9 @@ if command -v jq >/dev/null 2>&1; then
             if [[ -f "$atomic_test_json" ]] && ! [[ -f "$tmpfile" ]]; then
                 if print_msg 40 "Does navto use atomic writes for JSON?" true; then
                     ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
                 fi
             else
                 print_msg 40 "Does navto use atomic writes for JSON?" false
@@ -764,8 +905,15 @@ else
     fi
 fi
 
-total_tests=41  # Tests 1-40 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

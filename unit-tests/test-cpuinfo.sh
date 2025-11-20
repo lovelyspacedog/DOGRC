@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=25  # Tests 1-5, "*", 6-24
 printf "Running unit tests for cpuinfo.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/information/cpuinfo.sh" ]]; then
     if print_msg 3 "Can I find cpuinfo.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find cpuinfo.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/information/cpuinfo.sh" 2>/dev/null; then
     if print_msg 4 "Can I source cpuinfo.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source cpuinfo.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f cpuinfo >/dev/null 2>&1; then
     if print_msg 5 "Is cpuinfo function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is cpuinfo function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -120,6 +149,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cpuinfo --help >/dev/null 2>&1; then
         if print_msg 6 "Does cpuinfo --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does cpuinfo --help work?" false
@@ -131,6 +163,9 @@ else
     else
         if print_msg 6 "Does cpuinfo --help work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -140,6 +175,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cpuinfo -h >/dev/null 2>&1; then
         if print_msg 7 "Does cpuinfo -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does cpuinfo -h work?" false
@@ -150,6 +188,9 @@ else
     else
         if print_msg 7 "Does cpuinfo -h work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -159,6 +200,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cpuinfo --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does cpuinfo --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does cpuinfo --HELP work (case-insensitive)?" false
@@ -169,6 +213,9 @@ else
     else
         if print_msg 8 "Does cpuinfo --HELP work (case-insensitive, no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -182,6 +229,9 @@ output=$(cpuinfo 2>&1)
 if [[ -n "$output" ]]; then
     if print_msg 9 "Does cpuinfo check for dependencies?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does cpuinfo check for dependencies?" false
@@ -195,6 +245,9 @@ if cpuinfo >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does cpuinfo run without errors?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does cpuinfo run without errors?" false
@@ -209,6 +262,9 @@ if cpuinfo >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 11 "Does cpuinfo return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does cpuinfo return 0 on success?" false
@@ -222,6 +278,9 @@ output=$(cpuinfo 2>&1)
 if [[ -n "$output" ]]; then
     if print_msg 12 "Does cpuinfo produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does cpuinfo produce output?" false
@@ -234,6 +293,9 @@ output=$(cpuinfo 2>&1)
 if echo "$output" | grep -q "CPU Usage:"; then
     if print_msg 13 "Does cpuinfo output contain 'CPU Usage:' header?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does cpuinfo output contain 'CPU Usage:' header?" false
@@ -244,6 +306,9 @@ output=$(cpuinfo 2>&1)
 if echo "$output" | grep -q "Top CPU Processes:"; then
     if print_msg 14 "Does cpuinfo output contain 'Top CPU Processes:' header?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does cpuinfo output contain 'Top CPU Processes:' header?" false
@@ -255,12 +320,18 @@ output=$(cpuinfo 2>&1)
 if echo "$output" | grep -qE "^CPU Usage:" && echo "$output" | grep -A1 "CPU Usage:" | tail -1 | grep -qE "^[0-9]+\.?[0-9]*$"; then
     if print_msg 15 "Does cpuinfo output contain CPU usage value?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # Alternative: just check that there's something after "CPU Usage:"
     if echo "$output" | grep -A1 "CPU Usage:" | tail -1 | grep -qE "[0-9]"; then
         if print_msg 15 "Does cpuinfo output contain CPU usage value?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does cpuinfo output contain CPU usage value?" false
@@ -273,12 +344,18 @@ output=$(cpuinfo 2>&1)
 if echo "$output" | grep -A2 "Top CPU Processes:" | tail -n +2 | grep -qE "(USER|PID|%CPU|COMMAND|root|[0-9])"; then
     if print_msg 16 "Does cpuinfo output contain process list?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # Alternative: just check that there are lines after the header
     if echo "$output" | grep -A2 "Top CPU Processes:" | tail -n +2 | grep -q .; then
         if print_msg 16 "Does cpuinfo output contain process list?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 16 "Does cpuinfo output contain process list?" false
@@ -292,6 +369,9 @@ output=$(cpuinfo 2>&1)
 if [[ -n "$output" ]] && echo "$output" | grep -q "CPU Usage:"; then
     if print_msg 17 "Does cpuinfo work with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does cpuinfo work with no arguments?" false
@@ -302,6 +382,9 @@ output=$(cpuinfo --unknown-arg 2>&1)
 if [[ -n "$output" ]] && echo "$output" | grep -q "CPU Usage:"; then
     if print_msg 18 "Does cpuinfo handle unknown arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does cpuinfo handle unknown arguments?" false
@@ -316,6 +399,9 @@ if echo "$output1" | grep -q "CPU Usage:" && echo "$output2" | grep -q "CPU Usag
    echo "$output1" | grep -q "Top CPU Processes:" && echo "$output2" | grep -q "Top CPU Processes:"; then
     if print_msg 19 "Does cpuinfo output format remain consistent?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does cpuinfo output format remain consistent?" false
@@ -329,6 +415,9 @@ if bash "${__PLUGINS_DIR}/information/cpuinfo.sh" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 20 "Can cpuinfo.sh be executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Can cpuinfo.sh be executed directly?" false
@@ -342,6 +431,9 @@ output=$(bash "${__PLUGINS_DIR}/information/cpuinfo.sh" 2>&1)
 if [[ -n "$output" ]] && echo "$output" | grep -q "CPU Usage:"; then
     if print_msg 21 "Does cpuinfo.sh direct execution produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does cpuinfo.sh direct execution produce output?" false
@@ -354,6 +446,9 @@ output=$(bash "${__PLUGINS_DIR}/information/cpuinfo.sh" --help 2>&1)
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 22 "Does cpuinfo.sh --help work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does cpuinfo.sh --help work when executed directly?" false
@@ -366,6 +461,9 @@ output=$(bash "${__PLUGINS_DIR}/information/cpuinfo.sh" -h 2>&1)
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 23 "Does cpuinfo.sh -h work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does cpuinfo.sh -h work when executed directly?" false
@@ -377,6 +475,9 @@ if bash "${__PLUGINS_DIR}/information/cpuinfo.sh" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 24 "Does cpuinfo.sh return correct exit code when executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 24 "Does cpuinfo.sh return correct exit code when executed directly?" false
@@ -385,8 +486,15 @@ else
     print_msg 24 "Does cpuinfo.sh return correct exit code when executed directly?" false
 fi
 
-total_tests=25  # Tests 1-5, "*", 6-24
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

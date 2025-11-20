@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=30  # Tests 1-29 plus 1 summary test with "*"
 printf "Running unit tests for dots.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/navigation/dots.sh" ]]; then
     if print_msg 3 "Can I find dots.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find dots.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/navigation/dots.sh" 2>/dev/null; then
     if print_msg 4 "Can I source dots.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source dots.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f dots >/dev/null 2>&1; then
     if print_msg 5 "Is dots function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is dots function defined?" false
@@ -80,6 +106,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory and .config path
 original_dir=$(pwd)
@@ -146,6 +175,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if dots --help >/dev/null 2>&1; then
         if print_msg 6 "Does dots --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does dots --help work?" false
@@ -160,6 +192,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if dots -h >/dev/null 2>&1; then
         if print_msg 7 "Does dots -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does dots -h work?" false
@@ -175,6 +210,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if dots --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does dots --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does dots --HELP work (case-insensitive)?" false
@@ -194,6 +232,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "Usage:"; then
     if print_msg 9 "Does dots show usage when called with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does dots show usage when called with no arguments?" false
@@ -203,6 +244,9 @@ fi
 if echo "$output" | grep -q "ls" && echo "$output" | grep -q "Commands:"; then
     if print_msg 10 "Does usage message contain expected commands?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does usage message contain expected commands?" false
@@ -235,6 +279,9 @@ test_dots_ls() {
 if test_dots_ls; then
     if print_msg 11 "Does 'dots ls' list .config directories?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does 'dots ls' list .config directories?" false
@@ -255,6 +302,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if echo "$output" | grep -q "another_dir\|hypr\|kitty\|neofetch\|starship\|test_dir\|waybar\|zed"; then
     if print_msg 12 "Does 'dots ls' output appear sorted?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does 'dots ls' output appear sorted?" false
@@ -275,6 +325,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]] && echo "$output" | grep -q "hypr\|test.conf"; then
     if print_msg 13 "Does 'dots ls <dir>' list directory contents?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does 'dots ls <dir>' list directory contents?" false
@@ -295,6 +348,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]] && (echo "$output" | grep -q "hypr\|test_file"); then
     if print_msg 14 "Does 'dots ls .config' list ~/.config itself?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does 'dots ls .config' list ~/.config itself?" false
@@ -314,6 +370,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 2 ]]; then
     if print_msg 15 "Does 'dots ls <invalid_dir>' return error code 2?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does 'dots ls <invalid_dir>' return error code 2?" false
@@ -345,6 +404,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]] && [[ "$new_pwd" == "$test_home/.config/hypr" ]]; then
     if print_msg 16 "Does 'dots <dir>' change to the directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does 'dots <dir>' change to the directory?" false
@@ -373,6 +435,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]] && [[ "$new_pwd" == "$test_home/.config" ]]; then
     if print_msg 17 "Does 'dots .config' navigate to ~/.config?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does 'dots .config' navigate to ~/.config?" false
@@ -400,6 +465,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 3 ]]; then
     if print_msg 18 "Does 'dots <invalid_dir>' return error code 3?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does 'dots <invalid_dir>' return error code 3?" false
@@ -420,6 +488,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if echo "$output" | grep -q "📁"; then
     if print_msg 19 "Does output contain emoji (📁)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does output contain emoji (📁)?" false
@@ -438,6 +509,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if echo "$output" | grep -q "$test_home/.config/hypr"; then
     if print_msg 20 "Does output show full directory path?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does output show full directory path?" false
@@ -458,6 +532,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if echo "$output" | grep -q "test.conf\|Listing contents"; then
     if print_msg 21 "Does 'dots ls' use eza or ls for listing?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does 'dots ls' use eza or ls for listing?" false
@@ -480,6 +557,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]]; then
     if print_msg 22 "Does 'dots ls' handle empty .config directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does 'dots ls' handle empty .config directory?" false
@@ -500,6 +580,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -ge 0 ]] && [[ $exit_code -le 255 ]]; then
     if print_msg 23 "Does 'dots ls' handle missing .config directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does 'dots ls' handle missing .config directory?" false
@@ -528,6 +611,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]] && [[ "$new_pwd" == "$test_home/.config/my config" ]]; then
     if print_msg 24 "Does 'dots' work with directory names containing spaces?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does 'dots' work with directory names containing spaces?" false
@@ -547,6 +633,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if [[ $exit_code -eq 0 ]]; then
     if print_msg 25 "Does 'dots ls' return 0 on success?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does 'dots ls' return 0 on success?" false
@@ -565,6 +654,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if echo "$error_output" | grep -q "not a valid directory\|invalid"; then
     if print_msg 26 "Does 'dots ls' show user-friendly error message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does 'dots ls' show user-friendly error message?" false
@@ -585,6 +677,9 @@ rm -rf "$test_home" 2>/dev/null || true
 if echo "$output" | grep -qE $'\033\[|\[0-9]+m'; then
     if print_msg 27 "Does 'dots ls' color first letter of each new letter group?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does 'dots ls' color first letter of each new letter group?" false
@@ -596,6 +691,9 @@ printf "\nTesting bash completion...\n"
 if declare -f _dots_completion >/dev/null 2>&1; then
     if print_msg 28 "Is _dots_completion function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Is _dots_completion function defined?" false
@@ -607,6 +705,9 @@ if [[ -n "${BASH_VERSION:-}" ]] && command -v complete >/dev/null 2>&1; then
     if complete -p dots >/dev/null 2>&1; then
         if print_msg 29 "Is dots completion registered with bash?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         # Completion might not be registered in test environment, but function exists
@@ -620,8 +721,15 @@ else
     fi
 fi
 
-total_tests=30  # Tests 1-29 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

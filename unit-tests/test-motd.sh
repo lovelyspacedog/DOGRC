@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=36  # Tests 1-5, "*", 6-35
 printf "Running unit tests for motd.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/motd.sh" ]]; then
     if print_msg 3 "Can I find motd.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find motd.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/motd.sh" 2>/dev/null; then
     if print_msg 4 "Can I source motd.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source motd.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f motd >/dev/null 2>&1; then
     if print_msg 5 "Is motd function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is motd function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory and HOME
 original_dir=$(pwd)
@@ -128,10 +157,20 @@ fi
 MOCK_EDITOR_FILE=$(mktemp)
 MOCK_PAGER_FILE=$(mktemp)
 nvim() {
-    cat > "$MOCK_PAGER_FILE"
+    # Ignore all arguments (like -u NONE -R -) and just read from stdin
+    # This simulates nvim reading from stdin and writing to a file
+    cat > "$MOCK_PAGER_FILE" 2>/dev/null
     return 0
 }
 export -f nvim
+export MOCK_PAGER_FILE
+# Also mock less as a fallback
+less() {
+    # Ignore all arguments and just read from stdin
+    cat > "$MOCK_PAGER_FILE" 2>/dev/null
+    return 0
+}
+export -f less
 
 printf "\nTesting motd() function help flags...\n"
 
@@ -140,6 +179,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if motd --help >/dev/null 2>&1; then
         if print_msg 6 "Does motd --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does motd --help work?" false
@@ -150,6 +192,9 @@ else
     else
         if print_msg 6 "Does motd --help work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -159,6 +204,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if motd -h >/dev/null 2>&1; then
         if print_msg 7 "Does motd -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does motd -h work?" false
@@ -169,6 +217,9 @@ else
     else
         if print_msg 7 "Does motd -h work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -178,6 +229,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if motd --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does motd --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does motd --HELP work (case-insensitive)?" false
@@ -188,6 +242,9 @@ else
     else
         if print_msg 8 "Does motd --HELP work (case-insensitive, no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -199,6 +256,9 @@ output=$(motd 2>&1)
 if echo "$output" | grep -q "Usage: motd" && echo "$output" | grep -q "Message of the Day"; then
     if print_msg 9 "Does motd show help with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does motd show help with no arguments?" false
@@ -210,6 +270,9 @@ if motd >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does motd return 0 when showing help?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does motd return 0 when showing help?" false
@@ -226,6 +289,9 @@ if motd shoo >/dev/null 2>&1; then
     if [[ ! -f "$HOME/motd.txt" ]]; then
         if print_msg 11 "Does motd shoo remove motd.txt file?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does motd shoo remove motd.txt file?" false
@@ -240,6 +306,9 @@ if motd shoo >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 12 "Does motd shoo handle missing file gracefully?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does motd shoo handle missing file gracefully?" false
@@ -254,6 +323,9 @@ output=$(motd shoo 2>&1)
 if echo "$output" | grep -q "MOTD file removed"; then
     if print_msg 13 "Does motd shoo show success message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does motd shoo show success message?" false
@@ -265,6 +337,9 @@ if motd SHOO >/dev/null 2>&1; then
     if [[ ! -f "$HOME/motd.txt" ]]; then
         if print_msg 14 "Does motd SHOO work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does motd SHOO work (case-insensitive)?" false
@@ -280,6 +355,9 @@ echo "Test message from stdin" | motd make >/dev/null 2>&1
 if [[ -f "$HOME/motd.txt" ]] && [[ "$(cat "$HOME/motd.txt")" == "Test message from stdin" ]]; then
     if print_msg 15 "Does motd make write from stdin to file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does motd make write from stdin to file?" false
@@ -290,6 +368,9 @@ output=$(echo "Test message" | motd make 2>&1)
 if echo "$output" | grep -q "Message of the day written to file"; then
     if print_msg 16 "Does motd make show success message for stdin?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does motd make show success message for stdin?" false
@@ -301,6 +382,9 @@ echo "New message" | motd make >/dev/null 2>&1
 if [[ "$(cat "$HOME/motd.txt")" == "New message" ]]; then
     if print_msg 17 "Does motd make overwrite existing file from stdin?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does motd make overwrite existing file from stdin?" false
@@ -311,6 +395,9 @@ echo "Test message" | motd MAKE >/dev/null 2>&1
 if [[ -f "$HOME/motd.txt" ]] && [[ "$(cat "$HOME/motd.txt")" == "Test message" ]]; then
     if print_msg 18 "Does motd MAKE work (case-insensitive)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does motd MAKE work (case-insensitive)?" false
@@ -325,6 +412,9 @@ output=$(motd print 2>&1)
 if echo "$output" | grep -q "MESSAGE OF THE DAY:" && echo "$output" | grep -q "Line 1" && echo "$output" | grep -q "Line 2"; then
     if print_msg 19 "Does motd print display short file content?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does motd print display short file content?" false
@@ -337,6 +427,9 @@ if motd print >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 20 "Does motd print return 0 when file missing?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Does motd print return 0 when file missing?" false
@@ -353,6 +446,9 @@ output=$(motd print 2>&1)
 if echo "$output" | grep -q "MESSAGE OF THE DAY:" && ! echo "$output" | grep -q "preview"; then
     if print_msg 21 "Does motd print display 20-line file normally?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does motd print display 20-line file normally?" false
@@ -365,6 +461,9 @@ output=$(motd PRINT 2>&1)
 if echo "$output" | grep -q "MESSAGE OF THE DAY:" && echo "$output" | grep -q "Test message"; then
     if print_msg 22 "Does motd PRINT work (case-insensitive)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does motd PRINT work (case-insensitive)?" false
@@ -381,6 +480,9 @@ output=$(motd print 2>&1)
 if echo "$output" | grep -q "MESSAGE OF THE DAY (preview):" && echo "$output" | grep -q "Line 1" && echo "$output" | grep -q "..."; then
     if print_msg 23 "Does motd print show preview for long file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does motd print show preview for long file?" false
@@ -395,6 +497,9 @@ output=$(motd print 2>&1)
 if echo "$output" | grep -q "Line 1" && echo "$output" | grep -q "Line 5" && ! echo "$output" | grep -q "Line 6"; then
     if print_msg 24 "Does motd print preview show first 5 lines?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does motd print preview show first 5 lines?" false
@@ -405,12 +510,15 @@ rm -f "$HOME/motd.txt" "$MOCK_PAGER_FILE"
 for i in {1..25}; do
     echo "Line $i" >> "$HOME/motd.txt"
 done
-# Capture preview output
+# Capture preview output (pager calls are non-blocking, no timeout needed)
 preview_output=$(motd print 2>&1)
 # Check that preview was shown and pager was called (file should have content)
 if echo "$preview_output" | grep -q "MESSAGE OF THE DAY (preview):" && [[ -f "$MOCK_PAGER_FILE" ]] && [[ -s "$MOCK_PAGER_FILE" ]]; then
     if print_msg 25 "Does motd print use pager for long file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does motd print use pager for long file?" false
@@ -421,11 +529,15 @@ rm -f "$HOME/motd.txt" "$MOCK_PAGER_FILE"
 for i in {1..25}; do
     echo "Line $i" >> "$HOME/motd.txt"
 done
+# Pager calls are non-blocking, no timeout needed
 motd print >/dev/null 2>&1
 # Check pager file for date/time header
 if [[ -f "$MOCK_PAGER_FILE" ]] && grep -qE "20[0-9]{2}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" "$MOCK_PAGER_FILE"; then
     if print_msg 26 "Does motd print pager include date/time header?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does motd print pager include date/time header?" false
@@ -436,11 +548,15 @@ rm -f "$HOME/motd.txt" "$MOCK_PAGER_FILE"
 for i in {1..25}; do
     echo "Line $i" >> "$HOME/motd.txt"
 done
+# Pager calls are non-blocking, no timeout needed
 motd print >/dev/null 2>&1
 # Check pager file for separator line (60 dashes)
 if [[ -f "$MOCK_PAGER_FILE" ]] && grep -qE "^-{60}" "$MOCK_PAGER_FILE"; then
     if print_msg 27 "Does motd print pager include separator line?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does motd print pager include separator line?" false
@@ -453,6 +569,9 @@ output=$(motd unknown 2>&1)
 if echo "$output" | grep -q "Usage: motd"; then
     if print_msg 28 "Does motd show help for unknown command?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Does motd show help for unknown command?" false
@@ -464,6 +583,9 @@ output=$(motd print 2>&1)
 if echo "$output" | grep -q "MESSAGE OF THE DAY:"; then
     if print_msg 29 "Does motd print handle empty file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does motd print handle empty file?" false
@@ -474,6 +596,9 @@ printf "Line 1\nLine 2\nLine 3\n" | motd make >/dev/null 2>&1
 if [[ -f "$HOME/motd.txt" ]] && [[ "$(wc -l < "$HOME/motd.txt")" -eq 3 ]]; then
     if print_msg 30 "Does motd make handle multiline stdin?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does motd make handle multiline stdin?" false
@@ -487,6 +612,9 @@ if bash "${__PLUGINS_DIR}/utilities/motd.sh" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 31 "Can motd.sh be executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Can motd.sh be executed directly?" false
@@ -500,6 +628,9 @@ output=$(bash "${__PLUGINS_DIR}/utilities/motd.sh" 2>&1)
 if echo "$output" | grep -q "Usage: motd"; then
     if print_msg 32 "Does motd.sh direct execution show help?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does motd.sh direct execution show help?" false
@@ -512,6 +643,9 @@ output=$(bash "${__PLUGINS_DIR}/utilities/motd.sh" --help 2>&1)
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 33 "Does motd.sh --help work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does motd.sh --help work when executed directly?" false
@@ -523,6 +657,9 @@ if bash "${__PLUGINS_DIR}/utilities/motd.sh" shoo >/dev/null 2>&1; then
     if [[ ! -f "$HOME/motd.txt" ]]; then
         if print_msg 34 "Does motd.sh shoo work when executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 34 "Does motd.sh shoo work when executed directly?" false
@@ -536,13 +673,23 @@ echo "Test from script" | bash "${__PLUGINS_DIR}/utilities/motd.sh" make >/dev/n
 if [[ -f "$HOME/motd.txt" ]] && [[ "$(cat "$HOME/motd.txt")" == "Test from script" ]]; then
     if print_msg 35 "Does motd.sh make work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 35 "Does motd.sh make work when executed directly?" false
 fi
 
-total_tests=36  # Tests 1-5, "*", 6-35
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

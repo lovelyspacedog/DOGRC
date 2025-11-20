@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=20  # Tests 1-19 plus 1 summary test with "*"
 printf "Running unit tests for drcversion.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/information/drcversion.sh" ]]; then
     if print_msg 3 "Can I find drcversion.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find drcversion.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/information/drcversion.sh" 2>/dev/null; then
     if print_msg 4 "Can I source drcversion.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source drcversion.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f drcversion >/dev/null 2>&1; then
     if print_msg 5 "Is drcversion function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is drcversion function defined?" false
@@ -80,6 +106,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -198,6 +227,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcversion --help >/dev/null 2>&1; then
         if print_msg 6 "Does drcversion --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does drcversion --help work?" false
@@ -213,6 +245,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcversion -h >/dev/null 2>&1; then
         if print_msg 7 "Does drcversion -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does drcversion -h work?" false
@@ -230,6 +265,9 @@ if command -v cat >/dev/null 2>&1; then
     # cat is available, dependency check should pass
     if print_msg 8 "Does drcversion check for cat dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 8 "Does drcversion check for cat dependency?" false; then
@@ -242,6 +280,9 @@ if command -v jq >/dev/null 2>&1; then
     # jq is available, dependency check should pass
     if print_msg 9 "Does drcversion check for jq dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 9 "Does drcversion check for jq dependency?" false; then
@@ -263,6 +304,9 @@ EOF
     if echo "$output" | grep -q "DOGRC Version 0.1.5" && ! echo "$output" | grep -q "spoofed"; then
         if print_msg 10 "Does drcversion read version from DOGRC.json?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does drcversion read version from DOGRC.json?" false
@@ -279,6 +323,9 @@ if command -v cat >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     if echo "$output" | grep -qE "^DOGRC Version [0-9]+\.[0-9]+\.[0-9]+$"; then
         if print_msg 11 "Does drcversion output format match expected pattern?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does drcversion output format match expected pattern?" false
@@ -301,6 +348,9 @@ EOF
     if echo "$output" | grep -q "DOGRC Version 0.2.0" && echo "$output" | grep -q "spoofed" && echo "$output" | grep -q "real version: 0.1.5"; then
         if print_msg 12 "Does drcversion read version from version.fake when it exists?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does drcversion read version from version.fake when it exists?" false
@@ -317,6 +367,9 @@ if command -v cat >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     if echo "$output" | grep -qE "DOGRC Version [0-9]+\.[0-9]+\.[0-9]+ \(spoofed, real version: [0-9]+\.[0-9]+\.[0-9]+\)"; then
         if print_msg 13 "Does drcversion show correct spoofed output format?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does drcversion show correct spoofed output format?" false
@@ -339,6 +392,9 @@ EOF
     if echo "$output" | grep -q "DOGRC Version 0.1.5" && ! echo "$output" | grep -q "spoofed"; then
         if print_msg 14 "Does drcversion fall back to DOGRC.json when version.fake is empty?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does drcversion fall back to DOGRC.json when version.fake is empty?" false
@@ -362,6 +418,9 @@ EOF
     if echo "$output" | grep -q "DOGRC Version 0.2.0" && ! echo "$output" | grep -q "  0.2.0  "; then
         if print_msg 15 "Does drcversion trim whitespace from version.fake?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does drcversion trim whitespace from version.fake?" false
@@ -381,6 +440,9 @@ if command -v cat >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     if echo "$output" | grep -q "DOGRC Version 0.2.0" && echo "$output" | grep -q "real version: unknown"; then
         if print_msg 16 "Does drcversion show 'unknown' when DOGRC.json is missing?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 16 "Does drcversion show 'unknown' when DOGRC.json is missing?" false
@@ -407,6 +469,9 @@ if command -v cat >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     if echo "$output" | grep -qi "DOGRC Version unknown" || echo "$output" | grep -qi "unknown"; then
         if print_msg 17 "Does drcversion show 'unknown' when DOGRC.json is missing (no version.fake)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does drcversion show 'unknown' when DOGRC.json is missing (no version.fake)?" false
@@ -438,6 +503,9 @@ EOF
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 18 "Does drcversion return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 18 "Does drcversion return 0 on success?" false
@@ -461,6 +529,9 @@ EOF
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 19 "Does drcversion return 0 on success with version.fake?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 19 "Does drcversion return 0 on success with version.fake?" false
@@ -472,8 +543,15 @@ else
     fi
 fi
 
-total_tests=20  # Tests 1-19 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

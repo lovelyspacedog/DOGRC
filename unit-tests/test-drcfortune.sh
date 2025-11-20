@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=42  # Tests 1-5, "*", 6-41
 printf "Running unit tests for drcfortune.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/information/drcfortune.sh" ]]; then
     if print_msg 3 "Can I find drcfortune.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find drcfortune.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/information/drcfortune.sh" 2>/dev/null; then
     if print_msg 4 "Can I source drcfortune.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source drcfortune.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f drcfortune >/dev/null 2>&1; then
     if print_msg 5 "Is drcfortune function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is drcfortune function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -164,6 +193,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcfortune --help >/dev/null 2>&1; then
         if print_msg 6 "Does drcfortune --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does drcfortune --help work?" false
@@ -174,6 +206,9 @@ else
     else
         if print_msg 6 "Does drcfortune --help work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -183,6 +218,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcfortune -h >/dev/null 2>&1; then
         if print_msg 7 "Does drcfortune -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does drcfortune -h work?" false
@@ -193,6 +231,9 @@ else
     else
         if print_msg 7 "Does drcfortune -h work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -202,6 +243,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcfortune --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does drcfortune --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does drcfortune --HELP work (case-insensitive)?" false
@@ -212,6 +256,9 @@ else
     else
         if print_msg 8 "Does drcfortune --HELP work (case-insensitive, no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -225,6 +272,9 @@ if drcfortune --zero >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 9 "Does drcfortune run without errors?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does drcfortune run without errors?" false
@@ -240,6 +290,9 @@ if drcfortune --zero >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does drcfortune return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does drcfortune return 0 on success?" false
@@ -254,6 +307,9 @@ output=$(drcfortune --zero 2>&1)
 if [[ -n "$output" ]]; then
     if print_msg 11 "Does drcfortune produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does drcfortune produce output?" false
@@ -271,6 +327,9 @@ elapsed=$(echo "$end_time - $start_time" | bc)
 if (( $(echo "$elapsed < 0.5" | bc -l) )); then
     if print_msg 12 "Does drcfortune --zero disable typewriter effect?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does drcfortune --zero disable typewriter effect?" false
@@ -282,6 +341,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "Test message"; then
     if print_msg 13 "Does drcfortune --zero produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does drcfortune --zero produce output?" false
@@ -294,6 +356,9 @@ MOCK_FORTUNE_OUTPUT="Test message"
 if drcfortune --custom 0.05 0.005 >/dev/null 2>&1; then
     if print_msg 14 "Does drcfortune --custom work with valid speeds?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does drcfortune --custom work with valid speeds?" false
@@ -305,6 +370,9 @@ output=$(drcfortune --custom - 0 2>&1)
 if echo "$output" | grep -qE "drcfortune --custom"; then
     if print_msg 15 "Does drcfortune --custom echo expanded command with '-'?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does drcfortune --custom echo expanded command with '-'?" false
@@ -319,6 +387,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 16 "Does drcfortune --custom error on missing arguments?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 16 "Does drcfortune --custom error on missing arguments?" false
@@ -334,6 +405,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 17 "Does drcfortune --custom error on invalid speed?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does drcfortune --custom error on invalid speed?" false
@@ -345,6 +419,9 @@ MOCK_FORTUNE_OUTPUT="Test message"
 if drcfortune --custom - 0.01 >/dev/null 2>&1; then
     if print_msg 18 "Does drcfortune --custom work with '-' for title speed?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does drcfortune --custom work with '-' for title speed?" false
@@ -355,6 +432,9 @@ MOCK_FORTUNE_OUTPUT="Test message"
 if drcfortune --custom 0.1 - >/dev/null 2>&1; then
     if print_msg 19 "Does drcfortune --custom work with '-' for fortune speed?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does drcfortune --custom work with '-' for fortune speed?" false
@@ -369,6 +449,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "COOKIE NAME" && echo "$output" | grep -q "Fortune text here"; then
     if print_msg 20 "Does drcfortune parse fortune cookie with '%' separator?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does drcfortune parse fortune cookie with '%' separator?" false
@@ -381,6 +464,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "COOKIE NAME" && echo "$output" | grep -q "Fortune text here"; then
     if print_msg 21 "Does drcfortune parse fortune cookie with '---' separator?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does drcfortune parse fortune cookie with '---' separator?" false
@@ -392,6 +478,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "Just fortune text, no title"; then
     if print_msg 22 "Does drcfortune handle fortune without separator?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does drcfortune handle fortune without separator?" false
@@ -405,6 +494,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "COOKIE NAME" && ! echo "$output" | grep -q "("; then
     if print_msg 23 "Does drcfortune remove parentheses from title?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does drcfortune remove parentheses from title?" false
@@ -416,6 +508,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "COOKIE NAME"; then
     if print_msg 24 "Does drcfortune convert title to uppercase?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does drcfortune convert title to uppercase?" false
@@ -427,6 +522,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "COOKIE NAME" && ! echo "$output" | grep -q "path/to"; then
     if print_msg 25 "Does drcfortune extract basename from path-like title?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does drcfortune extract basename from path-like title?" false
@@ -440,6 +538,9 @@ output=$(drcfortune --zero --upper 2>&1)
 if echo "$output" | grep -q "TEST FORTUNE TEXT"; then
     if print_msg 26 "Does drcfortune --upper convert fortune text to uppercase?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does drcfortune --upper convert fortune text to uppercase?" false
@@ -451,6 +552,9 @@ output=$(drcfortune --zero --lower 2>&1)
 if echo "$output" | grep -q "test fortune text"; then
     if print_msg 27 "Does drcfortune --lower convert fortune text to lowercase?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does drcfortune --lower convert fortune text to lowercase?" false
@@ -467,6 +571,9 @@ else
         if echo "$output" | grep -q "Error: --upper and --lower flags cannot be used together"; then
             if print_msg 28 "Does drcfortune error on conflicting --upper and --lower?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 28 "Does drcfortune error on conflicting --upper and --lower?" false
@@ -484,6 +591,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "🐾"; then
     if print_msg 29 "Does drcfortune display title with emoji?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does drcfortune display title with emoji?" false
@@ -495,6 +605,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -qE '\e\[1;34m|\\033\[1;34m|\[1;34m'; then
     if print_msg 30 "Does drcfortune display title with ANSI color codes?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does drcfortune display title with ANSI color codes?" false
@@ -510,6 +623,9 @@ drcfortune --zero > "$TEMP_OUTPUT_FILE" 2>&1
 if [[ -s "$TEMP_OUTPUT_FILE" ]] && [[ "$(tail -c 1 "$TEMP_OUTPUT_FILE" | od -An -tu1)" == *" 10" ]]; then
     if print_msg 31 "Does drcfortune ensure final newline?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 31 "Does drcfortune ensure final newline?" false
@@ -530,6 +646,9 @@ drcfortune --zero --clear >/dev/null 2>&1
 if [[ "$CLEAR_CALLED" == true ]]; then
     if print_msg 32 "Does drcfortune --clear call clear command?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does drcfortune --clear call clear command?" false
@@ -550,6 +669,9 @@ fortune_args=$(cat "$MOCK_FORTUNE_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fortune_args" != *"-a"* ]]; then
     if print_msg 33 "Does drcfortune --no-a skip fortune -a flag?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does drcfortune --no-a skip fortune -a flag?" false
@@ -563,6 +685,9 @@ fortune_args=$(cat "$MOCK_FORTUNE_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fortune_args" == *"-a"* ]]; then
     if print_msg 34 "Does drcfortune include -a flag by default?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 34 "Does drcfortune include -a flag by default?" false
@@ -576,6 +701,9 @@ fortune_args=$(cat "$MOCK_FORTUNE_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fortune_args" == *"computers"* ]]; then
     if print_msg 35 "Does drcfortune pass fortune args through?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 35 "Does drcfortune pass fortune args through?" false
@@ -590,6 +718,9 @@ if drcfortune --zero >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 36 "Does drcfortune handle empty fortune output?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 36 "Does drcfortune handle empty fortune output?" false
@@ -604,6 +735,9 @@ output=$(drcfortune --zero 2>&1)
 if echo "$output" | grep -q "Cookie Name"; then
     if print_msg 37 "Does drcfortune handle fortune with only title?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 37 "Does drcfortune handle fortune with only title?" false
@@ -617,6 +751,9 @@ fortune_args=$(cat "$MOCK_FORTUNE_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fortune_args" == *"computers"* ]] && [[ "$fortune_args" == *"science"* ]]; then
     if print_msg 38 "Does drcfortune handle multiple fortune args?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 38 "Does drcfortune handle multiple fortune args?" false
@@ -631,6 +768,9 @@ if bash "${__PLUGINS_DIR}/information/drcfortune.sh" --zero >/dev/null 2>&1; the
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 39 "Can drcfortune.sh be executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 39 "Can drcfortune.sh be executed directly?" false
@@ -646,6 +786,9 @@ output=$(bash -c "source <(declare -f fortune); export MOCK_FORTUNE_OUTPUT='$MOC
 if [[ -n "$output" ]] && echo "$output" | grep -q "Test message"; then
     if print_msg 40 "Does drcfortune.sh direct execution produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 40 "Does drcfortune.sh direct execution produce output?" false
@@ -657,13 +800,23 @@ output=$(bash "${__PLUGINS_DIR}/information/drcfortune.sh" --help 2>&1)
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 41 "Does drcfortune.sh --help work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 41 "Does drcfortune.sh --help work when executed directly?" false
 fi
 
-total_tests=42  # Tests 1-5, "*", 6-41
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

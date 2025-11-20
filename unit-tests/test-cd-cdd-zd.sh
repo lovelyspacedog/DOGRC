@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=41  # Tests 1-40 plus 1 summary test with "*"
 printf "Running unit tests for cd-cdd-zd.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/navigation/cd-cdd-zd.sh" ]]; then
     if print_msg 3 "Can I find cd-cdd-zd.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find cd-cdd-zd.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/navigation/cd-cdd-zd.sh" 2>/dev/null; then
     if print_msg 4 "Can I source cd-cdd-zd.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source cd-cdd-zd.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f cd >/dev/null 2>&1; then
     if print_msg 5 "Is cd function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is cd function defined?" false
@@ -79,6 +105,9 @@ fi
 if declare -f cdd >/dev/null 2>&1; then
     if print_msg 6 "Is cdd function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is cdd function defined?" false
@@ -87,6 +116,9 @@ fi
 if declare -f zd >/dev/null 2>&1; then
     if print_msg 7 "Is zd function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 7 "Is zd function defined?" false
@@ -94,6 +126,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -138,6 +173,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cd --drchelp >/dev/null 2>&1; then
         if print_msg 8 "Does cd --drchelp work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does cd --drchelp work?" false
@@ -153,6 +191,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cd --drc >/dev/null 2>&1; then
         if print_msg 9 "Does cd --drc work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does cd --drc work?" false
@@ -171,6 +212,9 @@ cd >/dev/null 2>&1
 if [[ "$(pwd)" == "$HOME" ]]; then
     if print_msg 10 "Does cd with no arguments change to HOME?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does cd with no arguments change to HOME?" false
@@ -182,6 +226,9 @@ if cd "test_cd_dir1" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_cd_dir1" ]]; then
         if print_msg 11 "Does cd change to valid directory?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does cd change to valid directory?" false
@@ -197,6 +244,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]]; then
     if print_msg 12 "Does cd always return 0 (even on error)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does cd always return 0 (even on error)?" false
@@ -209,6 +259,9 @@ if cd "$abs_test_dir" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$abs_test_dir" ]]; then
         if print_msg 13 "Does cd work with absolute paths?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does cd work with absolute paths?" false
@@ -224,6 +277,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cdd --help >/dev/null 2>&1; then
         if print_msg 14 "Does cdd --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does cdd --help work?" false
@@ -239,6 +295,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if cdd -h >/dev/null 2>&1; then
         if print_msg 15 "Does cdd -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does cdd -h work?" false
@@ -258,6 +317,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]] && [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_cdd_dir1" ]]; then
     if print_msg 16 "Does cdd change to valid directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does cdd change to valid directory?" false
@@ -269,6 +331,9 @@ output=$(cdd "test_cdd_dir1" 2>&1)
 if echo "$output" | grep -q "📁"; then
     if print_msg 17 "Does cdd output contain emoji (📁)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does cdd output contain emoji (📁)?" false
@@ -280,6 +345,9 @@ fi
 if [[ ${#output} -gt 20 ]]; then
     if print_msg 18 "Does cdd list directory contents?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # If output is minimal, check if cdd at least ran successfully (directory change worked)
@@ -288,6 +356,9 @@ else
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_cdd_dir1" ]]; then
         if print_msg 18 "Does cdd list directory contents?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 18 "Does cdd list directory contents?" false
@@ -301,6 +372,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 19 "Does cdd return 1 on invalid directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does cdd return 1 on invalid directory?" false
@@ -311,6 +385,9 @@ error_output=$(cdd "nonexistent_dir_12345" 2>&1)
 if echo "$error_output" | grep -q "Error:" && echo "$error_output" | grep -q "does not exist"; then
     if print_msg 20 "Does cdd show error message for invalid directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does cdd show error message for invalid directory?" false
@@ -321,6 +398,9 @@ builtin cd "${__UNIT_TESTS_DIR}" || exit 91
 if ! cdd 2>/dev/null; then
     if print_msg 21 "Does cdd error on no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does cdd error on no arguments?" false
@@ -332,6 +412,9 @@ if cdd "test dir with spaces" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test dir with spaces" ]]; then
         if print_msg 22 "Does cdd work with directory names containing spaces?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 22 "Does cdd work with directory names containing spaces?" false
@@ -347,6 +430,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if zd --help >/dev/null 2>&1; then
         if print_msg 23 "Does zd --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 23 "Does zd --help work?" false
@@ -362,6 +448,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if zd -h >/dev/null 2>&1; then
         if print_msg 24 "Does zd -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 24 "Does zd -h work?" false
@@ -380,6 +469,9 @@ zd >/dev/null 2>&1
 if [[ "$(pwd)" == "$HOME" ]]; then
     if print_msg 25 "Does zd with no arguments change to HOME (fallback)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does zd with no arguments change to HOME (fallback)?" false
@@ -392,6 +484,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]] && [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_zd_dir1" ]]; then
     if print_msg 26 "Does zd change to valid directory (fallback)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does zd change to valid directory (fallback)?" false
@@ -403,6 +498,9 @@ output=$(zd "test_zd_dir1" 2>&1)
 if echo "$output" | grep -q "📁"; then
     if print_msg 27 "Does zd output contain emoji (📁)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does zd output contain emoji (📁)?" false
@@ -414,6 +512,9 @@ fi
 if [[ ${#output} -gt 20 ]]; then
     if print_msg 28 "Does zd list directory contents?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # If output is minimal, check if zd at least ran successfully (directory change worked)
@@ -422,6 +523,9 @@ else
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_zd_dir1" ]]; then
         if print_msg 28 "Does zd list directory contents?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does zd list directory contents?" false
@@ -435,6 +539,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 29 "Does zd return 1 on invalid directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does zd return 1 on invalid directory?" false
@@ -445,6 +552,9 @@ error_output=$(zd "nonexistent_dir_12345" 2>&1)
 if echo "$error_output" | grep -q "Error:" && echo "$error_output" | grep -q "Failed to change"; then
     if print_msg 30 "Does zd show error message for invalid directory?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does zd show error message for invalid directory?" false
@@ -456,6 +566,9 @@ if zd "test dir with spaces" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test dir with spaces" ]]; then
         if print_msg 31 "Does zd work with directory names containing spaces?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Does zd work with directory names containing spaces?" false
@@ -476,6 +589,9 @@ if command -v eza >/dev/null 2>&1 || command -v ls >/dev/null 2>&1; then
     # Both eza and ls are available, cdd should use one of them
     if print_msg 32 "Does cdd use eza or ls for listing?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does cdd use eza or ls for listing?" false
@@ -491,6 +607,9 @@ if command -v eza >/dev/null 2>&1 || command -v ls >/dev/null 2>&1; then
     # Both eza and ls are available, zd should use one of them
     if print_msg 33 "Does zd use eza or ls for listing?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does zd use eza or ls for listing?" false
@@ -501,11 +620,17 @@ if command -v z >/dev/null 2>&1; then
     # zoxide is available, zd should try it first
     if print_msg 34 "Does zd detect zoxide availability?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # zoxide not available, zd should fall back to cd
     if print_msg 34 "Does zd fall back to cd when zoxide unavailable?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 fi
 
@@ -517,6 +642,9 @@ if cd ".." >/dev/null 2>&1; then
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}" ]]; then
         if print_msg 35 "Does cd work with parent directory (..)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 35 "Does cd work with parent directory (..)?" false
@@ -531,6 +659,9 @@ if cd ~ >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$HOME" ]]; then
         if print_msg 36 "Does cd work with tilde (~)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 36 "Does cd work with tilde (~)?" false
@@ -546,6 +677,9 @@ if cdd "$abs_cdd_dir" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$abs_cdd_dir" ]]; then
         if print_msg 37 "Does cdd work with absolute paths?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 37 "Does cdd work with absolute paths?" false
@@ -561,6 +695,9 @@ if zd "$abs_zd_dir" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$abs_zd_dir" ]]; then
         if print_msg 38 "Does zd work with absolute paths?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 38 "Does zd work with absolute paths?" false
@@ -577,6 +714,9 @@ cd_help_output=$(cd --help 2>&1 || true)
 if ! echo "$cd_help_output" | grep -q "drchelp\|Error: drchelp not available"; then
     if print_msg 39 "Does cd preserve builtin --help (not intercepted)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 39 "Does cd preserve builtin --help (not intercepted)?" false
@@ -589,6 +729,9 @@ if cd "test_cd_dir1" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 40 "Does cd return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 40 "Does cd return 0 on success?" false
@@ -597,8 +740,15 @@ else
     print_msg 40 "Does cd return 0 on success?" false
 fi
 
-total_tests=41  # Tests 1-40 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

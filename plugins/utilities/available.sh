@@ -123,7 +123,18 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   fi
   
   mode=$(__available_determine_mode warn "$@")
-  mapfile -t raw_funcs < <(bash --noprofile -ic 'compgen -A function | sort' 2>/dev/null)
+  
+  # Try to get functions from an interactive shell that sources ~/.bashrc
+  # First try interactive mode (if we have a terminal), otherwise try non-interactive
+  if [[ -t 0 ]] && [[ -t 1 ]]; then
+    # We have a terminal, use interactive mode
+    mapfile -t raw_funcs < <(bash --noprofile -ic 'compgen -A function | sort' 2>/dev/null)
+  else
+    # Non-interactive environment - try to source bashrc in non-interactive mode
+    # This won't work perfectly but at least won't fail
+    mapfile -t raw_funcs < <(bash --noprofile -c 'if [[ -f ~/.bashrc ]]; then source ~/.bashrc 2>/dev/null; fi; compgen -A function | sort' 2>/dev/null)
+  fi
+  
   funcs=()
   for func in "${raw_funcs[@]}"; do
     [[ "$func" =~ ^[[:alnum:]_]+$ ]] || continue

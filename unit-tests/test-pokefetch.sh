@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=32  # Tests 1-5, "*", 6-31
 printf "Running unit tests for pokefetch.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/information/pokefetch.sh" ]]; then
     if print_msg 3 "Can I find pokefetch.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find pokefetch.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/information/pokefetch.sh" 2>/dev/null; then
     if print_msg 4 "Can I source pokefetch.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source pokefetch.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f pokefetch >/dev/null 2>&1; then
     if print_msg 5 "Is pokefetch function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is pokefetch function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -146,6 +175,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if pokefetch --help >/dev/null 2>&1; then
         if print_msg 6 "Does pokefetch --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does pokefetch --help work?" false
@@ -156,6 +188,9 @@ else
     else
         if print_msg 6 "Does pokefetch --help work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -165,6 +200,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if pokefetch -h >/dev/null 2>&1; then
         if print_msg 7 "Does pokefetch -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does pokefetch -h work?" false
@@ -175,6 +213,9 @@ else
     else
         if print_msg 7 "Does pokefetch -h work (no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -184,6 +225,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if pokefetch --HELP >/dev/null 2>&1; then
         if print_msg 8 "Does pokefetch --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does pokefetch --HELP work (case-insensitive)?" false
@@ -194,6 +238,9 @@ else
     else
         if print_msg 8 "Does pokefetch --HELP work (case-insensitive, no drchelp)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     fi
 fi
@@ -209,6 +256,9 @@ if pokefetch >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 9 "Does pokefetch run without errors?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does pokefetch run without errors?" false
@@ -226,6 +276,9 @@ if pokefetch >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does pokefetch return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does pokefetch return 0 on success?" false
@@ -242,6 +295,9 @@ output=$(pokefetch 2>&1)
 if [[ -n "$output" ]]; then
     if print_msg 11 "Does pokefetch produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does pokefetch produce output?" false
@@ -257,6 +313,9 @@ pokefetch >/dev/null 2>&1
 if [[ -f /tmp/pokefetch.txt ]]; then
     if print_msg 12 "Does pokefetch write to /tmp/pokefetch.txt?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does pokefetch write to /tmp/pokefetch.txt?" false
@@ -271,6 +330,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -qi "charizard"; then
     if print_msg 13 "Does pokefetch extract Pokemon name from first line?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does pokefetch extract Pokemon name from first line?" false
@@ -285,6 +347,9 @@ pokefetch >/dev/null 2>&1
 if [[ -f /tmp/pokefetch.txt ]] && ! head -n 1 /tmp/pokefetch.txt | grep -q "bulbasaur"; then
     if print_msg 14 "Does pokefetch remove first line from file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does pokefetch remove first line from file?" false
@@ -299,6 +364,9 @@ pokefetch >/dev/null 2>&1
 if [[ -f /tmp/pokefetch.txt ]] && head -n 1 /tmp/pokefetch.txt | grep -q "ASCII art line 1"; then
     if print_msg 15 "Does pokefetch preserve remaining lines after removing first?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does pokefetch preserve remaining lines after removing first?" false
@@ -314,6 +382,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -q "\[ Pikachu \]"; then
     if print_msg 16 "Does pokefetch capitalize first letter of Pokemon name?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does pokefetch capitalize first letter of Pokemon name?" false
@@ -327,6 +398,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -q "\[ Charizard \]"; then
     if print_msg 17 "Does pokefetch handle lowercase Pokemon name?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does pokefetch handle lowercase Pokemon name?" false
@@ -340,6 +414,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -q "\[ Pikachu \]"; then
     if print_msg 18 "Does pokefetch handle already capitalized Pokemon name?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does pokefetch handle already capitalized Pokemon name?" false
@@ -355,6 +432,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -q "Joins The Battle!"; then
     if print_msg 19 "Does pokefetch display battle message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does pokefetch display battle message?" false
@@ -368,6 +448,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -qE "\[ Squirtle \] Joins The Battle!"; then
     if print_msg 20 "Does pokefetch battle message format match expected?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does pokefetch battle message format match expected?" false
@@ -384,12 +467,18 @@ pokefetch > "$TEMP_OUTPUT_FILE" 2>&1
 if [[ -s "$TEMP_OUTPUT_FILE" ]] && [[ "$(tail -c 2 "$TEMP_OUTPUT_FILE" | od -An -tu1)" == *" 10 10" ]]; then
     if print_msg 21 "Does pokefetch add blank line after battle message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # Check if it ends with at least one newline
     if [[ "$(tail -c 1 "$TEMP_OUTPUT_FILE" | od -An -tu1)" == *" 10" ]]; then
         if print_msg 21 "Does pokefetch add blank line after battle message?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 21 "Does pokefetch add blank line after battle message?" false
@@ -407,6 +496,9 @@ pokefetch >/dev/null 2>&1
 if [[ "$MOCK_FASTFETCH_CALLED" == true ]]; then
     if print_msg 22 "Does pokefetch call fastfetch?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does pokefetch call fastfetch?" false
@@ -422,6 +514,9 @@ fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fastfetch_args" == *"--logo-height 5"* ]]; then
     if print_msg 23 "Does pokefetch call fastfetch with --logo-height 5?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does pokefetch call fastfetch with --logo-height 5?" false
@@ -437,6 +532,9 @@ fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fastfetch_args" == *"--logo /tmp/pokefetch.txt"* ]]; then
     if print_msg 24 "Does pokefetch call fastfetch with --logo /tmp/pokefetch.txt?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does pokefetch call fastfetch with --logo /tmp/pokefetch.txt?" false
@@ -452,6 +550,9 @@ fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
 if [[ "$fastfetch_args" == *"--logo-height 5"* ]] && [[ "$fastfetch_args" == *"--logo /tmp/pokefetch.txt"* ]]; then
     if print_msg 25 "Does pokefetch call fastfetch with correct arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does pokefetch call fastfetch with correct arguments?" false
@@ -468,6 +569,9 @@ if pokefetch >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 26 "Does pokefetch handle single line Pokemon output?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 26 "Does pokefetch handle single line Pokemon output?" false
@@ -484,6 +588,9 @@ output=$(pokefetch 2>&1)
 if echo "$output" | grep -q "\[ Mr. mime \]"; then
     if print_msg 27 "Does pokefetch handle Pokemon name with spaces?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does pokefetch handle Pokemon name with spaces?" false
@@ -498,6 +605,9 @@ if pokefetch >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 28 "Does pokefetch handle empty Pokemon name?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does pokefetch handle empty Pokemon name?" false
@@ -517,6 +627,9 @@ if bash "${__PLUGINS_DIR}/information/pokefetch.sh" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 29 "Can pokefetch.sh be executed directly?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Can pokefetch.sh be executed directly?" false
@@ -533,6 +646,9 @@ output=$(bash -c "source <(declare -f pokemon-colorscripts fastfetch); export MO
 if [[ -n "$output" ]] && echo "$output" | grep -q "Joins The Battle!"; then
     if print_msg 30 "Does pokefetch.sh direct execution produce output?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does pokefetch.sh direct execution produce output?" false
@@ -543,13 +659,23 @@ output=$(bash "${__PLUGINS_DIR}/information/pokefetch.sh" --help 2>&1)
 if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#output} -gt 0 ]]; then
     if print_msg 31 "Does pokefetch.sh --help work when executed directly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 31 "Does pokefetch.sh --help work when executed directly?" false
 fi
 
-total_tests=32  # Tests 1-5, "*", 6-31
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

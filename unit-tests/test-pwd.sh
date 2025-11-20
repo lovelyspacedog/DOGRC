@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -28,12 +33,21 @@ print_msg() {
 }
 
 score=0
+total_tests=23  # Tests 1-5, "*", 6-17, 19-23 (Test 18 is intentionally skipped)
 printf "Running unit tests for pwd.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -44,6 +58,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -54,6 +71,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/pwd.sh" ]]; then
     if print_msg 3 "Can I find pwd.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find pwd.sh?" false
@@ -64,6 +84,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/pwd.sh" 2>/dev/null; then
     if print_msg 4 "Can I source pwd.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source pwd.sh?" false
@@ -74,6 +97,9 @@ fi
 if declare -f pwd >/dev/null 2>&1; then
     if print_msg 5 "Is pwd function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is pwd function defined?" false
@@ -83,6 +109,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory
 original_dir=$(pwd)
@@ -126,6 +155,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if pwd --drchelp >/dev/null 2>&1; then
         if print_msg 6 "Does pwd --drchelp work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does pwd --drchelp work?" false
@@ -141,6 +173,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if pwd --drc >/dev/null 2>&1; then
         if print_msg 7 "Does pwd --drc work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does pwd --drc work?" false
@@ -157,6 +192,9 @@ output=$(pwd --help 2>&1)
 if echo "$output" | grep -q "pwd" || echo "$output" | grep -q "print.*directory" || [[ -n "$output" ]]; then
     if print_msg 8 "Does pwd --help pass through to builtin?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Does pwd --help pass through to builtin?" false
@@ -170,6 +208,9 @@ expected=$(builtin pwd 2>&1)
 if [[ "$result" == "$expected" ]]; then
     if print_msg 9 "Does pwd return current directory (no arguments)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does pwd return current directory (no arguments)?" false
@@ -181,6 +222,9 @@ expected=$(builtin pwd 2>&1)
 if [[ "$result" == "$expected" ]]; then
     if print_msg 10 "Does pwd output match builtin pwd?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does pwd output match builtin pwd?" false
@@ -192,6 +236,9 @@ expected=$(builtin pwd -P 2>&1)
 if [[ "$result" == "$expected" ]]; then
     if print_msg 11 "Does pwd -P work (physical path)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does pwd -P work (physical path)?" false
@@ -203,6 +250,9 @@ expected=$(builtin pwd -L 2>&1)
 if [[ "$result" == "$expected" ]]; then
     if print_msg 12 "Does pwd -L work (logical path)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does pwd -L work (logical path)?" false
@@ -214,6 +264,9 @@ if pwd >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 13 "Does pwd return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does pwd return 0 on success?" false
@@ -263,6 +316,9 @@ chmod +x "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh"
 if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 14 "Does pwd c copy to clipboard (mocked wl-copy)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does pwd c copy to clipboard (mocked wl-copy)?" false
@@ -308,6 +364,9 @@ chmod +x "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh"
 if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 15 "Does pwd C copy to clipboard (mocked, case-insensitive)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does pwd C copy to clipboard (mocked, case-insensitive)?" false
@@ -349,6 +408,9 @@ chmod +x "${__UNIT_TESTS_DIR}/test_pwd_message.sh"
 if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_message.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 16 "Does pwd show clipboard message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does pwd show clipboard message?" false
@@ -390,6 +452,9 @@ chmod +x "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh"
 if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 17 "Does pwd check for wl-copy dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does pwd check for wl-copy dependency?" false
@@ -411,6 +476,9 @@ expected=$(builtin pwd x 2>&1)
 if [[ "$result" == "$expected" ]] || ([[ $? -ne 0 ]] && builtin pwd x >/dev/null 2>&1; [[ $? -ne 0 ]]); then
     if print_msg 19 "Does pwd pass through arguments starting with other letters?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does pwd pass through arguments starting with other letters?" false
@@ -422,6 +490,9 @@ result=$(pwd copy 2>&1)
 if echo "$result" | grep -q "Working directory copied to clipboard"; then
     if print_msg 20 "Does pwd handle 'copy' argument correctly (triggers clipboard)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does pwd handle 'copy' argument correctly (triggers clipboard)?" false
@@ -433,6 +504,9 @@ expected=$(builtin pwd 2>&1)
 if [[ "$result" == "$expected" ]]; then
     if print_msg 21 "Does pwd handle empty string argument?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does pwd handle empty string argument?" false
@@ -445,6 +519,9 @@ expected=$(builtin pwd -P -L 2>&1)
 if [[ "$result" == "$expected" ]] || ([[ $? -ne 0 ]] && builtin pwd -P -L >/dev/null 2>&1; [[ $? -ne 0 ]]); then
     if print_msg 22 "Does pwd handle multiple arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does pwd handle multiple arguments?" false
@@ -483,6 +560,9 @@ if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_return.sh" "$MOCK_CLIPBOARD_FILE
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 23 "Does pwd c return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 23 "Does pwd c return 0 on success?" false
@@ -492,8 +572,15 @@ else
 fi
 rm -f "${__UNIT_TESTS_DIR}/test_pwd_return.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
 
-total_tests=23  # Tests 1-5, "*", 6-17, 19-23 (Test 18 is intentionally skipped)
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

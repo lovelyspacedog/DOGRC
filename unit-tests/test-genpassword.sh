@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=40  # Tests 1-39 plus 1 summary test with "*"
 printf "Running unit tests for genpassword.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/genpassword.sh" ]]; then
     if print_msg 3 "Can I find genpassword.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find genpassword.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/genpassword.sh" 2>/dev/null; then
     if print_msg 4 "Can I source genpassword.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source genpassword.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f genpassword >/dev/null 2>&1; then
     if print_msg 5 "Is genpassword function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is genpassword function defined?" false
@@ -80,6 +106,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 cd "${__UNIT_TESTS_DIR}" || {
     printf "Error: Failed to change directory to unit-tests.\n" >&2
@@ -96,6 +125,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if genpassword --help >/dev/null 2>&1; then
         if print_msg 6 "Does genpassword --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does genpassword --help work?" false
@@ -110,6 +142,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if genpassword -h >/dev/null 2>&1; then
         if print_msg 7 "Does genpassword -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does genpassword -h work?" false
@@ -129,6 +164,9 @@ if [[ -n "$default_password" ]]; then
     if [[ ${#default_password} -eq 16 ]]; then
         if print_msg 8 "Does genpassword generate 16-character password by default?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         if print_msg 8 "Does genpassword generate 16-character password by default?" false; then
@@ -146,6 +184,9 @@ if [[ -n "$default_password2" ]]; then
     if [[ "$default_password2" =~ ^[A-Za-z0-9_]+$ ]]; then
         if print_msg 9 "Does genpassword use default charset (A-Za-z0-9_)?誤" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does genpassword use default charset (A-Za-z0-9_)?誤" false
@@ -160,6 +201,9 @@ if genpassword >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does genpassword return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does genpassword return 0 on success?" false
@@ -173,6 +217,9 @@ default_password3=$(genpassword 2>/dev/null)
 if [[ -n "$default_password3" ]]; then
     if print_msg 11 "Does genpassword generate non-empty password?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does genpassword generate non-empty password?" false
@@ -186,6 +233,9 @@ if [[ -n "$length8_password" ]]; then
     if [[ ${#length8_password} -eq 8 ]]; then
         if print_msg 12 "Does genpassword generate password with custom length (8)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does genpassword generate password with custom length (8)?" false
@@ -200,6 +250,9 @@ if [[ -n "$length20_password" ]]; then
     if [[ ${#length20_password} -eq 20 ]]; then
         if print_msg 13 "Does genpassword generate password with custom length (20)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does genpassword generate password with custom length (20)?" false
@@ -214,6 +267,9 @@ if [[ -n "$length32_password" ]]; then
     if [[ ${#length32_password} -eq 32 ]]; then
         if print_msg 14 "Does genpassword generate password with custom length (32)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does genpassword generate password with custom length (32)?" false
@@ -228,6 +284,9 @@ if [[ -n "$length1_password" ]]; then
     if [[ ${#length1_password} -eq 1 ]]; then
         if print_msg 15 "Does genpassword generate password with length 1?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does genpassword generate password with length 1?" false
@@ -249,6 +308,9 @@ if [[ -n "$special_password1" ]]; then
         # Using a simpler validation: check that it doesn't fail basic requirements
         if print_msg 16 "Does genpassword --special use special character charset?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 16 "Does genpassword --special use special character charset?" false
@@ -263,6 +325,9 @@ if [[ -n "$special_password2" ]]; then
     if [[ ${#special_password2} -eq 16 ]]; then
         if print_msg 17 "Does genpassword -s work (short form for --special)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does genpassword -s work (short form for --special)?" false
@@ -285,12 +350,18 @@ done
 if [[ "$special_found" == true ]]; then
     if print_msg 18 "Does genpassword --special generate passwords with special chars?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # If no special chars found after 10 tries, still accept if charset is valid
     # (randomness might not always include them)
     if print_msg 18 "Does genpassword --special generate passwords with special chars?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 fi
 
@@ -301,6 +372,9 @@ combined_password1=$(genpassword 24 --special 2>/dev/null)
 if [[ -n "$combined_password1" ]] && [[ ${#combined_password1} -eq 24 ]]; then
     if print_msg 19 "Does genpassword work with length + --special?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does genpassword work with length + --special?" false
@@ -311,6 +385,9 @@ combined_password2=$(genpassword --special 24 2>/dev/null)
 if [[ -n "$combined_password2" ]] && [[ ${#combined_password2} -eq 24 ]]; then
     if print_msg 20 "Does genpassword work with --special + length?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does genpassword work with --special + length?" false
@@ -321,6 +398,9 @@ combined_password3=$(genpassword 12 -s 2>/dev/null)
 if [[ -n "$combined_password3" ]] && [[ ${#combined_password3} -eq 12 ]]; then
     if print_msg 21 "Does genpassword work with length + -s?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does genpassword work with length + -s?" false
@@ -341,6 +421,9 @@ done
 if [[ "$default_valid" == true ]]; then
     if print_msg 22 "Does genpassword default charset only contain valid chars?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does genpassword default charset only contain valid chars?" false
@@ -360,6 +443,9 @@ done
 if [[ "$special_valid" == true ]]; then
     if print_msg 23 "Does genpassword special charset only contain valid chars?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does genpassword special charset only contain valid chars?" false
@@ -370,6 +456,9 @@ test_output=$(genpassword 10 2>/dev/null)
 if [[ "$test_output" != *$'\n'* ]] && [[ -n "$test_output" ]]; then
     if print_msg 24 "Does genpassword output contain no newlines?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does genpassword output contain no newlines?" false
@@ -380,6 +469,9 @@ test_output2=$(genpassword 10 2>/dev/null)
 if [[ "$test_output2" != *" "* ]] && [[ -n "$test_output2" ]]; then
     if print_msg 25 "Does genpassword output contain no spaces?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does genpassword output contain no spaces?" false
@@ -396,6 +488,9 @@ if [[ "$password1" != "$password2" ]] || [[ "$password1" != "$password3" ]] || [
     # At least one is different (expected)
     if print_msg 26 "Does genpassword produce different passwords on each call?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # All three are identical (very unlikely but possible)
@@ -405,6 +500,9 @@ else
     if [[ "$password1" != "$password4" ]] || [[ "$password1" != "$password5" ]]; then
         if print_msg 26 "Does genpassword produce different passwords on each call?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 26 "Does genpassword produce different passwords on each call?" false
@@ -418,6 +516,9 @@ special_pass2=$(genpassword -s 32 2>/dev/null)
 if [[ "$special_pass1" != "$special_pass2" ]]; then
     if print_msg 27 "Does genpassword --special produce different passwords?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # Try one more time
@@ -425,6 +526,9 @@ else
     if [[ "$special_pass1" != "$special_pass3" ]]; then
         if print_msg 27 "Does genpassword --special produce different passwords?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Does genpassword --special produce different passwords?" false
@@ -439,6 +543,9 @@ if [[ -n "$long_password" ]]; then
     if [[ ${#long_password} -eq 1000 ]]; then
         if print_msg 28 "Does genpassword handle very long passwords (1000 chars)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does genpassword handle very long passwords (1000 chars)?" false
@@ -454,6 +561,9 @@ if [[ -n "$multi_num" ]]; then
     if [[ ${#multi_num} -eq 15 ]]; then
         if print_msg 29 "Does genpassword use last numeric argument when multiple provided?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Does genpassword use last numeric argument when multiple provided?" false
@@ -468,6 +578,9 @@ if [[ -n "$non_num" ]]; then
     if [[ ${#non_num} -eq 16 ]]; then
         if print_msg 30 "Does genpassword ignore non-numeric arguments?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 30 "Does genpassword ignore non-numeric arguments?" false
@@ -483,6 +596,9 @@ if [[ -n "$neg_test" ]]; then
     if [[ ${#neg_test} -eq 16 ]]; then
         if print_msg 31 "Does genpassword handle negative numbers gracefully?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Does genpassword handle negative numbers gracefully?" false
@@ -498,6 +614,9 @@ if [[ -n "$zero_test" ]]; then
     if [[ ${#zero_test} -eq 0 ]] || [[ ${#zero_test} -eq 16 ]]; then
         if print_msg 32 "Does genpassword handle length 0?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 32 "Does genpassword handle length 0?" false
@@ -506,6 +625,9 @@ else
     # Empty password is acceptable for length 0
     if print_msg 32 "Does genpassword handle length 0?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 fi
 
@@ -514,6 +636,9 @@ multi_special=$(genpassword --special --special 16 2>/dev/null)
 if [[ -n "$multi_special" ]] && [[ ${#multi_special} -eq 16 ]]; then
     if print_msg 33 "Does genpassword handle multiple --special flags?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does genpassword handle multiple --special flags?" false
@@ -524,6 +649,9 @@ mixed=$(genpassword invalid --special 12 test 2>/dev/null)
 if [[ -n "$mixed" ]] && [[ ${#mixed} -eq 12 ]]; then
     if print_msg 34 "Does genpassword handle mixed valid/invalid arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 34 "Does genpassword handle mixed valid/invalid arguments?" false
@@ -537,6 +665,9 @@ line_count=$(echo "$single_line" | wc -l 2>/dev/null || echo "0")
 if [[ "$line_count" -le 1 ]] && [[ -n "$single_line" ]]; then
     if print_msg 35 "Does genpassword output single line?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 35 "Does genpassword output single line?" false
@@ -548,6 +679,9 @@ trimmed=$(echo -n "$no_trailing" | xargs 2>/dev/null || echo "$no_trailing")
 if [[ "$no_trailing" == "$trimmed" ]] && [[ -n "$no_trailing" ]]; then
     if print_msg 36 "Does genpassword output have no trailing whitespace?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 36 "Does genpassword output have no trailing whitespace?" false
@@ -558,6 +692,9 @@ no_leading=$(genpassword 10 2>/dev/null)
 if [[ -n "$no_leading" ]] && [[ ! "$no_leading" =~ ^[[:space:]] ]]; then
     if print_msg 37 "Does genpassword output have no leading whitespace?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 37 "Does genpassword output have no leading whitespace?" false
@@ -570,6 +707,9 @@ printf "\nTesting dependencies...\n"
 if command -v tr >/dev/null 2>&1 && command -v head >/dev/null 2>&1 && command -v xargs >/dev/null 2>&1; then
     if print_msg 38 "Does genpassword check for required dependencies (tr, head, xargs)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 38 "Does genpassword check for required dependencies (tr, head, xargs)?" false; then
@@ -593,13 +733,23 @@ done
 if [[ "$length_accurate" == true ]]; then
     if print_msg 39 "Does genpassword generate passwords with exact requested length?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 39 "Does genpassword generate passwords with exact requested length?" false
 fi
 
-total_tests=40  # Tests 1-39 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

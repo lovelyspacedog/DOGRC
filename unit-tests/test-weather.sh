@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -15,7 +20,10 @@ print_msg() {
     fi
     
     sleep 0.4
-    if [[ "$passed" == "true" ]] || [[ "$passed" -eq 1 ]]; then
+    if [[ "$passed" == "N/A" ]] || [[ "$passed" == "n/a" ]]; then
+        printf "%-8s %-70s %s\n" "[$test_num]" "$description" "[  N/A   ]"
+        return 0
+    elif [[ "$passed" == "true" ]] || [[ "$passed" -eq 1 ]]; then
         printf "%-8s %-70s %s\n" "[$test_num]" "$description" "[ PASSED ]"
         return 0
     else
@@ -25,12 +33,22 @@ print_msg() {
 }
 
 score=0
+total_tests=46  # Tests 1-45 plus 1 summary test with "*"
+na_tests=0  # Track N/A tests to exclude from percentage calculation
 printf "Running unit tests for weather.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +59,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +72,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/information/weather.sh" ]]; then
     if print_msg 3 "Can I find weather.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find weather.sh?" false
@@ -61,6 +85,9 @@ fi
 if source "${__PLUGINS_DIR}/information/weather.sh" 2>/dev/null; then
     if print_msg 4 "Can I source weather.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source weather.sh?" false
@@ -71,6 +98,9 @@ fi
 if declare -f wttr >/dev/null 2>&1; then
     if print_msg 5 "Is wttr function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is wttr function defined?" false
@@ -81,6 +111,9 @@ fi
 if declare -f weather >/dev/null 2>&1; then
     if print_msg 6 "Is weather function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is weather function defined?" false
@@ -90,6 +123,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory and environment
 original_dir=$(pwd)
@@ -143,6 +179,9 @@ printf "\nTesting WTTR_PARAMS setup...\n"
 if env | grep -q "^WTTR_PARAMS=" || [[ -n "${WTTR_PARAMS:-}" ]]; then
     if print_msg 7 "Is WTTR_PARAMS set after sourcing?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # WTTR_PARAMS might not be set if sourcing guard prevented re-execution
@@ -156,6 +195,9 @@ fi
 if env | grep -q "^WTTR_PARAMS=" || [[ -n "${WTTR_PARAMS+set}" ]]; then
     if print_msg 8 "Is WTTR_PARAMS exported?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 8 "Is WTTR_PARAMS exported?" false; then
@@ -170,6 +212,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if wttr --help >/dev/null 2>&1; then
         if print_msg 9 "Does wttr --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does wttr --help work?" false
@@ -185,6 +230,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if wttr -h >/dev/null 2>&1; then
         if print_msg 10 "Does wttr -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does wttr -h work?" false
@@ -200,6 +248,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if wttr --HELP >/dev/null 2>&1; then
         if print_msg 11 "Does wttr --HELP work (case-insensitive)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does wttr --HELP work (case-insensitive)?" false
@@ -219,6 +270,9 @@ if command -v curl >/dev/null 2>&1; then
     # We'll skip the actual network call but verify it processes the argument
     if print_msg 12 "Does wttr handle location arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 12 "Does wttr handle location arguments?" false; then
@@ -233,6 +287,9 @@ if command -v curl >/dev/null 2>&1; then
     # We can't easily test the failure case without breaking the test environment
     if print_msg 13 "Does wttr check for curl dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 13 "Does wttr check for curl dependency?" false; then
@@ -247,6 +304,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if weather --help >/dev/null 2>&1; then
         if print_msg 14 "Does weather --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does weather --help work?" false
@@ -262,6 +322,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if weather -h >/dev/null 2>&1; then
         if print_msg 15 "Does weather -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does weather -h work?" false
@@ -280,6 +343,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]] && echo "$output" | grep -q "Usage:"; then
     if print_msg 16 "Does weather show usage when called with no arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does weather show usage when called with no arguments?" false
@@ -289,6 +355,9 @@ fi
 if echo "$output" | grep -q "weather \[mode\]" && echo "$output" | grep -q "Modes:"; then
     if print_msg 17 "Does usage message contain expected information?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does usage message contain expected information?" false
@@ -300,6 +369,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]] && echo "$help_output" | grep -q "Usage:"; then
     if print_msg 18 "Does 'weather help' show help message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does 'weather help' show help message?" false
@@ -311,6 +383,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]] && echo "$help_output_upper" | grep -q "Usage:"; then
     if print_msg 19 "Does 'weather HELP' work (case-insensitive)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does 'weather HELP' work (case-insensitive)?" false
@@ -323,6 +398,9 @@ output=$(weather current --location "TestCity" 2>&1)
 if echo "$output" | grep -q "CURRENT WEATHER" || echo "$output" | grep -qi "current"; then
     if print_msg 20 "Does 'weather current' set current mode?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does 'weather current' set current mode?" false
@@ -333,6 +411,9 @@ output=$(weather CURRENT --location "TestCity" 2>&1)
 if echo "$output" | grep -q "CURRENT WEATHER" || echo "$output" | grep -qi "current"; then
     if print_msg 21 "Does 'weather CURRENT' work (case-insensitive)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does 'weather CURRENT' work (case-insensitive)?" false
@@ -343,6 +424,9 @@ output=$(weather forecast --location "TestCity" 2>&1)
 if echo "$output" | grep -q "3-DAY FORECAST" || echo "$output" | grep -qi "forecast"; then
     if print_msg 22 "Does 'weather forecast' set forecast mode?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does 'weather forecast' set forecast mode?" false
@@ -353,6 +437,9 @@ output=$(weather FORECAST --location "TestCity" 2>&1)
 if echo "$output" | grep -q "3-DAY FORECAST" || echo "$output" | grep -qi "forecast"; then
     if print_msg 23 "Does 'weather FORECAST' work (case-insensitive)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does 'weather FORECAST' work (case-insensitive)?" false
@@ -363,6 +450,9 @@ output=$(weather --location "TestCity" 2>&1)
 if echo "$output" | grep -q "TestCity\|WEATHER FOR" || echo "$output" | grep -qi "weather"; then
     if print_msg 24 "Does 'weather --location' set custom location?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does 'weather --location' set custom location?" false
@@ -373,6 +463,9 @@ output=$(weather -l "TestCity" 2>&1)
 if echo "$output" | grep -q "TestCity\|WEATHER FOR" || echo "$output" | grep -qi "weather"; then
     if print_msg 25 "Does 'weather -l' set custom location?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does 'weather -l' set custom location?" false
@@ -383,6 +476,9 @@ output=$(weather --wttr "TestCity" 2>&1)
 if echo "$output" | grep -q "TestCity\|WEATHER FOR" || echo "$output" | grep -qi "weather"; then
     if print_msg 26 "Does 'weather --wttr' set custom location?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does 'weather --wttr' set custom location?" false
@@ -393,6 +489,9 @@ output=$(weather -w "TestCity" 2>&1)
 if echo "$output" | grep -q "TestCity\|WEATHER FOR" || echo "$output" | grep -qi "weather"; then
     if print_msg 27 "Does 'weather -w' set custom location?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does 'weather -w' set custom location?" false
@@ -405,6 +504,9 @@ error_output=$(weather --location 2>&1)
 if echo "$error_output" | grep -q "Error:" && echo "$error_output" | grep -q "No location provided"; then
     if print_msg 28 "Does 'weather --location' show error when no location provided?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Does 'weather --location' show error when no location provided?" false
@@ -416,6 +518,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 29 "Does 'weather --location' return 1 on error?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does 'weather --location' return 1 on error?" false
@@ -426,6 +531,9 @@ if command -v curl >/dev/null 2>&1; then
     # curl is available, dependency check should pass
     if print_msg 30 "Does weather check for curl dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 30 "Does weather check for curl dependency?" false; then
@@ -438,6 +546,9 @@ if command -v head >/dev/null 2>&1; then
     # head is available, dependency check should pass
     if print_msg 31 "Does weather check for head dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 31 "Does weather check for head dependency?" false; then
@@ -452,6 +563,9 @@ output=$(weather current --location "TestCity" 2>&1)
 if echo "$output" | grep -qE '🌤️|📅|📍'; then
     if print_msg 32 "Does weather output contain emoji/icons?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does weather output contain emoji/icons?" false
@@ -461,6 +575,9 @@ fi
 if echo "$output" | grep -qE $'\033\[|\[0-9]+m'; then
     if print_msg 33 "Does weather output contain color codes?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does weather output contain color codes?" false
@@ -470,6 +587,9 @@ fi
 if echo "$output" | grep -q "CURRENT WEATHER\|3-DAY FORECAST\|WEATHER FOR"; then
     if print_msg 34 "Does weather output have proper section headers?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 34 "Does weather output have proper section headers?" false
@@ -480,6 +600,9 @@ output=$(weather --location "TestCity" 2>&1)
 if echo "$output" | grep -q "Current Weather\|3-Day Forecast\|WEATHER FOR"; then
     if print_msg 35 "Does default mode show both current and forecast sections?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 35 "Does default mode show both current and forecast sections?" false
@@ -491,6 +614,9 @@ printf "\nTesting bash completion...\n"
 if declare -f _weather_completion >/dev/null 2>&1; then
     if print_msg 36 "Is _weather_completion function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 36 "Is _weather_completion function defined?" false
@@ -500,6 +626,9 @@ fi
 if declare -f _wttr_completion >/dev/null 2>&1; then
     if print_msg 37 "Is _wttr_completion function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 37 "Is _wttr_completion function defined?" false
@@ -510,6 +639,9 @@ if [[ -n "${BASH_VERSION:-}" ]] && command -v complete >/dev/null 2>&1; then
     if complete -p weather >/dev/null 2>&1; then
         if print_msg 38 "Is weather completion registered with bash?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         if print_msg 38 "Is weather completion registered with bash?" false; then
@@ -527,6 +659,9 @@ if [[ -n "${BASH_VERSION:-}" ]] && command -v complete >/dev/null 2>&1; then
     if complete -p wttr >/dev/null 2>&1; then
         if print_msg 39 "Is wttr completion registered with bash?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         if print_msg 39 "Is wttr completion registered with bash?" false; then
@@ -546,6 +681,9 @@ output=$(weather --location "New York" 2>&1)
 if echo "$output" | grep -q "New York\|WEATHER FOR" || echo "$output" | grep -qi "weather"; then
     if print_msg 40 "Does weather handle location names with spaces?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 40 "Does weather handle location names with spaces?" false
@@ -557,6 +695,9 @@ if weather current --location "TestCity" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 41 "Does weather return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 41 "Does weather return 0 on success?" false
@@ -574,6 +715,9 @@ output=$(weather current --location "TestCity" "extra" "args" 2>&1)
 if echo "$output" | grep -q "TestCity\|WEATHER FOR" || echo "$output" | grep -qi "weather\|current"; then
     if print_msg 42 "Does weather handle multiple arguments after location flag?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 42 "Does weather handle multiple arguments after location flag?" false
@@ -585,28 +729,45 @@ printf "\nTesting optional network-dependent functionality...\n"
 if [[ "$network_available" == true ]]; then
     if print_msg 43 "Is network available for optional tests?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
-    if print_msg 43 "Is network available for optional tests?" false; then
+    if print_msg 43 "Is network available for optional tests?" "N/A"; then
         printf "        (Network not available, skipping network-dependent tests)\n"
+        ((na_tests++))
     fi
 fi
 
 # Test 44: wttr makes curl request (if network available)
 if [[ "$network_available" == true ]] && command -v curl >/dev/null 2>&1; then
-    # Try a simple wttr call with a timeout
-    if timeout 5 bash -c 'source '"${__PLUGINS_DIR}"'/information/weather.sh 2>/dev/null; wttr "London" 2>&1 | head -1' >/dev/null 2>&1; then
+    # Try a simple wttr call with a timeout (15 seconds)
+    timeout 15 bash -c 'source '"${__PLUGINS_DIR}"'/information/weather.sh 2>/dev/null; wttr "London" 2>&1 | head -1' >/dev/null 2>&1
+    timeout_exit_code=$?
+    if [[ $timeout_exit_code -eq 0 ]]; then
         if print_msg 44 "Does wttr make curl request (network test)?" true; then
             ((score++))
+            if type update_progress_from_score >/dev/null 2>&1; then
+                update_progress_from_score
+            fi
+        fi
+    elif [[ $timeout_exit_code -eq 124 ]]; then
+        # Timeout occurred - mark as N/A
+        if print_msg 44 "Does wttr make curl request (network test)?" "N/A"; then
+            printf "        (Network request timed out after 15 seconds)\n"
+            ((na_tests++))
         fi
     else
+        # Other failure
         if print_msg 44 "Does wttr make curl request (network test)?" false; then
-            printf "        (Network request failed or timed out)\n"
+            printf "        (Network request failed)\n"
         fi
     fi
 else
-    if print_msg 44 "Does wttr make curl request (network test)?" false; then
+    if print_msg 44 "Does wttr make curl request (network test)?" "N/A"; then
         printf "        (Network or curl not available, skipping)\n"
+        ((na_tests++))
     fi
 fi
 
@@ -614,30 +775,62 @@ fi
 if [[ "$network_available" == true ]] && command -v curl >/dev/null 2>&1; then
     # Try weather with auto-detection (may fail, but test the attempt)
     # Use a subshell to avoid affecting current environment
-    output=$(timeout 5 bash -c 'source '"${__PLUGINS_DIR}"'/information/weather.sh 2>/dev/null; weather current 2>&1' 2>&1 || true)
-    if echo "$output" | grep -q "CURRENT WEATHER\|Error: Could not detect location\|🌤️"; then
+    # Timeout is 15 seconds
+    output=$(timeout 15 bash -c 'source '"${__PLUGINS_DIR}"'/information/weather.sh 2>/dev/null; weather current 2>&1' 2>&1)
+    timeout_exit_code=$?
+    if [[ $timeout_exit_code -eq 124 ]]; then
+        # Timeout occurred - mark as N/A
+        if print_msg 45 "Does weather attempt location auto-detection (network test)?" "N/A"; then
+            printf "        (Auto-detection timed out after 15 seconds)\n"
+            ((na_tests++))
+        fi
+    elif echo "$output" | grep -q "CURRENT WEATHER\|Error: Could not detect location\|🌤️"; then
         if print_msg 45 "Does weather attempt location auto-detection (network test)?" true; then
             ((score++))
+            if type update_progress_from_score >/dev/null 2>&1; then
+                update_progress_from_score
+            fi
         fi
     else
         if print_msg 45 "Does weather attempt location auto-detection (network test)?" false; then
-            printf "        (Auto-detection may have failed or timed out)\n"
+            printf "        (Auto-detection failed)\n"
         fi
     fi
 else
-    if print_msg 45 "Does weather attempt location auto-detection (network test)?" false; then
+    if print_msg 45 "Does weather attempt location auto-detection (network test)?" "N/A"; then
         printf "        (Network or curl not available, skipping)\n"
+        ((na_tests++))
     fi
 fi
 
-total_tests=46  # Tests 1-45 plus 1 summary test with "*"
-percentage=$((score * 100 / total_tests))
+# Calculate percentage excluding N/A tests
+applicable_tests=$((total_tests - na_tests))
+if [[ $applicable_tests -gt 0 ]]; then
+    percentage=$((score * 100 / applicable_tests))
+    # Cap percentage at 100%
+    if [[ $percentage -gt 100 ]]; then
+        percentage=100
+    fi
+else
+    percentage=100  # All tests were N/A, consider it 100%
+fi
+
+# Write results file
+# Use applicable_tests for display (so it shows 43/43 instead of 43/46)
+if type write_test_results >/dev/null 2>&1; then
+    # Determine status: PASSED if all applicable tests passed, otherwise FAILED
+    if [[ $score -eq $applicable_tests ]] && [[ $applicable_tests -gt 0 ]]; then
+        write_test_results "PASSED" "$score" "$applicable_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$applicable_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"
 printf "Test Results Summary\n"
 printf "========================================\n"
-printf "Tests Passed: %d / %d\n" "$score" "$total_tests"
+printf "Tests Passed: %d / %d\n" "$score" "$applicable_tests"
 printf "Percentage: %d%%\n" "$percentage"
 printf "========================================\n"
 

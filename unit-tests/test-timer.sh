@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=43  # Tests 1-42 plus 1 summary test with "*"
 printf "Running unit tests for timer.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/timer.sh" ]]; then
     if print_msg 3 "Can I find timer.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find timer.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/timer.sh" 2>/dev/null; then
     if print_msg 4 "Can I source timer.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source timer.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f timer >/dev/null 2>&1; then
     if print_msg 5 "Is timer function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is timer function defined?" false
@@ -81,6 +107,9 @@ fi
 if declare -f _timer_completion >/dev/null 2>&1; then
     if print_msg 6 "Is _timer_completion function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is _timer_completion function defined?" false
@@ -88,6 +117,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 cd "${__UNIT_TESTS_DIR}" || {
     printf "Error: Failed to change directory to unit-tests.\n" >&2
@@ -138,6 +170,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if timer --help >/dev/null 2>&1; then
         if print_msg 7 "Does timer --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does timer --help work?" false
@@ -152,6 +187,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if timer -h >/dev/null 2>&1; then
         if print_msg 8 "Does timer -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 8 "Does timer -h work?" false
@@ -172,6 +210,9 @@ if timer ${TEST_TIMER_PREFIX}DefaultTimer >/dev/null 2>&1; then
     if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt" ]]; then
         if print_msg 9 "Does timer create timer file with custom name?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 9 "Does timer create timer file with custom name?" false
@@ -185,6 +226,9 @@ if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt" ]]; then
     if grep -qE '^[0-9]+$' "/tmp/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt"; then
         if print_msg 10 "Does timer file contain valid timestamp?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 10 "Does timer file contain valid timestamp?" false
@@ -200,6 +244,9 @@ if timer ${TEST_TIMER_PREFIX}TestReturn >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 11 "Does timer return 0 on successful creation?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 11 "Does timer return 0 on successful creation?" false
@@ -213,6 +260,9 @@ timer_output=$(timer ${TEST_TIMER_PREFIX}SuccessMsg 2>&1)
 if echo "$timer_output" | grep -q "Timer set for"; then
     if print_msg 12 "Does timer output success message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does timer output success message?" false
@@ -226,6 +276,9 @@ if timer "${TEST_TIMER_PREFIX}Test Timer" >/dev/null 2>&1; then
     if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}Test_Timer.txt" ]]; then
         if print_msg 13 "Does timer convert spaces to underscores in name?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does timer convert spaces to underscores in name?" false
@@ -241,6 +294,9 @@ if timer "${TEST_TIMER_PREFIX}Test@Timer#123" >/dev/null 2>&1; then
     if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}TestTimer123.txt" ]]; then
         if print_msg 14 "Does timer remove invalid characters from name?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does timer remove invalid characters from name?" false
@@ -258,6 +314,9 @@ if timer "@@@!!!" >/dev/null 2>&1; then
     if [[ -f "/tmp/timer-Timer.txt" ]]; then
         if print_msg 15 "Does timer default to 'Timer' when name empty after sanitization?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does timer default to 'Timer' when name empty after sanitization?" false
@@ -280,6 +339,9 @@ list_output=$(timer LIST 2>&1)
 if echo "$list_output" | grep -q "Listing all timers" || echo "$list_output" | grep -q "${TEST_TIMER_PREFIX}Timer"; then
     if print_msg 16 "Does timer LIST command work?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 16 "Does timer LIST command work?" false
@@ -289,6 +351,9 @@ fi
 if echo "$list_output" | grep -q "${TEST_TIMER_PREFIX}Timer1\|${TEST_TIMER_PREFIX}Timer2"; then
     if print_msg 17 "Does timer LIST show timer names?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 17 "Does timer LIST show timer names?" false
@@ -299,6 +364,9 @@ list_output2=$(timer list 2>&1)
 if echo "$list_output2" | grep -q "Listing all timers\|${TEST_TIMER_PREFIX}Timer"; then
     if print_msg 18 "Does timer LIST work case-insensitively?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does timer LIST work case-insensitively?" false
@@ -310,6 +378,9 @@ list_output_empty=$(timer LIST 2>&1)
 if echo "$list_output_empty" | grep -q "no timers found"; then
     if print_msg 19 "Does timer LIST handle empty list?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 19 "Does timer LIST handle empty list?" false
@@ -322,6 +393,9 @@ if timer LIST >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 20 "Does timer LIST return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Does timer LIST return 0 on success?" false
@@ -342,6 +416,9 @@ if echo "n" | timer CLEAR 2>&1 | grep -q "Timers not cleared"; then
     if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}Clear1.txt" ]] || [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}Clear2.txt" ]]; then
         if print_msg 21 "Does timer CLEAR preserve timers when cancelled?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 21 "Does timer CLEAR preserve timers when cancelled?" false
@@ -360,6 +437,9 @@ if echo "y" | timer CLEAR 2>&1 | grep -q "All timers cleared"; then
         if [[ ! -f "/tmp/timer-${TEST_TIMER_PREFIX}AfterClear.txt" ]]; then
             if print_msg 22 "Does timer CLEAR remove all timers when confirmed?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 22 "Does timer CLEAR remove all timers when confirmed?" false
@@ -376,6 +456,9 @@ timer ${TEST_TIMER_PREFIX}Clear4 >/dev/null 2>&1
 if echo "n" | timer clear 2>&1 | grep -q "Timers not cleared\|Timers not cleared"; then
     if print_msg 23 "Does timer CLEAR work case-insensitively?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does timer CLEAR work case-insensitively?" false
@@ -388,6 +471,9 @@ if echo "y" | timer CLEAR >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 24 "Does timer CLEAR return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 24 "Does timer CLEAR return 0 on success?" false
@@ -406,10 +492,13 @@ past_timestamp=$(( $(date +%s) - 5 ))
 printf "%s" "$past_timestamp" > "$test_timer_file"
 
 # Test elapsed time calculation
-elapsed_output=$(timer $test_timer_name 2>&1)
+elapsed_output=$(printf "n\n" | timer $test_timer_name 2>&1)
 if echo "$elapsed_output" | grep -q "Elapsed Time"; then
     if print_msg 25 "Does timer calculate and display elapsed time?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 25 "Does timer calculate and display elapsed time?" false
@@ -419,6 +508,9 @@ fi
 if echo "$elapsed_output" | grep -qE '[0-9]{3}:[0-9]{2}:[0-9]{2}'; then
     if print_msg 26 "Does timer format time as HHH:MM:SS?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 26 "Does timer format time as HHH:MM:SS?" false
@@ -431,10 +523,13 @@ rm -f "$test_timer_file2" 2>/dev/null || true
 hours_ago_timestamp=$(( $(date +%s) - 7200 ))  # 2 hours
 printf "%s" "$hours_ago_timestamp" > "$test_timer_file2"
 
-elapsed_output2=$(timer $test_timer_name2 2>&1)
+elapsed_output2=$(printf "n\n" | timer $test_timer_name2 2>&1)
 if echo "$elapsed_output2" | grep -qE '00[12]:[0-9]{2}:[0-9]{2}'; then
     if print_msg 27 "Does timer calculate hours correctly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does timer calculate hours correctly?" false
@@ -447,10 +542,13 @@ rm -f "$test_timer_file3" 2>/dev/null || true
 minutes_ago_timestamp=$(( $(date +%s) - 90 ))  # 90 seconds = 1 min 30 sec
 printf "%s" "$minutes_ago_timestamp" > "$test_timer_file3"
 
-elapsed_output3=$(timer $test_timer_name3 2>&1)
+elapsed_output3=$(printf "n\n" | timer $test_timer_name3 2>&1)
 if echo "$elapsed_output3" | grep -qE '[0-9]{3}:0[01]:[0-9]{2}'; then
     if print_msg 28 "Does timer calculate minutes correctly?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Does timer calculate minutes correctly?" false
@@ -468,12 +566,18 @@ elapsed_output4=$(printf "n\n" | timer $test_timer_name4 2>&1)
 if echo "$elapsed_output4" | grep -qE '000:00:00|Elapsed Time.*000:00:00'; then
     if print_msg 29 "Does timer handle negative elapsed time (defaults to 0)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # Check if it shows elapsed time without error (negative was handled gracefully)
     if echo "$elapsed_output4" | grep -q "Elapsed Time" && ! echo "$elapsed_output4" | grep -q "Error\|error"; then
         if print_msg 29 "Does timer handle negative elapsed time (defaults to 0)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Does timer handle negative elapsed time (defaults to 0)?" false
@@ -495,6 +599,9 @@ if echo "$reset_output" | grep -q "Would you like to reset\|still set"; then
     if [[ -f "$test_timer_file5" ]]; then
         if print_msg 30 "Does timer preserve timer when reset cancelled?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 30 "Does timer preserve timer when reset cancelled?" false
@@ -513,6 +620,9 @@ if echo "$reset_output2" | grep -q "reset"; then
     if [[ ! -f "$test_timer_file5" ]]; then
         if print_msg 31 "Does timer delete timer file when reset confirmed?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Does timer delete timer file when reset confirmed?" false
@@ -528,6 +638,9 @@ reset_output3=$(printf "Y\n" | timer $test_timer_name5 2>&1)
 if echo "$reset_output3" | grep -q "reset"; then
     if print_msg 32 "Does timer reset work case-insensitively (Y/y)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does timer reset work case-insensitively (Y/y)?" false
@@ -550,15 +663,21 @@ if echo "$multi_list_output" | grep -q "${TEST_TIMER_PREFIX}Multi1" && \
    echo "$multi_list_output" | grep -q "${TEST_TIMER_PREFIX}Multi3"; then
     if print_msg 33 "Does timer LIST show all active timers?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does timer LIST show all active timers?" false
 fi
 
 # Test accessing individual timer
-if timer ${TEST_TIMER_PREFIX}Multi1 >/dev/null 2>&1; then
+if printf "n\n" | timer ${TEST_TIMER_PREFIX}Multi1 >/dev/null 2>&1; then
     if print_msg 34 "Does timer work with multiple active timers?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 34 "Does timer work with multiple active timers?" false
@@ -575,6 +694,9 @@ if timer "$long_name" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]] || [[ $exit_code -eq 1 ]]; then
         if print_msg 35 "Does timer handle edge cases gracefully?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 35 "Does timer handle edge cases gracefully?" false
@@ -585,6 +707,9 @@ else
     if [[ $exit_code -eq 1 ]]; then
         if print_msg 35 "Does timer handle edge cases gracefully?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 35 "Does timer handle edge cases gracefully?" false
@@ -604,11 +729,17 @@ corrupt_output=$(printf "n\n" | timer $test_timer_name6 2>&1)
 if echo "$corrupt_output" | grep -q "Elapsed Time\|Error\|error\|Could not"; then
     if print_msg 36 "Does timer handle corrupted timer file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     # If it completes without error, that's acceptable too
     if print_msg 36 "Does timer handle corrupted timer file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 fi
 
@@ -639,6 +770,9 @@ if command -v complete >/dev/null 2>&1; then
     if complete -p timer >/dev/null 2>&1; then
         if print_msg 38 "Is timer completion function registered?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 38 "Is timer completion function registered?" false
@@ -657,6 +791,9 @@ if command -v date >/dev/null 2>&1 && command -v read >/dev/null 2>&1 && \
    command -v rm >/dev/null 2>&1 && command -v printf >/dev/null 2>&1; then
     if print_msg 39 "Does timer check for required dependencies?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 39 "Does timer check for required dependencies?" false; then
@@ -673,6 +810,9 @@ if timer "" >/dev/null 2>&1; then
     if [[ -f "/tmp/timer-Timer.txt" ]]; then
         if print_msg 40 "Does timer handle empty name (defaults to 'Timer')?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 40 "Does timer handle empty name (defaults to 'Timer')?" false
@@ -687,6 +827,9 @@ if timer "${TEST_TIMER_PREFIX}test.timer-name" >/dev/null 2>&1; then
     if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}test.timer-name.txt" ]]; then
         if print_msg 41 "Does timer preserve dots and hyphens in name?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 41 "Does timer preserve dots and hyphens in name?" false
@@ -702,10 +845,13 @@ rm -f "$test_timer_file7" 2>/dev/null || true
 very_old_timestamp=$(( $(date +%s) - 1000000 ))  # ~11.5 days ago
 printf "%s" "$very_old_timestamp" > "$test_timer_file7"
 
-long_output=$(timer $test_timer_name7 2>&1)
+long_output=$(printf "n\n" | timer $test_timer_name7 2>&1)
 if echo "$long_output" | grep -q "Elapsed Time"; then
     if print_msg 42 "Does timer handle very long elapsed times?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 42 "Does timer handle very long elapsed times?" false
@@ -714,8 +860,15 @@ fi
 # Clean up before final tests
 rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt /tmp/timer-Timer.txt 2>/dev/null || true
 
-total_tests=43  # Tests 1-42 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

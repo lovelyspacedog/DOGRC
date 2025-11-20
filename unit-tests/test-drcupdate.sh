@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=36  # Tests 1-35 plus 1 summary test with "*"
 printf "Running unit tests for drcupdate.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/utilities/drcupdate.sh" ]]; then
     if print_msg 3 "Can I find drcupdate.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find drcupdate.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/utilities/drcupdate.sh" 2>/dev/null; then
     if print_msg 4 "Can I source drcupdate.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source drcupdate.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f drcupdate >/dev/null 2>&1; then
     if print_msg 5 "Is drcupdate function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is drcupdate function defined?" false
@@ -81,6 +107,9 @@ fi
 if declare -f compare_versions >/dev/null 2>&1; then
     if print_msg 6 "Is compare_versions function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 6 "Is compare_versions function defined?" false
@@ -90,6 +119,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 # Save original directory and environment
 original_dir=$(pwd)
@@ -221,6 +253,9 @@ if compare_versions "1.0.0" "1.0.0"; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 7 "Does compare_versions return 0 for equal versions?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does compare_versions return 0 for equal versions?" false
@@ -235,6 +270,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 8 "Does compare_versions return 1 when v1 > v2?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Does compare_versions return 1 when v1 > v2?" false
@@ -246,6 +284,9 @@ exit_code=$?
 if [[ $exit_code -eq 2 ]]; then
     if print_msg 9 "Does compare_versions return 2 when v1 < v2?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does compare_versions return 2 when v1 < v2?" false
@@ -257,6 +298,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]]; then
     if print_msg 10 "Does compare_versions handle 'v' prefix?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does compare_versions handle 'v' prefix?" false
@@ -268,6 +312,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]]; then
     if print_msg 11 "Does compare_versions handle incomplete versions (1.2 vs 1.2.0)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does compare_versions handle incomplete versions (1.2 vs 1.2.0)?" false
@@ -279,6 +326,9 @@ exit_code=$?
 if [[ $exit_code -eq 0 ]]; then
     if print_msg 12 "Does compare_versions handle single digit versions (1 vs 1.0.0)?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does compare_versions handle single digit versions (1 vs 1.0.0)?" false
@@ -290,6 +340,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 13 "Does compare_versions handle major version differences?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does compare_versions handle major version differences?" false
@@ -301,6 +354,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 14 "Does compare_versions handle minor version differences?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does compare_versions handle minor version differences?" false
@@ -312,6 +368,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 15 "Does compare_versions handle patch version differences?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 15 "Does compare_versions handle patch version differences?" false
@@ -324,6 +383,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcupdate --help >/dev/null 2>&1; then
         if print_msg 16 "Does drcupdate --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 16 "Does drcupdate --help work?" false
@@ -339,6 +401,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if drcupdate -h >/dev/null 2>&1; then
         if print_msg 17 "Does drcupdate -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does drcupdate -h work?" false
@@ -367,6 +432,9 @@ fi
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 18 "Does drcupdate error when DOGRC.json not found?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does drcupdate error when DOGRC.json not found?" false
@@ -377,6 +445,9 @@ if command -v curl >/dev/null 2>&1; then
     # curl is available, dependency check should pass
     if print_msg 19 "Does drcupdate check for curl dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 19 "Does drcupdate check for curl dependency?" false; then
@@ -389,6 +460,9 @@ if command -v jq >/dev/null 2>&1; then
     # jq is available, dependency check should pass
     if print_msg 20 "Does drcupdate check for jq dependency?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     if print_msg 20 "Does drcupdate check for jq dependency?" false; then
@@ -412,6 +486,9 @@ if [[ -f "${TEST_CONFIG_DIR}/DOGRC.json" ]]; then
     if jq -r '.version // empty' "${TEST_CONFIG_DIR}/DOGRC.json" 2>/dev/null | grep -q "0.1.5"; then
         if print_msg 21 "Can drcupdate read version from DOGRC.json?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 21 "Can drcupdate read version from DOGRC.json?" false
@@ -482,6 +559,9 @@ TESTSCRIPT
     if [[ $exit_code -eq 2 ]]; then
         if print_msg 22 "Does drcupdate use version.fake when it exists?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 22 "Does drcupdate use version.fake when it exists?" false
@@ -500,6 +580,9 @@ EOF
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 23 "Does --return-only return 0 when up-to-date?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 23 "Does --return-only return 0 when up-to-date?" false
@@ -516,6 +599,9 @@ EOF
     if [[ $exit_code -eq 2 ]]; then
         if print_msg 24 "Does --return-only return 2 when update available?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 24 "Does --return-only return 2 when update available?" false
@@ -532,6 +618,9 @@ EOF
     if [[ $exit_code -eq 3 ]]; then
         if print_msg 25 "Does --return-only return 3 when downgrade possible?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 25 "Does --return-only return 3 when downgrade possible?" false
@@ -542,6 +631,9 @@ EOF
     if [[ -z "$output" ]]; then
         if print_msg 26 "Does --return-only suppress all output?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 26 "Does --return-only suppress all output?" false
@@ -580,6 +672,9 @@ EOF
     if [[ -z "$output" ]]; then
         if print_msg 27 "Does --silent flag suppress output?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Does --silent flag suppress output?" false
@@ -601,6 +696,9 @@ EOF
     if echo "$output" | grep -q "Error.*cannot be used with --silent"; then
         if print_msg 28 "Does --ignore-this-version error when used with --silent?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does --ignore-this-version error when used with --silent?" false
@@ -625,6 +723,9 @@ EOF
     if echo "$output" | grep -q "Update available" && echo "$output" | grep -q "0.1.5" && echo "$output" | grep -q "0.2.0"; then
         if print_msg 29 "Does update available message show both versions?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 29 "Does update available message show both versions?" false
@@ -646,6 +747,9 @@ EOF
     if echo "$output" | grep -q "latest version" && echo "$output" | grep -q "0.2.0"; then
         if print_msg 30 "Does up-to-date message show version?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 30 "Does up-to-date message show version?" false
@@ -662,6 +766,9 @@ printf "\nTesting bash completion...\n"
 if declare -f _drcupdate_completion >/dev/null 2>&1; then
     if print_msg 31 "Is _drcupdate_completion function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 31 "Is _drcupdate_completion function defined?" false
@@ -672,6 +779,9 @@ if [[ -n "${BASH_VERSION:-}" ]] && command -v complete >/dev/null 2>&1; then
     if complete -p drcupdate >/dev/null 2>&1; then
         if print_msg 32 "Is drcupdate completion registered with bash?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         if print_msg 32 "Is drcupdate completion registered with bash?" false; then
@@ -701,6 +811,9 @@ EOF
     if [[ $exit_code -eq 2 ]]; then
         if print_msg 33 "Does drcupdate handle empty version.fake?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 33 "Does drcupdate handle empty version.fake?" false
@@ -721,6 +834,9 @@ if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     if [[ $exit_code -eq 2 ]]; then
         if print_msg 34 "Does drcupdate trim whitespace from version.fake?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 34 "Does drcupdate trim whitespace from version.fake?" false
@@ -744,6 +860,9 @@ EOF
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 35 "Does drcupdate return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 35 "Does drcupdate return 0 on success?" false
@@ -754,8 +873,15 @@ else
     fi
 fi
 
-total_tests=36  # Tests 1-35 plus 1 summary test with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

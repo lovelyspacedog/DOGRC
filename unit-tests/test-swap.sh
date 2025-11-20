@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -26,12 +31,21 @@ print_msg() {
 }
 
 score=0
+total_tests=35  # Tests 1-33 plus 2 summary tests with "*"
 printf "Running unit tests for swap.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -42,6 +56,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -52,6 +69,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/file-operations/swap.sh" ]]; then
     if print_msg 3 "Can I find swap.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find swap.sh?" false
@@ -62,6 +82,9 @@ fi
 if source "${__PLUGINS_DIR}/file-operations/swap.sh" 2>/dev/null; then
     if print_msg 4 "Can I source swap.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source swap.sh?" false
@@ -73,6 +96,9 @@ fi
 if declare -f swap >/dev/null 2>&1; then
     if print_msg 5 "Is swap function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is swap function defined?" false
@@ -82,6 +108,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 cd "${__UNIT_TESTS_DIR}" || {
     printf "Error: Failed to change directory to unit-tests.\n" >&2
@@ -100,6 +129,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if swap --help >/dev/null 2>&1; then
         if print_msg 6 "Does swap --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does swap --help work?" false
@@ -115,6 +147,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if swap -h >/dev/null 2>&1; then
         if print_msg 7 "Does swap -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does swap -h work?" false
@@ -133,6 +168,9 @@ test_content2="This is the content of file two.\nLine 2 of file two.\nEnd of fil
 if printf "${test_content1}" > "${__UNIT_TESTS_DIR}/file1.txt"; then
     if print_msg 8 "Can I create file1.txt?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Can I create file1.txt?" false
@@ -143,6 +181,9 @@ fi
 if printf "${test_content2}" > "${__UNIT_TESTS_DIR}/file2.txt"; then
     if print_msg 9 "Can I create file2.txt?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Can I create file2.txt?" false
@@ -152,6 +193,9 @@ fi
 
 print_msg "*" "Did I create test files?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 printf "\nTesting error handling...\n"
 
@@ -159,6 +203,9 @@ printf "\nTesting error handling...\n"
 if ! swap 2>/dev/null; then
     if print_msg 10 "Does swap error on missing arguments?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does swap error on missing arguments?" false
@@ -168,6 +215,9 @@ fi
 if ! swap "file1.txt" 2>/dev/null; then
     if print_msg 11 "Does swap error on missing second argument?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does swap error on missing second argument?" false
@@ -177,6 +227,9 @@ fi
 if ! swap "nonexistent1.txt" "file2.txt" 2>/dev/null; then
     if print_msg 12 "Does swap error on non-existent first file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 12 "Does swap error on non-existent first file?" false
@@ -186,6 +239,9 @@ fi
 if ! swap "file1.txt" "nonexistent2.txt" 2>/dev/null; then
     if print_msg 13 "Does swap error on non-existent second file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 13 "Does swap error on non-existent second file?" false
@@ -196,6 +252,9 @@ if mkdir -p "${__UNIT_TESTS_DIR}/test_dir"; then
     if ! swap "test_dir" "file2.txt" 2>/dev/null; then
         if print_msg 14 "Does swap error when first argument is a directory?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 14 "Does swap error when first argument is a directory?" false
@@ -210,6 +269,9 @@ if mkdir -p "${__UNIT_TESTS_DIR}/test_dir2"; then
     if ! swap "file1.txt" "test_dir2" 2>/dev/null; then
         if print_msg 15 "Does swap error when second argument is a directory?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does swap error when second argument is a directory?" false
@@ -233,6 +295,9 @@ if swap "file1.txt" "file2.txt" >/dev/null 2>&1; then
         if [[ "$new_content1" == "$original_content2" ]] && [[ "$new_content2" == "$original_content1" ]]; then
             if print_msg 16 "Does swap successfully swap two files?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 16 "Does swap successfully swap two files?" false
@@ -255,6 +320,9 @@ if swap "file1.txt" "file2.txt" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 17 "Does swap return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does swap return 0 on success?" false
@@ -272,6 +340,9 @@ output=$(swap "file1.txt" "file2.txt" 2>&1)
 if echo "$output" | grep -q "Successfully swapped"; then
     if print_msg 18 "Does swap output success message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 18 "Does swap output success message?" false
@@ -296,6 +367,9 @@ if swap "file1.txt" "file2.txt" >/dev/null 2>&1; then
     if [[ "$restored_content1" == "$original_content1" ]] && [[ "$restored_content2" == "$original_content2" ]]; then
         if print_msg 19 "Does swap preserve content correctly (swap back test)?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 19 "Does swap preserve content correctly (swap back test)?" false
@@ -320,6 +394,9 @@ final_content2="$(cat file2.txt 2>/dev/null)"
 if [[ "$final_content1" == "$original_content2" ]] && [[ "$final_content2" == "$original_content1" ]]; then
     if print_msg 20 "Does swap work correctly with multiple swaps?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 20 "Does swap work correctly with multiple swaps?" false
@@ -338,6 +415,9 @@ output=$(swap "test1.txt" "test2.txt" 2>&1)
 if ! echo "$output" | grep -q "Warning: Files have different extensions"; then
     if print_msg 21 "Does swap NOT warn when files have same extension?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 21 "Does swap NOT warn when files have same extension?" false
@@ -355,6 +435,9 @@ output=$(swap "test1.txt" "test2.sh" 2>&1)
 if echo "$output" | grep -q "Warning: Files have different extensions"; then
     if print_msg 22 "Does swap warn when files have different extensions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does swap warn when files have different extensions?" false
@@ -372,6 +455,9 @@ output=$(swap "test1" "test2" 2>&1)
 if ! echo "$output" | grep -q "Warning: Files have different extensions"; then
     if print_msg 23 "Does swap NOT warn when files have no extensions?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does swap NOT warn when files have no extensions?" false
@@ -391,6 +477,9 @@ output=$(swap "test1.txt" "test2" 2>&1)
 if ! echo "$output" | grep -q "Warning: Files have different extensions"; then
     if print_msg 24 "Does swap NOT warn when only one file has extension?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 24 "Does swap NOT warn when only one file has extension?" false
@@ -414,6 +503,9 @@ if swap "${space_file1}" "${space_file2}" >/dev/null 2>&1; then
     if [[ "$content1" == "content2" ]] && [[ "$content2" == "content1" ]]; then
         if print_msg 25 "Does swap work with filenames containing spaces?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 25 "Does swap work with filenames containing spaces?" false
@@ -434,6 +526,9 @@ if swap "empty1.txt" "empty2.txt" >/dev/null 2>&1; then
     if [[ ! -s "empty1.txt" ]] && [[ ! -s "empty2.txt" ]]; then
         if print_msg 26 "Does swap work with empty files?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 26 "Does swap work with empty files?" false
@@ -453,6 +548,9 @@ if ! swap "self_swap.txt" "self_swap.txt" >/dev/null 2>&1; then
     # The function errors because it moves the file away and then can't find it
     if print_msg 27 "Does swap error when swapping file with itself?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 27 "Does swap error when swapping file with itself?" false
@@ -475,6 +573,9 @@ if swap "large1.txt" "large2.txt" >/dev/null 2>&1; then
     if [[ "$size1_after" -eq "$size2_before" ]] && [[ "$size2_after" -eq "$size1_before" ]]; then
         if print_msg 28 "Does swap work with files of different sizes?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 28 "Does swap work with files of different sizes?" false
@@ -492,6 +593,9 @@ exit_code=$?
 if [[ $exit_code -eq 1 ]]; then
     if print_msg 29 "Does swap return 1 on error?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does swap return 1 on error?" false
@@ -502,6 +606,9 @@ error_output=$(swap "nonexistent.txt" "file1.txt" 2>&1)
 if echo "$error_output" | grep -q "Error:"; then
     if print_msg 30 "Does swap output error message on failure?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does swap output error message on failure?" false
@@ -514,6 +621,9 @@ if command -v complete >/dev/null 2>&1; then
     if complete -p swap >/dev/null 2>&1; then
         if print_msg 31 "Is swap completion function registered?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 31 "Is swap completion function registered?" false
@@ -534,6 +644,9 @@ output=$(swap "msg_test1.txt" "msg_test2.txt" 2>&1)
 if echo "$output" | grep -q "Successfully swapped" && echo "$output" | grep -q "msg_test1.txt" && echo "$output" | grep -q "msg_test2.txt"; then
     if print_msg 32 "Does success message contain both filenames?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 32 "Does success message contain both filenames?" false
@@ -551,6 +664,9 @@ output=$(swap "warn_test1.txt" "warn_test2.sh" 2>&1)
 if echo "$output" | grep -q "Warning: Files have different extensions" && (echo "$output" | grep -q "\.txt" || echo "$output" | grep -q "\.sh"); then
     if print_msg 33 "Does warning message include extension information?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 33 "Does warning message include extension information?" false
@@ -561,8 +677,15 @@ swap "warn_test1.txt" "warn_test2.sh" >/dev/null 2>&1
 rm -f "warn_test1.txt" "warn_test2.sh"
 
 # Calculate and display test results
-total_tests=35  # Tests 1-33 plus 2 summary tests with "*"
 percentage=$((score * 100 / total_tests))
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

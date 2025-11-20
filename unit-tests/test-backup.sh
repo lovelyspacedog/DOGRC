@@ -5,6 +5,11 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 readonly __PLUGINS_DIR="$(cd "${__TESTING_DIR}/plugins" && pwd)"
 readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 
+# Source results helper
+if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
+    source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
+fi
+
 print_msg() {
     local test_num="$1"
     local description="$2"
@@ -25,12 +30,21 @@ print_msg() {
 }
 
 score=0
+total_tests=33  # Tests 1-31 plus 2 summary tests with "*"
 printf "Running unit tests for backup.sh...\n\n"
+
+# Initialize progress tracking for real-time updates
+if type init_test_progress >/dev/null 2>&1; then
+    init_test_progress "$total_tests"
+fi
 
 # Sanity checks
 if [[ -f "${__CORE_DIR}/dependency_check.sh" ]]; then
     if print_msg 1 "Can I find dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 1 "Can I find dependency_check.sh?" false
@@ -41,6 +55,9 @@ fi
 if source "${__CORE_DIR}/dependency_check.sh" 2>/dev/null; then
     if print_msg 2 "Can I source dependency_check.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 2 "Can I source dependency_check.sh?" false
@@ -51,6 +68,9 @@ fi
 if [[ -f "${__PLUGINS_DIR}/file-operations/backup.sh" ]]; then
     if print_msg 3 "Can I find backup.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 3 "Can I find backup.sh?" false
@@ -61,6 +81,9 @@ fi
 if source "${__PLUGINS_DIR}/file-operations/backup.sh" 2>/dev/null; then
     if print_msg 4 "Can I source backup.sh?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 4 "Can I source backup.sh?" false
@@ -71,6 +94,9 @@ fi
 if declare -f backup >/dev/null 2>&1; then
     if print_msg 5 "Is backup function defined?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 5 "Is backup function defined?" false
@@ -80,6 +106,9 @@ fi
 
 print_msg "*" "Did I pass initial sanity checks?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 cd "${__UNIT_TESTS_DIR}" || {
     printf "Error: Failed to change directory to unit-tests.\n" >&2
@@ -96,6 +125,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if backup --help >/dev/null 2>&1; then
         if print_msg 6 "Does backup --help work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 6 "Does backup --help work?" false
@@ -110,6 +142,9 @@ if declare -f drchelp >/dev/null 2>&1; then
     if backup -h >/dev/null 2>&1; then
         if print_msg 7 "Does backup -h work?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 7 "Does backup -h work?" false
@@ -126,6 +161,9 @@ test_content="This is a test file for backup.\nLine 2 of test file.\nEnd of test
 if printf "${test_content}" > "${__UNIT_TESTS_DIR}/test_backup_file.txt"; then
     if print_msg 8 "Can I create test_backup_file.txt?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 8 "Can I create test_backup_file.txt?" false
@@ -135,12 +173,18 @@ fi
 
 print_msg "*" "Did I create test files?" true
 ((score++))
+if type update_progress_from_score >/dev/null 2>&1; then
+    update_progress_from_score
+fi
 
 printf "\nTesting error handling...\n"
 
 if ! backup "nonexistent.txt" 2>/dev/null; then
     if print_msg 9 "Does backup error on non-existent file?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 9 "Does backup error on non-existent file?" false
@@ -149,6 +193,9 @@ fi
 if backup "nonexistent.txt" 2>&1 | grep -q "Error:"; then
     if print_msg 10 "Does backup output error message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 10 "Does backup output error message?" false
@@ -157,6 +204,9 @@ fi
 if ! backup --unknown-flag 2>/dev/null; then
     if print_msg 11 "Does backup error on unknown option?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 11 "Does backup error on unknown option?" false
@@ -169,6 +219,9 @@ if backup "test_backup_file.txt" >/dev/null 2>&1; then
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if print_msg 12 "Does backup create .bak.* file?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 12 "Does backup create .bak.* file?" false
@@ -183,6 +236,9 @@ if backup "test_backup_file.txt" >/dev/null 2>&1; then
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 13 "Does backup return 0 on success?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 13 "Does backup return 0 on success?" false
@@ -195,6 +251,9 @@ fi
 if backup "test_backup_file.txt" 2>&1 | grep -q "Backup created"; then
     if print_msg 14 "Does backup output success message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 14 "Does backup output success message?" false
@@ -209,6 +268,9 @@ if [[ -n "$backup_file" ]]; then
     if [[ "$original_content" == "$backup_content" ]]; then
         if print_msg 15 "Does backup preserve file content?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 15 "Does backup preserve file content?" false
@@ -226,6 +288,9 @@ if [[ -d "${HOME}/Documents/BAK" ]] || mkdir -p "${HOME}/Documents/BAK" 2>/dev/n
         if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
             if print_msg 16 "Does backup --store create backup in ~/Documents/BAK?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 16 "Does backup --store create backup in ~/Documents/BAK?" false
@@ -245,6 +310,9 @@ if backup -s "test_backup_file.txt" >/dev/null 2>&1; then
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if print_msg 17 "Does backup -s create backup in ~/Documents/BAK?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 17 "Does backup -s create backup in ~/Documents/BAK?" false
@@ -267,6 +335,9 @@ if backup --directory >/dev/null 2>&1; then
         if [[ -f "$backup_dir/test_backup_dir/file1.txt" ]] && [[ -f "$backup_dir/test_backup_dir/file2.txt" ]]; then
             if print_msg 18 "Does backup --directory create directory backup?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 18 "Does backup --directory create directory backup?" false
@@ -285,6 +356,9 @@ if backup -d >/dev/null 2>&1; then
     if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
         if print_msg 19 "Does backup -d create directory backup?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 19 "Does backup -d create directory backup?" false
@@ -299,6 +373,9 @@ if backup --dir >/dev/null 2>&1; then
     if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
         if print_msg 20 "Does backup --dir create directory backup?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 20 "Does backup --dir create directory backup?" false
@@ -317,6 +394,9 @@ if [[ -d "${HOME}/Documents/BAK" ]] || mkdir -p "${HOME}/Documents/BAK" 2>/dev/n
         if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
             if print_msg 21 "Does backup --directory --store create backup in ~/Documents/BAK?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 21 "Does backup --directory --store create backup in ~/Documents/BAK?" false
@@ -340,6 +420,9 @@ backup_count=$(ls -1 test_backup_file.txt.bak.* 2>/dev/null | wc -l)
 if [[ $backup_count -ge 2 ]]; then
     if print_msg 22 "Does backup create multiple backups?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 22 "Does backup create multiple backups?" false
@@ -353,6 +436,9 @@ exit_code=$?
 if [[ $exit_code -ne 0 ]]; then
     if print_msg 23 "Does backup return non-zero on error?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 23 "Does backup return non-zero on error?" false
@@ -366,6 +452,9 @@ if backup "test file with spaces.txt" >/dev/null 2>&1; then
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if print_msg 24 "Does backup work with filenames containing spaces?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 24 "Does backup work with filenames containing spaces?" false
@@ -383,6 +472,9 @@ if backup "empty_file.txt" >/dev/null 2>&1; then
         if [[ ! -s "$backup_file" ]]; then
             if print_msg 25 "Does backup work with empty files?" true; then
                 ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
             fi
         else
             print_msg 25 "Does backup work with empty files?" false
@@ -403,6 +495,9 @@ if backup --directory >/dev/null 2>&1; then
     if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
         if print_msg 26 "Does backup work with empty directories?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 26 "Does backup work with empty directories?" false
@@ -420,6 +515,9 @@ if command -v complete >/dev/null 2>&1; then
     if complete -p backup >/dev/null 2>&1; then
         if print_msg 27 "Is backup completion function registered?" true; then
             ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
         fi
     else
         print_msg 27 "Is backup completion function registered?" false
@@ -436,6 +534,9 @@ output=$(backup "test_backup_file.txt" 2>&1)
 if echo "$output" | grep -q "Backup created"; then
     if print_msg 28 "Does backup output success message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 28 "Does backup output success message?" false
@@ -446,6 +547,9 @@ error_output=$(backup "nonexistent.txt" 2>&1)
 if echo "$error_output" | grep -q "Error:"; then
     if print_msg 29 "Does backup output error message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 29 "Does backup output error message?" false
@@ -454,6 +558,9 @@ fi
 if backup --store "test_backup_file.txt" 2>&1 | grep -q "Backup created at.*Documents/BAK"; then
     if print_msg 30 "Does backup output store location in message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 30 "Does backup output store location in message?" false
@@ -463,14 +570,25 @@ rm -f "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* 2>/dev/null || true
 if backup --directory 2>&1 | grep -q "Backup created"; then
     if print_msg 31 "Does backup output directory backup message?" true; then
         ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
     fi
 else
     print_msg 31 "Does backup output directory backup message?" false
 fi
 rm -rf *.bak.* 2>/dev/null || true
 
-total_tests=33  # Tests 1-31 plus 2 summary tests with "*"
 percentage=$((score * 100 / total_tests))
+
+# Write results file
+if type write_test_results >/dev/null 2>&1; then
+    if [[ $score -eq $total_tests ]]; then
+        write_test_results "PASSED" "$score" "$total_tests" "$percentage"
+    else
+        write_test_results "FAILED" "$score" "$total_tests" "$percentage"
+    fi
+fi
 
 printf "\n"
 printf "========================================\n"

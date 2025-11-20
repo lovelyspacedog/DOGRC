@@ -744,6 +744,7 @@ verify_installation() {
         "plugins/utilities/openthis.sh"
         "plugins/utilities/prepfile.sh"
         "plugins/utilities/pwd.sh"
+        "plugins/utilities/runtests.sh"
         "plugins/utilities/silent.sh"
         "plugins/utilities/timer.sh"
         "plugins/utilities/update.sh"
