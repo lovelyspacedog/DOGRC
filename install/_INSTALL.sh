@@ -500,6 +500,15 @@ generate_user_files() {
         return 1
     fi
 
+    # Generate config/disabled.json
+    echo -e "  ${BLUE}Generating config/disabled.json...${NC}"
+    if bash "$generate_template" disabled.json > "$install_dir/config/disabled.json" 2>/dev/null; then
+        echo -e "  ${GREEN}✓${NC} Created config/disabled.json"
+    else
+        echo -e "  ${RED}✗${NC} Failed to generate config/disabled.json" >&2
+        return 1
+    fi
+
     # Generate plugins/user-plugins/example.sh
     echo -e "  ${BLUE}Generating plugins/user-plugins/example.sh...${NC}"
     # Ensure the directory exists
@@ -576,6 +585,7 @@ verify_installation() {
         ".bashrc"
         "config/DOGRC.json"
         "config/preamble.sh"
+        "config/disabled.json"
         "core/dependency_check.sh"
         "core/aliases.sh"
         "install/generate_template.sh"

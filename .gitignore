@@ -4,3 +4,6 @@ testing/
 # User plugin example
 plugins/user-plugins/example.sh
 
+# User configuration files
+config/disabled.json
+

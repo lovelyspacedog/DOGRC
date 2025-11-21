@@ -174,9 +174,25 @@ EOF
 source "$HOME/DOGRC/.bashrc"
 EOF
         ;;
+    "disabled.json"|"disabled")
+        cat <<'EOF'
+{
+    "do_not_source_these_plugins": [
+        "plugins/example.sh"
+    ],
+    "do_not_enable_these_functions": [
+        "example_function",
+        "another_example_function"
+    ],
+    "do_not_source_these_aliases": [
+        "example_alias"
+    ]
+}
+EOF
+        ;;
     *)
         echo "Error: Unknown template '$1'" >&2
-        echo "Available templates: aliases, preamble, example, DOGRC.json, redirect" >&2
+        echo "Available templates: aliases, preamble, example, DOGRC.json, redirect, disabled.json" >&2
         exit 1
         ;;
 esac
