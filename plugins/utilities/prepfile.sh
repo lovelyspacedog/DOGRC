@@ -312,17 +312,24 @@ BASH_EOF
     else
         printf "Created %s (%s template)\n" "$filename" "$file_type"
     fi
-    printf "Would you like to edit the file? (y/n): "
-    read -n 1 -r ans
-    echo
     
-    if [[ $ans =~ ^[Yy]$ ]]; then
-        local editor="${EDITOR:-nvim}"
-        ensure_commands_present --caller "prepfile edit" "$editor" || {
-            return $?
-        }
-        "$editor" "$filename"
-        return 0
+    # Only prompt for editing if stdin is available and we're in an interactive shell
+    if [[ -t 0 ]] && [[ "${-}" == *i* ]]; then
+        printf "Would you like to edit the file? (y/n): "
+        if read -n 1 -r ans 2>/dev/null; then
+            echo
+            if [[ $ans =~ ^[Yy]$ ]]; then
+                local editor="${EDITOR:-nvim}"
+                ensure_commands_present --caller "prepfile edit" "$editor" || {
+                    return $?
+                }
+                "$editor" "$filename"
+                return 0
+            fi
+        else
+            # If read fails, silently continue without editing
+            echo
+        fi
     fi
     
     return 0
