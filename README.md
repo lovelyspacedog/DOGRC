@@ -2,7 +2,7 @@
 
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
 
-> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.5). Features may change, and there may be bugs. Use at your own discretion.
+> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.6). Features may change, and there may be bugs. Use at your own discretion.
 
 ## Features
 
@@ -12,7 +12,9 @@
 - 🛠️ **Rich Utilities** - File operations, navigation, information tools, and more
 - 📦 **Self-Contained** - All configuration in one directory (`~/DOGRC`)
 - 🔄 **Update-Friendly** - Update system that preserves user customizations
-- 🧪 **Well-Tested** - Unit tests for core functionality
+- 🧪 **Well-Tested** - Comprehensive unit test suite (27+ test files, 40+ plugins)
+- ⚡ **Parallel Testing** - Run tests in parallel for faster execution
+- 📊 **Test Staging** - Targeted testing with `--stage` flag
 
 ## Installation
 
@@ -78,6 +80,7 @@ DOGRC/
 │   │   ├── archive.sh     # Archive extraction and compression
 │   │   ├── backup.sh      # Timestamped backups
 │   │   ├── blank.sh       # Empty files with safety countdown
+│   │   ├── dupefind.sh    # Find duplicate files by content hash
 │   │   ├── mkcd.sh        # Create directory and cd into it
 │   │   └── swap.sh        # Swap file names
 │   ├── information/       # System information plugins
@@ -110,11 +113,16 @@ DOGRC/
 │   ├── _INSTALL.sh        # Installation script
 │   ├── _UPDATE.sh         # Update script
 │   └── generate_template.sh # Template generator
-└── unit-tests/            # Unit tests for plugins
-    ├── test-archive.sh
-    ├── test-backup.sh
-    ├── test-mkcd.sh
-    └── test-swap.sh
+├── unit-tests/            # Unit tests for plugins
+│   ├── _TEST-ALL.sh       # Test runner with tmux interface
+│   ├── _test-all-fb.sh    # CI-mode test runner
+│   ├── test-archive.sh
+│   ├── test-backup.sh
+│   ├── test-dupefind.sh
+│   └── ... (27+ test files)
+└── reports/               # Documentation
+    ├── COMPARISON_REPORT.md
+    └── MIGRATION_0.1.5_TO_0.1.6.md
 ```
 
 ## Configuration
@@ -125,7 +133,7 @@ Edit `~/DOGRC/config/DOGRC.json` to enable/disable features:
 
 ```json
 {
-    "version": "0.1.5",
+    "version": "0.1.6",
     "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
@@ -185,6 +193,13 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
   - `blank file.txt --touch` - Create file if it doesn't exist
   - Supports `--help` or `-h` for detailed help
 
+- **`dupefind`** - Find duplicate files by content hash
+  - `dupefind` - Find duplicates in current directory
+  - `dupefind /path/to/directory` - Find duplicates in specified directory
+  - `dupefind --md5` - Use MD5 hash (default is SHA256)
+  - `dupefind --recursive` - Recursive search
+  - Supports `--help` or `-h` for detailed help
+
 - **`mkcd`** - Create directory and change into it
   - `mkcd newdir` - Create and cd into directory
   - Automatically lists directory contents
@@ -221,6 +236,9 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 - **`drcfortune`** - Display fortune messages
 
 - **`pokefetch`** - Pokemon-themed system information display
+  - `pokefetch` - Display pokemon-themed system info
+  - `pokefetch --relocate /path/to/file.txt` - Custom output file location
+  - `pokefetch -l /path/to/file.txt` - Short form for relocate flag
 
 - **`weather`** - Weather information (supports multiple cities)
 
@@ -231,6 +249,11 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 - **`genpassword`** - Generate secure passwords
 
 - **`timer`** - Timer utility with notifications
+  - `timer <name>` - Start a timer with name
+  - `timer LIST` - List all active timers
+  - `timer CLEAR` - Clear all timers
+  - `timer --use-dir /path/to/dir` - Use custom directory for timer files
+  - `timer -ud /path/to/dir` - Short form for use-dir flag
 
 - **`fastnote`** - Quick note-taking utility
 
@@ -248,6 +271,8 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 - **`runtests`** - Run unit test suite
   - `runtests` - Run all unit tests interactively
   - `runtests --ci` - Run tests in CI mode
+  - `runtests --parallel` - Run tests in parallel mode
+  - `runtests --stage <test-name>` - Run specific test and neighbors
 
 - **`bashrc`** - Manage .bashrc files
   - `bashrc --edit` - Edit .bashrc
@@ -289,7 +314,10 @@ bash install/_UPDATE.sh   # Run update script
 Your customizations in:
 - `core/aliases.sh`
 - `config/preamble.sh`
+- `config/disabled.json` - Fine-grained feature disabling
+- `config/navto.json` - Navigation bookmarks
 - `plugins/user-plugins/`
+- `unit-tests/` - User-created test files
 
 will be preserved during updates.
 
@@ -308,20 +336,27 @@ DOGRC includes comprehensive unit tests for all plugins:
 
 ```bash
 cd ~/DOGRC/unit-tests
-./_TEST-ALL.sh            # Run all tests interactively with tmux interface
-./_TEST-ALL.sh --ci       # Run tests in CI mode
-./test-archive.sh         # Test archive.sh (extract, compress)
-./test-backup.sh          # Test backup.sh
-./test-mkcd.sh            # Test mkcd.sh
-./test-swap.sh            # Test swap.sh
-# ... and many more
+./_TEST-ALL.sh                  # Run all tests interactively with tmux interface
+./_TEST-ALL.sh --ci             # Run tests in CI mode
+./_TEST-ALL.sh --parallel       # Run tests in parallel (faster execution)
+./_TEST-ALL.sh --stage dupefind # Run specific test and neighbors
+./test-archive.sh               # Test archive.sh (extract, compress)
+./test-backup.sh                # Test backup.sh
+./test-dupefind.sh              # Test dupefind.sh
+./test-mkcd.sh                  # Test mkcd.sh
+./test-swap.sh                  # Test swap.sh
+# ... and many more (27+ test files)
 ```
 
 The test suite includes:
 - Real-time progress tracking with split pane display
 - Elapsed time tracking for suite and individual tests
-- 26+ test files covering all major plugins
+- **27+ test files** covering all 40+ plugins
+- **Parallel execution support** (`--parallel` flag) for faster test runs
+- **Test staging** (`--stage` flag) for targeted testing
+- Resource monitoring (htop/top) during parallel execution
 - All tests report pass/fail status with percentage completion
+- Comprehensive cleanup of temporary files and directories
 
 You can also use the `runtests` command from anywhere to run the test suite.
 
@@ -418,7 +453,28 @@ When contributing:
 
 ## Version History
 
-**v0.1.5** (Current)
+**v0.1.6** (Current)
+- **dupefind Plugin**: New file-operations plugin for finding duplicate files
+  - Finds duplicates by content hash (MD5/SHA256)
+  - Recursive directory scanning with detailed reporting
+  - Comprehensive unit test suite (45 tests)
+- **Parallel Test Execution**: Added `--parallel` flag for simultaneous test execution
+  - Significantly faster test suite execution
+  - Resource monitor (htop/top) in right tmux pane during parallel runs
+  - All test files updated for parallel execution safety
+- **Test Runner Enhancements**: Added `--stage` flag for targeted testing
+  - Test specific test and its adjacent tests for faster debugging
+- **pokefetch Enhancement**: Added `--relocate` flag for custom output location
+- **timer Enhancement**: Added `--use-dir` flag for custom timer directory
+- **Version Comparison**: Enhanced to handle 4+ part version strings (e.g., `0.1.5.12`)
+- **Update Script Enhancements**: Improved migration logic
+  - Added preservation of `disabled.json` user customizations
+  - Added preservation of user-created test files
+- **Test Suite Improvements**: Enhanced for parallel execution safety
+  - Fixed race conditions and cleanup issues
+  - Improved test score tabulation
+
+**v0.1.5**
 - **Unit Test Infrastructure**: Added comprehensive test runner with tmux interface
   - Real-time progress tracking with split pane display
   - Added unit tests for all 25+ plugins

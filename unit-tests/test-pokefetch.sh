@@ -33,7 +33,7 @@ print_msg() {
 }
 
 score=0
-total_tests=32  # Tests 1-5, "*", 6-31
+total_tests=36  # Tests 1-5, "*", 6-31, 32-35 (--relocate flag tests)
 printf "Running unit tests for pokefetch.sh...\n\n"
 
 # Initialize progress tracking for real-time updates
@@ -120,12 +120,22 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_pokefetch_$$"
+
+# Test-specific file paths for parallel execution safety
+readonly TEST_POKEFETCH_FILE="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_pokefetch.txt"
+readonly TEST_POKEFETCH_FILE2="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_pokefetch.txt2"
+
 # Setup trap to ensure cleanup happens even on failure
 cleanup_pokefetch_test() {
     local exit_code=$?
     
-    # Clean up temporary files
-    rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2 2>/dev/null || true
+    # Clean up test-specific files
+    rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2" 2>/dev/null || true
+    # Clean up default location files (for tests that use default behavior)
+    rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2" 2>/dev/null || true
+    rm -f "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || true
     
     # Restore original commands if we modified PATH
     if [[ -n "${ORIGINAL_PATH:-}" ]]; then
@@ -152,9 +162,11 @@ MOCK_FASTFETCH_ARGS=()
 MOCK_FASTFETCH_ARGS_FILE=$(mktemp)
 
 # Mock pokemon-colorscripts command
+# Note: pokefetch redirects output to /tmp/pokefetch.txt, so we need to mock via PATH override
+# We'll create a script that writes to stdout which pokefetch will redirect
 pokemon-colorscripts() {
-    # Write mock Pokemon data to the file
-    echo -n "$MOCK_POKEMON_OUTPUT" > /tmp/pokefetch.txt
+    # Write mock Pokemon data to stdout (pokefetch redirects this to /tmp/pokefetch.txt)
+    echo -n "$MOCK_POKEMON_OUTPUT"
     return 0
 }
 export -f pokemon-colorscripts
@@ -247,11 +259,11 @@ fi
 
 printf "\nTesting pokefetch() function basic functionality...\n"
 
-# Test 9: pokefetch runs without errors
+# Test 9: pokefetch runs without errors (using --relocate)
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2\nASCII art line 3'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-if pokefetch >/dev/null 2>&1; then
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+if pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 9 "Does pokefetch run without errors?" true; then
@@ -267,11 +279,11 @@ else
     print_msg 9 "Does pokefetch run without errors?" false
 fi
 
-# Test 10: pokefetch returns 0 on success
+# Test 10: pokefetch returns 0 on success (using --relocate)
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-if pokefetch >/dev/null 2>&1; then
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+if pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 10 "Does pokefetch return 0 on success?" true; then
@@ -287,11 +299,11 @@ else
     print_msg 10 "Does pokefetch return 0 on success?" false
 fi
 
-# Test 11: pokefetch produces output
+# Test 11: pokefetch produces output (using --relocate)
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if [[ -n "$output" ]]; then
     if print_msg 11 "Does pokefetch produce output?" true; then
         ((score++))
@@ -305,27 +317,27 @@ fi
 
 printf "\nTesting pokefetch() function file operations...\n"
 
-# Test 12: pokefetch writes to /tmp/pokefetch.txt
+# Test 12: pokefetch writes to default location /tmp/pokefetch.txt (default behavior)
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
 rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
 pokefetch >/dev/null 2>&1
 if [[ -f /tmp/pokefetch.txt ]]; then
-    if print_msg 12 "Does pokefetch write to /tmp/pokefetch.txt?" true; then
+    if print_msg 12 "Does pokefetch write to default /tmp/pokefetch.txt?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    print_msg 12 "Does pokefetch write to /tmp/pokefetch.txt?" false
+        print_msg 12 "Does pokefetch write to default /tmp/pokefetch.txt?" false
 fi
 
-# Test 13: pokefetch extracts Pokemon name from first line
+# Test 13: pokefetch extracts Pokemon name from first line (using --relocate)
 MOCK_POKEMON_OUTPUT=$'charizard\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 # Pokemon name is capitalized in output, so check for capitalized version
 if echo "$output" | grep -qi "charizard"; then
     if print_msg 13 "Does pokefetch extract Pokemon name from first line?" true; then
@@ -338,13 +350,13 @@ else
     print_msg 13 "Does pokefetch extract Pokemon name from first line?" false
 fi
 
-# Test 14: pokefetch removes first line from file
+# Test 14: pokefetch removes first line from file (using --relocate)
 MOCK_POKEMON_OUTPUT=$'bulbasaur\nASCII art line 1\nASCII art line 2\nASCII art line 3'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-pokefetch >/dev/null 2>&1
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1
 # Check that first line (Pokemon name) is removed
-if [[ -f /tmp/pokefetch.txt ]] && ! head -n 1 /tmp/pokefetch.txt | grep -q "bulbasaur"; then
+if [[ -f "$TEST_POKEFETCH_FILE" ]] && ! head -n 1 "$TEST_POKEFETCH_FILE" | grep -q "bulbasaur"; then
     if print_msg 14 "Does pokefetch remove first line from file?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -355,13 +367,13 @@ else
     print_msg 14 "Does pokefetch remove first line from file?" false
 fi
 
-# Test 15: pokefetch preserves remaining lines after removing first
+# Test 15: pokefetch preserves remaining lines after removing first (using --relocate)
 MOCK_POKEMON_OUTPUT=$'squirtle\nASCII art line 1\nASCII art line 2\nASCII art line 3'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-pokefetch >/dev/null 2>&1
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1
 # Check that remaining lines are preserved
-if [[ -f /tmp/pokefetch.txt ]] && head -n 1 /tmp/pokefetch.txt | grep -q "ASCII art line 1"; then
+if [[ -f "$TEST_POKEFETCH_FILE" ]] && head -n 1 "$TEST_POKEFETCH_FILE" | grep -q "ASCII art line 1"; then
     if print_msg 15 "Does pokefetch preserve remaining lines after removing first?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -377,8 +389,8 @@ printf "\nTesting pokefetch() function Pokemon name capitalization...\n"
 # Test 16: pokefetch capitalizes first letter of Pokemon name
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if echo "$output" | grep -q "\[ Pikachu \]"; then
     if print_msg 16 "Does pokefetch capitalize first letter of Pokemon name?" true; then
         ((score++))
@@ -393,8 +405,8 @@ fi
 # Test 17: pokefetch handles lowercase Pokemon name
 MOCK_POKEMON_OUTPUT=$'charizard\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if echo "$output" | grep -q "\[ Charizard \]"; then
     if print_msg 17 "Does pokefetch handle lowercase Pokemon name?" true; then
         ((score++))
@@ -409,8 +421,8 @@ fi
 # Test 18: pokefetch handles already capitalized Pokemon name
 MOCK_POKEMON_OUTPUT=$'Pikachu\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if echo "$output" | grep -q "\[ Pikachu \]"; then
     if print_msg 18 "Does pokefetch handle already capitalized Pokemon name?" true; then
         ((score++))
@@ -427,8 +439,8 @@ printf "\nTesting pokefetch() function output formatting...\n"
 # Test 19: pokefetch displays battle message
 MOCK_POKEMON_OUTPUT=$'bulbasaur\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if echo "$output" | grep -q "Joins The Battle!"; then
     if print_msg 19 "Does pokefetch display battle message?" true; then
         ((score++))
@@ -443,8 +455,8 @@ fi
 # Test 20: pokefetch battle message format is correct
 MOCK_POKEMON_OUTPUT=$'squirtle\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if echo "$output" | grep -qE "\[ Squirtle \] Joins The Battle!"; then
     if print_msg 20 "Does pokefetch battle message format match expected?" true; then
         ((score++))
@@ -459,7 +471,7 @@ fi
 # Test 21: pokefetch adds blank line after battle message
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
 # Use a temp file to capture output without newline stripping
 TEMP_OUTPUT_FILE=$(mktemp)
 pokefetch > "$TEMP_OUTPUT_FILE" 2>&1
@@ -491,8 +503,8 @@ printf "\nTesting pokefetch() function fastfetch call...\n"
 # Test 22: pokefetch calls fastfetch
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-pokefetch >/dev/null 2>&1
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1
 if [[ "$MOCK_FASTFETCH_CALLED" == true ]]; then
     if print_msg 22 "Does pokefetch call fastfetch?" true; then
         ((score++))
@@ -507,8 +519,8 @@ fi
 # Test 23: pokefetch calls fastfetch with --logo-height 5
 MOCK_POKEMON_OUTPUT=$'charizard\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-pokefetch >/dev/null 2>&1
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1
 fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
 # Use case statement or [[ ]] to check for string containment
 if [[ "$fastfetch_args" == *"--logo-height 5"* ]]; then
@@ -522,32 +534,32 @@ else
     print_msg 23 "Does pokefetch call fastfetch with --logo-height 5?" false
 fi
 
-# Test 24: pokefetch calls fastfetch with --logo /tmp/pokefetch.txt
+# Test 24: pokefetch calls fastfetch with --logo using custom path (--relocate)
 MOCK_POKEMON_OUTPUT=$'bulbasaur\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-pokefetch >/dev/null 2>&1
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1
 fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
-# Use [[ ]] to check for string containment
-if [[ "$fastfetch_args" == *"--logo /tmp/pokefetch.txt"* ]]; then
-    if print_msg 24 "Does pokefetch call fastfetch with --logo /tmp/pokefetch.txt?" true; then
+# Use [[ ]] to check for string containment with test file path
+if [[ "$fastfetch_args" == *"--logo $TEST_POKEFETCH_FILE"* ]]; then
+    if print_msg 24 "Does pokefetch call fastfetch with --logo using --relocate path?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    print_msg 24 "Does pokefetch call fastfetch with --logo /tmp/pokefetch.txt?" false
+        print_msg 24 "Does pokefetch call fastfetch with --logo /tmp/pokefetch.txt?" false
 fi
 
-# Test 25: pokefetch calls fastfetch with correct argument order
+# Test 25: pokefetch calls fastfetch with correct argument order (using --relocate)
 MOCK_POKEMON_OUTPUT=$'squirtle\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-pokefetch >/dev/null 2>&1
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1
 fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
 # Check that both arguments are present using [[ ]]
-if [[ "$fastfetch_args" == *"--logo-height 5"* ]] && [[ "$fastfetch_args" == *"--logo /tmp/pokefetch.txt"* ]]; then
+if [[ "$fastfetch_args" == *"--logo-height 5"* ]] && [[ "$fastfetch_args" == *"--logo $TEST_POKEFETCH_FILE"* ]]; then
     if print_msg 25 "Does pokefetch call fastfetch with correct arguments?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -560,11 +572,11 @@ fi
 
 printf "\nTesting pokefetch() function edge cases...\n"
 
-# Test 26: pokefetch handles single line Pokemon output
+# Test 26: pokefetch handles single line Pokemon output (using --relocate)
 MOCK_POKEMON_OUTPUT=$'pikachu'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-if pokefetch >/dev/null 2>&1; then
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+if pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 26 "Does pokefetch handle single line Pokemon output?" true; then
@@ -583,8 +595,8 @@ fi
 # Test 27: pokefetch handles Pokemon name with spaces
 MOCK_POKEMON_OUTPUT=$'mr. mime\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-output=$(pokefetch 2>&1)
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+output=$(pokefetch --relocate "$TEST_POKEFETCH_FILE" 2>&1)
 if echo "$output" | grep -q "\[ Mr. mime \]"; then
     if print_msg 27 "Does pokefetch handle Pokemon name with spaces?" true; then
         ((score++))
@@ -596,11 +608,11 @@ else
     print_msg 27 "Does pokefetch handle Pokemon name with spaces?" false
 fi
 
-# Test 28: pokefetch handles empty Pokemon name
+# Test 28: pokefetch handles empty Pokemon name (using --relocate)
 MOCK_POKEMON_OUTPUT=$'\nASCII art line 1\nASCII art line 2'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
-if pokefetch >/dev/null 2>&1; then
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
+if pokefetch --relocate "$TEST_POKEFETCH_FILE" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 28 "Does pokefetch handle empty Pokemon name?" true; then
@@ -621,7 +633,7 @@ printf "\nTesting pokefetch.sh direct script execution...\n"
 # Test 29: pokefetch.sh can be executed directly
 MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
 if bash "${__PLUGINS_DIR}/information/pokefetch.sh" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
@@ -641,7 +653,7 @@ fi
 # Test 30: pokefetch.sh direct execution produces output
 MOCK_POKEMON_OUTPUT=$'charizard\nASCII art line 1'
 MOCK_FASTFETCH_CALLED=false
-rm -f /tmp/pokefetch.txt /tmp/pokefetch.txt2
+rm -f "$TEST_POKEFETCH_FILE" "$TEST_POKEFETCH_FILE2"
 output=$(bash -c "source <(declare -f pokemon-colorscripts fastfetch); export MOCK_POKEMON_OUTPUT='$MOCK_POKEMON_OUTPUT'; export MOCK_FASTFETCH_ARGS_FILE='$MOCK_FASTFETCH_ARGS_FILE'; ${__PLUGINS_DIR}/information/pokefetch.sh" 2>&1)
 if [[ -n "$output" ]] && echo "$output" | grep -q "Joins The Battle!"; then
     if print_msg 30 "Does pokefetch.sh direct execution produce output?" true; then
@@ -666,6 +678,86 @@ if echo "$output" | grep -qE "(drchelp|Error: drchelp not available)" || [[ ${#o
 else
     print_msg 31 "Does pokefetch.sh --help work when executed directly?" false
 fi
+
+printf "\nTesting pokefetch() --relocate flag...\n"
+
+# Test 32: pokefetch --relocate writes to custom file location
+MOCK_POKEMON_OUTPUT=$'pikachu\nASCII art line 1\nASCII art line 2'
+MOCK_FASTFETCH_CALLED=false
+custom_file="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_custom.dat"
+rm -f "$custom_file" "${custom_file}2"
+pokefetch --relocate "$custom_file" >/dev/null 2>&1
+if [[ -f "$custom_file" ]]; then
+    if print_msg 32 "Does pokefetch --relocate write to custom file location?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 32 "Does pokefetch --relocate write to custom file location?" false
+fi
+rm -f "$custom_file" "${custom_file}2"
+
+# Test 33: pokefetch -l (short form) works
+MOCK_POKEMON_OUTPUT=$'charizard\nASCII art line 1'
+MOCK_FASTFETCH_CALLED=false
+custom_file="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_custom2.dat"
+rm -f "$custom_file" "${custom_file}2"
+pokefetch -l "$custom_file" >/dev/null 2>&1
+if [[ -f "$custom_file" ]]; then
+    if print_msg 33 "Does pokefetch -l (short form) work?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 33 "Does pokefetch -l (short form) work?" false
+fi
+rm -f "$custom_file" "${custom_file}2"
+
+# Test 34: pokefetch --relocate creates correct second file pattern
+MOCK_POKEMON_OUTPUT=$'bulbasaur\nASCII art line 1\nASCII art line 2'
+MOCK_FASTFETCH_CALLED=false
+custom_file="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_custom3.dat"
+rm -f "$custom_file" "${custom_file}2"
+pokefetch --relocate "$custom_file" >/dev/null 2>&1
+# Check that second file pattern is created (temporarily during processing)
+# The second file is moved to the first, so it shouldn't exist after, but verify the first exists
+if [[ -f "$custom_file" ]]; then
+    if print_msg 34 "Does pokefetch --relocate create correct file pattern?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 34 "Does pokefetch --relocate create correct file pattern?" false
+fi
+rm -f "$custom_file" "${custom_file}2"
+
+# Test 35: pokefetch --relocate calls fastfetch with custom path
+MOCK_POKEMON_OUTPUT=$'squirtle\nASCII art line 1'
+MOCK_FASTFETCH_CALLED=false
+custom_file="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_custom4.dat"
+rm -f "$custom_file" "${custom_file}2"
+pokefetch --relocate "$custom_file" >/dev/null 2>&1
+fastfetch_args=$(cat "$MOCK_FASTFETCH_ARGS_FILE" 2>/dev/null || echo "")
+if [[ "$fastfetch_args" == *"--logo $custom_file"* ]]; then
+    if print_msg 35 "Does pokefetch --relocate call fastfetch with custom path?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 35 "Does pokefetch --relocate call fastfetch with custom path?" false
+fi
+rm -f "$custom_file" "${custom_file}2"
+
+# Update total_tests count
+total_tests=36  # Tests 1-5, "*", 6-31, 32-35 (--relocate flag tests)
 
 percentage=$((score * 100 / total_tests))
 # Write results file

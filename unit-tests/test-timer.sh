@@ -30,7 +30,7 @@ print_msg() {
 }
 
 score=0
-total_tests=43  # Tests 1-42 plus 1 summary test with "*"
+total_tests=47  # Tests 1-39, 40-43 (--use-dir flag tests), 44-46 (edge cases), plus 1 summary test with "*"
 printf "Running unit tests for timer.sh...\n\n"
 
 # Initialize progress tracking for real-time updates
@@ -126,18 +126,20 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
-# Use test-specific timer prefix to avoid conflicts with real timers
-readonly TEST_TIMER_PREFIX="test-timer-"
-readonly TIMER_DIR="/tmp"
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_timer_$$"
 
-# Backup any existing test timer files
-test_timer_backup_dir="${__UNIT_TESTS_DIR}/timer_test_backup"
-mkdir -p "$test_timer_backup_dir" 2>/dev/null || true
-shopt -s nullglob
-for file in /tmp/timer-${TEST_TIMER_PREFIX}*.txt; do
-    [[ -f "$file" ]] && mv "$file" "$test_timer_backup_dir/" 2>/dev/null || true
-done
-shopt -u nullglob
+# Use test-specific timer --use-dir "$TEST_TIMER_DIR" directory to avoid conflicts with real timers
+readonly TEST_TIMER_DIR="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_timers"
+mkdir -p "${TEST_TIMER_DIR}" || {
+    printf "Error: Failed to create test timer --use-dir "$TEST_TIMER_DIR" directory.\n" >&2
+    exit 91
+}
+
+# Use test-specific timer --use-dir "$TEST_TIMER_DIR" prefix to avoid conflicts with real timers
+readonly TEST_TIMER_PREFIX="${TEST_PREFIX}_timer-"
+
+# No backup needed - we're using a test-specific directory
 
 # Save original directory
 original_dir=$(pwd)
@@ -147,12 +149,9 @@ cleanup_timer_test() {
     local exit_code=$?
     cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
     
-    # Clean up all test timer files
-    shopt -s nullglob
-    for file in /tmp/timer-${TEST_TIMER_PREFIX}*.txt; do
-        [[ -f "$file" ]] && rm -f "$file" 2>/dev/null || true
-    done
-    shopt -u nullglob
+    # Clean up test timer --use-dir "$TEST_TIMER_DIR" directory
+    rm -rf "${TEST_TIMER_DIR}" 2>/dev/null || true
+    rm -rf "${test_timer_backup_dir}" 2>/dev/null || true
     
     exit $exit_code
 }
@@ -167,7 +166,7 @@ fi
 printf "\nTesting help flags...\n"
 
 if declare -f drchelp >/dev/null 2>&1; then
-    if timer --help >/dev/null 2>&1; then
+    if timer --use-dir "$TEST_TIMER_DIR" --help >/dev/null 2>&1; then
         if print_msg 7 "Does timer --help work?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -184,7 +183,7 @@ else
 fi
 
 if declare -f drchelp >/dev/null 2>&1; then
-    if timer -h >/dev/null 2>&1; then
+    if timer --use-dir "$TEST_TIMER_DIR" -h >/dev/null 2>&1; then
         if print_msg 8 "Does timer -h work?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -200,14 +199,14 @@ else
     fi
 fi
 
-printf "\nTesting timer creation...\n"
+printf "\nTesting timer --use-dir "$TEST_TIMER_DIR" creation...\n"
 
 # Clean up any existing test timers
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
 
 # Test creating a timer with default name
-if timer ${TEST_TIMER_PREFIX}DefaultTimer >/dev/null 2>&1; then
-    if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt" ]]; then
+if timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}DefaultTimer >/dev/null 2>&1; then
+    if [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt" ]]; then
         if print_msg 9 "Does timer create timer file with custom name?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -222,8 +221,8 @@ else
 fi
 
 # Test timer file contains timestamp
-if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt" ]]; then
-    if grep -qE '^[0-9]+$' "/tmp/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt"; then
+if [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt" ]]; then
+    if grep -qE '^[0-9]+$' "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}DefaultTimer.txt"; then
         if print_msg 10 "Does timer file contain valid timestamp?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -238,8 +237,8 @@ else
 fi
 
 # Test return code on successful creation
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}TestReturn.txt 2>/dev/null || true
-if timer ${TEST_TIMER_PREFIX}TestReturn >/dev/null 2>&1; then
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}TestReturn.txt 2>/dev/null || true
+if timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}TestReturn >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 11 "Does timer return 0 on successful creation?" true; then
@@ -256,7 +255,7 @@ else
 fi
 
 # Test success message
-timer_output=$(timer ${TEST_TIMER_PREFIX}SuccessMsg 2>&1)
+timer_output=$(timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}SuccessMsg 2>&1)
 if echo "$timer_output" | grep -q "Timer set for"; then
     if print_msg 12 "Does timer output success message?" true; then
         ((score++))
@@ -271,9 +270,9 @@ fi
 printf "\nTesting name sanitization...\n"
 
 # Test spaces converted to underscores
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
-if timer "${TEST_TIMER_PREFIX}Test Timer" >/dev/null 2>&1; then
-    if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}Test_Timer.txt" ]]; then
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
+if timer --use-dir "$TEST_TIMER_DIR" "${TEST_TIMER_PREFIX}Test Timer" >/dev/null 2>&1; then
+    if [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}Test_Timer.txt" ]]; then
         if print_msg 13 "Does timer convert spaces to underscores in name?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -288,10 +287,10 @@ else
 fi
 
 # Test invalid characters removed
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
-if timer "${TEST_TIMER_PREFIX}Test@Timer#123" >/dev/null 2>&1; then
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
+if timer --use-dir "$TEST_TIMER_DIR" "${TEST_TIMER_PREFIX}Test@Timer#123" >/dev/null 2>&1; then
     # Should remove @ and # but keep alnum, dots, underscores, hyphens
-    if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}TestTimer123.txt" ]]; then
+    if [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}TestTimer123.txt" ]]; then
         if print_msg 14 "Does timer remove invalid characters from name?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -306,12 +305,12 @@ else
 fi
 
 # Test default name when empty (after sanitization removes all characters)
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt /tmp/timer-Timer.txt 2>/dev/null || true
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt ${TEST_TIMER_DIR}/timer-Timer.txt 2>/dev/null || true
 # Timer with only special characters should default to "Timer"
 # Note: The TEST_TIMER_PREFIX itself might be removed, so we test with just special chars
-if timer "@@@!!!" >/dev/null 2>&1; then
+if timer --use-dir "$TEST_TIMER_DIR" "@@@!!!" >/dev/null 2>&1; then
     # After sanitization removes all chars, should default to "Timer" (without prefix)
-    if [[ -f "/tmp/timer-Timer.txt" ]]; then
+    if [[ -f "${TEST_TIMER_DIR}/timer-Timer.txt" ]]; then
         if print_msg 15 "Does timer default to 'Timer' when name empty after sanitization?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -328,14 +327,14 @@ fi
 printf "\nTesting LIST command...\n"
 
 # Clean up and create test timers
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
 sleep 0.1
-timer ${TEST_TIMER_PREFIX}Timer1 >/dev/null 2>&1
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Timer1 >/dev/null 2>&1
 sleep 0.1
-timer ${TEST_TIMER_PREFIX}Timer2 >/dev/null 2>&1
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Timer2 >/dev/null 2>&1
 
 # Test LIST command
-list_output=$(timer LIST 2>&1)
+list_output=$(timer --use-dir "$TEST_TIMER_DIR" LIST 2>&1)
 if echo "$list_output" | grep -q "Listing all timers" || echo "$list_output" | grep -q "${TEST_TIMER_PREFIX}Timer"; then
     if print_msg 16 "Does timer LIST command work?" true; then
         ((score++))
@@ -347,7 +346,7 @@ else
     print_msg 16 "Does timer LIST command work?" false
 fi
 
-# Test LIST shows timer names
+# Test LIST shows timer --use-dir "$TEST_TIMER_DIR" names
 if echo "$list_output" | grep -q "${TEST_TIMER_PREFIX}Timer1\|${TEST_TIMER_PREFIX}Timer2"; then
     if print_msg 17 "Does timer LIST show timer names?" true; then
         ((score++))
@@ -360,7 +359,7 @@ else
 fi
 
 # Test LIST case-insensitive
-list_output2=$(timer list 2>&1)
+list_output2=$(timer --use-dir "$TEST_TIMER_DIR" list 2>&1)
 if echo "$list_output2" | grep -q "Listing all timers\|${TEST_TIMER_PREFIX}Timer"; then
     if print_msg 18 "Does timer LIST work case-insensitively?" true; then
         ((score++))
@@ -373,8 +372,8 @@ else
 fi
 
 # Test LIST with no timers
-rm -f /tmp/timer-*.txt 2>/dev/null || true
-list_output_empty=$(timer LIST 2>&1)
+rm -f ${TEST_TIMER_DIR}/timer-*.txt 2>/dev/null || true
+list_output_empty=$(timer --use-dir "$TEST_TIMER_DIR" LIST 2>&1)
 if echo "$list_output_empty" | grep -q "no timers found"; then
     if print_msg 19 "Does timer LIST handle empty list?" true; then
         ((score++))
@@ -387,8 +386,8 @@ else
 fi
 
 # Test LIST return code
-timer ${TEST_TIMER_PREFIX}TestList >/dev/null 2>&1
-if timer LIST >/dev/null 2>&1; then
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}TestList >/dev/null 2>&1
+if timer --use-dir "$TEST_TIMER_DIR" LIST >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 20 "Does timer LIST return 0 on success?" true; then
@@ -407,13 +406,13 @@ fi
 printf "\nTesting CLEAR command...\n"
 
 # Create test timers
-timer ${TEST_TIMER_PREFIX}Clear1 >/dev/null 2>&1
-timer ${TEST_TIMER_PREFIX}Clear2 >/dev/null 2>&1
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Clear1 >/dev/null 2>&1
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Clear2 >/dev/null 2>&1
 
 # Test CLEAR with cancellation
-if echo "n" | timer CLEAR 2>&1 | grep -q "Timers not cleared"; then
+if echo "n" | timer --use-dir "$TEST_TIMER_DIR" CLEAR 2>&1 | grep -q "Timers not cleared"; then
     # Verify timers still exist
-    if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}Clear1.txt" ]] || [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}Clear2.txt" ]]; then
+    if [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}Clear1.txt" ]] || [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}Clear2.txt" ]]; then
         if print_msg 21 "Does timer CLEAR preserve timers when cancelled?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -429,12 +428,12 @@ fi
 
 # Test CLEAR with confirmation (note: this will clear ALL timer-*.txt files)
 # We need to be careful here - create test timers after
-timer ${TEST_TIMER_PREFIX}Clear3 >/dev/null 2>&1
-if echo "y" | timer CLEAR 2>&1 | grep -q "All timers cleared"; then
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Clear3 >/dev/null 2>&1
+if echo "y" | timer --use-dir "$TEST_TIMER_DIR" CLEAR 2>&1 | grep -q "All timers cleared"; then
     # Verify test timers are gone (but they might have been cleared above, so check a new one)
-    timer ${TEST_TIMER_PREFIX}AfterClear >/dev/null 2>&1
-    if echo "y" | timer CLEAR >/dev/null 2>&1; then
-        if [[ ! -f "/tmp/timer-${TEST_TIMER_PREFIX}AfterClear.txt" ]]; then
+    timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}AfterClear >/dev/null 2>&1
+    if echo "y" | timer --use-dir "$TEST_TIMER_DIR" CLEAR >/dev/null 2>&1; then
+        if [[ ! -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}AfterClear.txt" ]]; then
             if print_msg 22 "Does timer CLEAR remove all timers when confirmed?" true; then
                 ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -452,8 +451,8 @@ else
 fi
 
 # Test CLEAR case-insensitive
-timer ${TEST_TIMER_PREFIX}Clear4 >/dev/null 2>&1
-if echo "n" | timer clear 2>&1 | grep -q "Timers not cleared\|Timers not cleared"; then
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Clear4 >/dev/null 2>&1
+if echo "n" | timer --use-dir "$TEST_TIMER_DIR" clear 2>&1 | grep -q "Timers not cleared\|Timers not cleared"; then
     if print_msg 23 "Does timer CLEAR work case-insensitively?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -465,8 +464,8 @@ else
 fi
 
 # Test CLEAR return code
-timer ${TEST_TIMER_PREFIX}Clear5 >/dev/null 2>&1
-if echo "y" | timer CLEAR >/dev/null 2>&1; then
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Clear5 >/dev/null 2>&1
+if echo "y" | timer --use-dir "$TEST_TIMER_DIR" CLEAR >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 24 "Does timer CLEAR return 0 on success?" true; then
@@ -484,15 +483,15 @@ fi
 
 printf "\nTesting elapsed time calculation...\n"
 
-# Create a timer with fixed timestamp (5 seconds ago)
+# Create a timer --use-dir "$TEST_TIMER_DIR" with fixed timestamp (5 seconds ago)
 test_timer_name="${TEST_TIMER_PREFIX}ElapsedTest"
-test_timer_file="/tmp/timer-${test_timer_name}.txt"
+test_timer_file="${TEST_TIMER_DIR}/timer-${test_timer_name}.txt"
 rm -f "$test_timer_file" 2>/dev/null || true
 past_timestamp=$(( $(date +%s) - 5 ))
 printf "%s" "$past_timestamp" > "$test_timer_file"
 
 # Test elapsed time calculation
-elapsed_output=$(printf "n\n" | timer $test_timer_name 2>&1)
+elapsed_output=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name" 2>&1)
 if echo "$elapsed_output" | grep -q "Elapsed Time"; then
     if print_msg 25 "Does timer calculate and display elapsed time?" true; then
         ((score++))
@@ -516,14 +515,14 @@ else
     print_msg 26 "Does timer format time as HHH:MM:SS?" false
 fi
 
-# Test hours calculation (create timer 2 hours ago)
+# Test hours calculation (create timer --use-dir "$TEST_TIMER_DIR" 2 hours ago)
 test_timer_name2="${TEST_TIMER_PREFIX}HoursTest"
-test_timer_file2="/tmp/timer-${test_timer_name2}.txt"
+test_timer_file2="${TEST_TIMER_DIR}/timer-${test_timer_name2}.txt"
 rm -f "$test_timer_file2" 2>/dev/null || true
 hours_ago_timestamp=$(( $(date +%s) - 7200 ))  # 2 hours
 printf "%s" "$hours_ago_timestamp" > "$test_timer_file2"
 
-elapsed_output2=$(printf "n\n" | timer $test_timer_name2 2>&1)
+elapsed_output2=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name2" 2>&1)
 if echo "$elapsed_output2" | grep -qE '00[12]:[0-9]{2}:[0-9]{2}'; then
     if print_msg 27 "Does timer calculate hours correctly?" true; then
         ((score++))
@@ -535,14 +534,14 @@ else
     print_msg 27 "Does timer calculate hours correctly?" false
 fi
 
-# Test minutes calculation (create timer 90 seconds ago)
+# Test minutes calculation (create timer --use-dir "$TEST_TIMER_DIR" 90 seconds ago)
 test_timer_name3="${TEST_TIMER_PREFIX}MinutesTest"
-test_timer_file3="/tmp/timer-${test_timer_name3}.txt"
+test_timer_file3="${TEST_TIMER_DIR}/timer-${test_timer_name3}.txt"
 rm -f "$test_timer_file3" 2>/dev/null || true
 minutes_ago_timestamp=$(( $(date +%s) - 90 ))  # 90 seconds = 1 min 30 sec
 printf "%s" "$minutes_ago_timestamp" > "$test_timer_file3"
 
-elapsed_output3=$(printf "n\n" | timer $test_timer_name3 2>&1)
+elapsed_output3=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name3" 2>&1)
 if echo "$elapsed_output3" | grep -qE '[0-9]{3}:0[01]:[0-9]{2}'; then
     if print_msg 28 "Does timer calculate minutes correctly?" true; then
         ((score++))
@@ -556,12 +555,12 @@ fi
 
 # Test negative elapsed time handling (future timestamp results in negative elapsed)
 test_timer_name4="${TEST_TIMER_PREFIX}NegativeTest"
-test_timer_file4="/tmp/timer-${test_timer_name4}.txt"
+test_timer_file4="${TEST_TIMER_DIR}/timer-${test_timer_name4}.txt"
 rm -f "$test_timer_file4" 2>/dev/null || true
 future_timestamp=$(( $(date +%s) + 100 ))  # Future timestamp
 printf "%s" "$future_timestamp" > "$test_timer_file4"
 
-elapsed_output4=$(printf "n\n" | timer $test_timer_name4 2>&1)
+elapsed_output4=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name4" 2>&1)
 # Negative elapsed time is set to 0, so should show 000:00:00 or at least not error
 if echo "$elapsed_output4" | grep -qE '000:00:00|Elapsed Time.*000:00:00'; then
     if print_msg 29 "Does timer handle negative elapsed time (defaults to 0)?" true; then
@@ -586,15 +585,15 @@ fi
 
 printf "\nTesting reset prompt...\n"
 
-# Create timer and test reset prompt
+# Create timer --use-dir "$TEST_TIMER_DIR" and test reset prompt
 test_timer_name5="${TEST_TIMER_PREFIX}ResetTest"
-test_timer_file5="/tmp/timer-${test_timer_name5}.txt"
+test_timer_file5="${TEST_TIMER_DIR}/timer-${test_timer_name5}.txt"
 rm -f "$test_timer_file5" 2>/dev/null || true
 past_timestamp_reset=$(( $(date +%s) - 10 ))
 printf "%s" "$past_timestamp_reset" > "$test_timer_file5"
 
 # Test reset cancellation
-reset_output=$(printf "n\n" | timer $test_timer_name5 2>&1)
+reset_output=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name5" 2>&1)
 if echo "$reset_output" | grep -q "Would you like to reset\|still set"; then
     if [[ -f "$test_timer_file5" ]]; then
         if print_msg 30 "Does timer preserve timer when reset cancelled?" true; then
@@ -613,7 +612,7 @@ fi
 # Test reset confirmation
 past_timestamp_reset2=$(( $(date +%s) - 5 ))
 printf "%s" "$past_timestamp_reset2" > "$test_timer_file5"
-reset_output2=$(printf "y\n" | timer $test_timer_name5 2>&1)
+reset_output2=$(printf "y\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name5" 2>&1)
 if echo "$reset_output2" | grep -q "reset"; then
     # Timer file should be deleted on reset
     sleep 0.1
@@ -634,7 +633,7 @@ fi
 # Test reset case-insensitive
 past_timestamp_reset3=$(( $(date +%s) - 5 ))
 printf "%s" "$past_timestamp_reset3" > "$test_timer_file5"
-reset_output3=$(printf "Y\n" | timer $test_timer_name5 2>&1)
+reset_output3=$(printf "Y\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name5" 2>&1)
 if echo "$reset_output3" | grep -q "reset"; then
     if print_msg 32 "Does timer reset work case-insensitively (Y/y)?" true; then
         ((score++))
@@ -649,15 +648,15 @@ fi
 printf "\nTesting multiple timers...\n"
 
 # Create multiple timers
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
-timer ${TEST_TIMER_PREFIX}Multi1 >/dev/null 2>&1
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Multi1 >/dev/null 2>&1
 sleep 0.1
-timer ${TEST_TIMER_PREFIX}Multi2 >/dev/null 2>&1
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Multi2 >/dev/null 2>&1
 sleep 0.1
-timer ${TEST_TIMER_PREFIX}Multi3 >/dev/null 2>&1
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Multi3 >/dev/null 2>&1
 
 # Test LIST shows all timers
-multi_list_output=$(timer LIST 2>&1)
+multi_list_output=$(timer --use-dir "$TEST_TIMER_DIR" LIST 2>&1)
 if echo "$multi_list_output" | grep -q "${TEST_TIMER_PREFIX}Multi1" && \
    echo "$multi_list_output" | grep -q "${TEST_TIMER_PREFIX}Multi2" && \
    echo "$multi_list_output" | grep -q "${TEST_TIMER_PREFIX}Multi3"; then
@@ -672,7 +671,7 @@ else
 fi
 
 # Test accessing individual timer
-if printf "n\n" | timer ${TEST_TIMER_PREFIX}Multi1 >/dev/null 2>&1; then
+if printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}Multi1 >/dev/null 2>&1; then
     if print_msg 34 "Does timer work with multiple active timers?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -685,10 +684,10 @@ fi
 
 printf "\nTesting error handling...\n"
 
-# Test file creation error (simulate by using invalid path - but timer uses /tmp which should be writable)
+# Test file creation error (simulate by using invalid path - but timer --use-dir "$TEST_TIMER_DIR" uses /tmp which should be writable)
 # Instead, test with a very long name that might cause issues
 long_name="${TEST_TIMER_PREFIX}$(printf 'a%.0s' {1..200})"
-if timer "$long_name" >/dev/null 2>&1; then
+if timer --use-dir "$TEST_TIMER_DIR" "$long_name" >/dev/null 2>&1; then
     # Should either succeed or fail gracefully
     exit_code=$?
     if [[ $exit_code -eq 0 ]] || [[ $exit_code -eq 1 ]]; then
@@ -716,14 +715,14 @@ else
     fi
 fi
 
-# Test corrupted timer file (non-numeric content)
+# Test corrupted timer --use-dir "$TEST_TIMER_DIR" file (non-numeric content)
 # Note: bash arithmetic with non-numeric will likely cause an error or unexpected behavior
 test_timer_name6="${TEST_TIMER_PREFIX}CorruptTest"
-test_timer_file6="/tmp/timer-${test_timer_name6}.txt"
+test_timer_file6="${TEST_TIMER_DIR}/timer-${test_timer_name6}.txt"
 rm -f "$test_timer_file6" 2>&1 || true
 printf "not-a-number" > "$test_timer_file6"
 
-corrupt_output=$(printf "n\n" | timer $test_timer_name6 2>&1)
+corrupt_output=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name6" 2>&1)
 # Corrupted file might cause arithmetic error or show 000:00:00 (non-numeric treated as 0)
 # Either way, it should handle it without crashing
 if echo "$corrupt_output" | grep -q "Elapsed Time\|Error\|error\|Could not"; then
@@ -748,15 +747,15 @@ fi
 # Since /tmp is typically writable, test CLEAR failure scenario or verify error codes exist
 # Actually, we can verify that error return codes exist by checking the source or testing known error paths
 
-# Test that timer has proper error handling - verify CLEAR can return error code 4
-# Create a timer and test that CLEAR returns appropriate code
-timer ${TEST_TIMER_PREFIX}ErrorTest >/dev/null 2>&1
+# Test that timer --use-dir "$TEST_TIMER_DIR" has proper error handling - verify CLEAR can return error code 4
+# Create a timer --use-dir "$TEST_TIMER_DIR" and test that CLEAR returns appropriate code
+timer --use-dir "$TEST_TIMER_DIR" ${TEST_TIMER_PREFIX}ErrorTest >/dev/null 2>&1
 # CLEAR with confirmation should return 0 on success, but we've tested this above
-# For this test, verify that timer at least has error handling logic
-# The timer function returns 1, 2, 3, or 4 for different error scenarios (documented in source)
+# For this test, verify that timer --use-dir "$TEST_TIMER_DIR" at least has error handling logic
+# The timer --use-dir "$TEST_TIMER_DIR" function returns 1, 2, 3, or 4 for different error scenarios (documented in source)
 
 # Since we can't easily simulate file errors in /tmp (it's usually writable),
-# we verify that timer has error handling by checking return codes from previous tests
+# we verify that timer --use-dir "$TEST_TIMER_DIR" has error handling by checking return codes from previous tests
 # All previous error tests passed, indicating error handling works
 if print_msg 37 "Does timer return non-zero on error?" true; then
     # We've verified error handling in previous tests (corrupted files, etc.)
@@ -801,64 +800,143 @@ else
     fi
 fi
 
-printf "\nTesting edge cases...\n"
+printf "\nTesting --use-dir flag...\n"
 
-# Test empty timer name (should default to "Timer")
-rm -f /tmp/timer-Timer.txt /tmp/timer-${TEST_TIMER_PREFIX}Timer.txt 2>/dev/null || true
-if timer "" >/dev/null 2>&1; then
-    # Should create timer with name "Timer" (without prefix since empty input)
-    if [[ -f "/tmp/timer-Timer.txt" ]]; then
-        if print_msg 40 "Does timer handle empty name (defaults to 'Timer')?" true; then
+# Test 40: timer --use-dir writes to custom directory
+custom_timer_dir="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_custom_timers"
+rm -rf "$custom_timer_dir" 2>/dev/null || true
+if timer --use-dir "$custom_timer_dir" ${TEST_TIMER_PREFIX}CustomDirTest >/dev/null 2>&1; then
+    if [[ -f "${custom_timer_dir}/timer-${TEST_TIMER_PREFIX}CustomDirTest.txt" ]]; then
+        if print_msg 40 "Does timer --use-dir write to custom directory?" true; then
             ((score++))
-        if type update_progress_from_score >/dev/null 2>&1; then
-            update_progress_from_score
-        fi
+            if type update_progress_from_score >/dev/null 2>&1; then
+                update_progress_from_score
+            fi
         fi
     else
-        print_msg 40 "Does timer handle empty name (defaults to 'Timer')?" false
+        print_msg 40 "Does timer --use-dir write to custom directory?" false
     fi
 else
-    print_msg 40 "Does timer handle empty name (defaults to 'Timer')?" false
+    print_msg 40 "Does timer --use-dir write to custom directory?" false
 fi
+rm -rf "$custom_timer_dir" 2>/dev/null || true
 
-# Test timer with dots and hyphens (valid characters)
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
-if timer "${TEST_TIMER_PREFIX}test.timer-name" >/dev/null 2>&1; then
-    if [[ -f "/tmp/timer-${TEST_TIMER_PREFIX}test.timer-name.txt" ]]; then
-        if print_msg 41 "Does timer preserve dots and hyphens in name?" true; then
+# Test 41: timer -ud (short form) works
+custom_timer_dir2="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_custom_timers2"
+rm -rf "$custom_timer_dir2" 2>/dev/null || true
+if timer -ud "$custom_timer_dir2" ${TEST_TIMER_PREFIX}ShortFormTest >/dev/null 2>&1; then
+    if [[ -f "${custom_timer_dir2}/timer-${TEST_TIMER_PREFIX}ShortFormTest.txt" ]]; then
+        if print_msg 41 "Does timer -ud (short form) work?" true; then
             ((score++))
-        if type update_progress_from_score >/dev/null 2>&1; then
-            update_progress_from_score
-        fi
+            if type update_progress_from_score >/dev/null 2>&1; then
+                update_progress_from_score
+            fi
         fi
     else
-        print_msg 41 "Does timer preserve dots and hyphens in name?" false
+        print_msg 41 "Does timer -ud (short form) work?" false
     fi
 else
-    print_msg 41 "Does timer preserve dots and hyphens in name?" false
+    print_msg 41 "Does timer -ud (short form) work?" false
 fi
+rm -rf "$custom_timer_dir2" 2>/dev/null || true
 
-# Test very long elapsed time
-test_timer_name7="${TEST_TIMER_PREFIX}LongTimeTest"
-test_timer_file7="/tmp/timer-${test_timer_name7}.txt"
-rm -f "$test_timer_file7" 2>/dev/null || true
-very_old_timestamp=$(( $(date +%s) - 1000000 ))  # ~11.5 days ago
-printf "%s" "$very_old_timestamp" > "$test_timer_file7"
+# Test 42: timer --use-dir creates directory if it doesn't exist
+custom_timer_dir3="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_nonexistent_timers"
+rm -rf "$custom_timer_dir3" 2>/dev/null || true
+if timer --use-dir "$custom_timer_dir3" ${TEST_TIMER_PREFIX}CreateDirTest >/dev/null 2>&1; then
+    if [[ -d "$custom_timer_dir3" ]] && [[ -f "${custom_timer_dir3}/timer-${TEST_TIMER_PREFIX}CreateDirTest.txt" ]]; then
+        if print_msg 42 "Does timer --use-dir create directory if missing?" true; then
+            ((score++))
+            if type update_progress_from_score >/dev/null 2>&1; then
+                update_progress_from_score
+            fi
+        fi
+    else
+        print_msg 42 "Does timer --use-dir create directory if missing?" false
+    fi
+else
+    print_msg 42 "Does timer --use-dir create directory if missing?" false
+fi
+rm -rf "$custom_timer_dir3" 2>/dev/null || true
 
-long_output=$(printf "n\n" | timer $test_timer_name7 2>&1)
-if echo "$long_output" | grep -q "Elapsed Time"; then
-    if print_msg 42 "Does timer handle very long elapsed times?" true; then
+# Test 43: timer LIST works with --use-dir
+custom_timer_dir4="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_list_timers"
+rm -rf "$custom_timer_dir4" 2>/dev/null || true
+timer --use-dir "$custom_timer_dir4" ${TEST_TIMER_PREFIX}ListTest1 >/dev/null 2>&1
+sleep 0.1
+timer --use-dir "$custom_timer_dir4" ${TEST_TIMER_PREFIX}ListTest2 >/dev/null 2>&1
+list_output_custom=$(timer --use-dir "$custom_timer_dir4" LIST 2>&1)
+if echo "$list_output_custom" | grep -q "${TEST_TIMER_PREFIX}ListTest1" && \
+   echo "$list_output_custom" | grep -q "${TEST_TIMER_PREFIX}ListTest2"; then
+    if print_msg 43 "Does timer LIST work with --use-dir?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    print_msg 42 "Does timer handle very long elapsed times?" false
+    print_msg 43 "Does timer LIST work with --use-dir?" false
+fi
+rm -rf "$custom_timer_dir4" 2>/dev/null || true
+
+printf "\nTesting edge cases...\n"
+
+# Test 44: timer handles empty name (should default to "Timer")
+rm -f ${TEST_TIMER_DIR}/timer-Timer.txt ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}Timer.txt 2>/dev/null || true
+if timer --use-dir "$TEST_TIMER_DIR" "" >/dev/null 2>&1; then
+    # Should create timer with name "Timer" (without prefix since empty input)
+    if [[ -f "${TEST_TIMER_DIR}/timer-Timer.txt" ]]; then
+        if print_msg 44 "Does timer handle empty name (defaults to 'Timer')?" true; then
+            ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+        fi
+    else
+        print_msg 44 "Does timer handle empty name (defaults to 'Timer')?" false
+    fi
+else
+    print_msg 44 "Does timer handle empty name (defaults to 'Timer')?" false
+fi
+
+# Test 45: timer with dots and hyphens (valid characters)
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt 2>/dev/null || true
+if timer --use-dir "$TEST_TIMER_DIR" "${TEST_TIMER_PREFIX}test.timer-name" >/dev/null 2>&1; then
+    if [[ -f "${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}test.timer-name.txt" ]]; then
+        if print_msg 45 "Does timer preserve dots and hyphens in name?" true; then
+            ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+        fi
+    else
+        print_msg 45 "Does timer preserve dots and hyphens in name?" false
+    fi
+else
+    print_msg 45 "Does timer preserve dots and hyphens in name?" false
+fi
+
+# Test 46: timer handles very long elapsed time
+test_timer_name7="${TEST_TIMER_PREFIX}LongTimeTest"
+test_timer_file7="${TEST_TIMER_DIR}/timer-${test_timer_name7}.txt"
+rm -f "$test_timer_file7" 2>/dev/null || true
+very_old_timestamp=$(( $(date +%s) - 1000000 ))  # ~11.5 days ago
+printf "%s" "$very_old_timestamp" > "$test_timer_file7"
+
+long_output=$(printf "n\n" | timer --use-dir "$TEST_TIMER_DIR" "$test_timer_name7" 2>&1)
+if echo "$long_output" | grep -q "Elapsed Time"; then
+    if print_msg 46 "Does timer handle very long elapsed times?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 46 "Does timer handle very long elapsed times?" false
 fi
 
 # Clean up before final tests
-rm -f /tmp/timer-${TEST_TIMER_PREFIX}*.txt /tmp/timer-Timer.txt 2>/dev/null || true
+rm -f ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt ${TEST_TIMER_DIR}/timer-Timer.txt 2>/dev/null || true
 
 percentage=$((score * 100 / total_tests))
 # Write results file
@@ -881,20 +959,23 @@ printf "========================================\n"
 printf "\nCleaning up test files...\n"
 cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
 
-# Clean up all test timer files
+# Clean up all test timer --use-dir "$TEST_TIMER_DIR" files
 shopt -s nullglob
-for file in /tmp/timer-${TEST_TIMER_PREFIX}*.txt /tmp/timer-Timer.txt; do
+for file in ${TEST_TIMER_DIR}/timer-${TEST_TIMER_PREFIX}*.txt ${TEST_TIMER_DIR}/timer-Timer.txt; do
     [[ -f "$file" ]] && rm -f "$file" 2>/dev/null || true
 done
 shopt -u nullglob
 
-# Restore any backed up test timer files
-if [[ -d "$test_timer_backup_dir" ]]; then
-    for file in "$test_timer_backup_dir"/*.txt; do
+# Restore any backed up test timer --use-dir "$TEST_TIMER_DIR" files
+if [[ -d "${test_timer_backup_dir}" ]]; then
+    for file in "${test_timer_backup_dir}"/*.txt; do
         [[ -f "$file" ]] && mv "$file" /tmp/ 2>/dev/null || true
     done
-    rm -rf "$test_timer_backup_dir" 2>/dev/null || true
+    rm -rf "${test_timer_backup_dir}" 2>/dev/null || true
 fi
+
+# Clean up test timer directory
+rm -rf "${TEST_TIMER_DIR}" 2>/dev/null || true
 
 printf "Cleanup complete.\n"
 

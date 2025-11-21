@@ -13,6 +13,7 @@ source "${__CORE_DIR}/dependency_check.sh"
 
 # Semantic version comparison function (same as _UPDATE.sh)
 # Returns: 0 if versions equal, 1 if v1 > v2, 2 if v1 < v2
+# Supports versions with any number of parts (e.g., 0.1.5, 0.1.5.1, 0.1.5.9.2)
 compare_versions() {
     local v1="$1"
     local v2="$2"
@@ -25,6 +26,12 @@ compare_versions() {
     IFS='.' read -ra v1_parts <<< "$v1"
     IFS='.' read -ra v2_parts <<< "$v2"
     
+    # Find the maximum number of parts
+    local max_parts=${#v1_parts[@]}
+    if [[ ${#v2_parts[@]} -gt $max_parts ]]; then
+        max_parts=${#v2_parts[@]}
+    fi
+    
     # Ensure both arrays have at least 3 elements (pad with 0 if needed)
     while [[ ${#v1_parts[@]} -lt 3 ]]; do
         v1_parts+=("0")
@@ -33,11 +40,12 @@ compare_versions() {
         v2_parts+=("0")
     done
     
-    # Compare major, minor, patch
-    for i in 0 1 2; do
+    # Compare all parts up to max_parts
+    for ((i=0; i<max_parts; i++)); do
         local num1="${v1_parts[$i]//[!0-9]/0}"  # Remove non-numeric, default to 0
         local num2="${v2_parts[$i]//[!0-9]/0}"
         
+        # If part doesn't exist, treat as 0
         num1=$((10#${num1:-0}))  # Force base-10 interpretation
         num2=$((10#${num2:-0}))
         

@@ -120,6 +120,9 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_available_$$"
+
 # Setup trap to ensure cleanup happens even on failure
 cleanup_available_test() {
     local exit_code=$?

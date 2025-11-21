@@ -128,6 +128,10 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_archive_$$"
+readonly TEST_DIR="${TEST_PREFIX}_dir"
+
 if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
     source "${__PLUGINS_DIR}/drchelp.sh" 2>/dev/null || true
 fi
@@ -376,11 +380,11 @@ fi
 printf "\nTesting tar.gz compression (if tar available)...\n"
 
 if command -v tar >/dev/null 2>&1; then
-    mkdir -p "test_dir"
-    printf "content1" > "test_dir/file1.txt"
-    printf "content2" > "test_dir/file2.txt"
-    if compress "test_dir" >/dev/null 2>&1; then
-        if [[ -f "test_dir.tar.gz" ]]; then
+    mkdir -p "${TEST_DIR}"
+    printf "content1" > "${TEST_DIR}/file1.txt"
+    printf "content2" > "${TEST_DIR}/file2.txt"
+    if compress "${TEST_DIR}" >/dev/null 2>&1; then
+        if [[ -f "${TEST_DIR}.tar.gz" ]]; then
             if print_msg 21 "Does compress create .tar.gz for directory?" true; then
                 ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -395,16 +399,16 @@ if command -v tar >/dev/null 2>&1; then
     else
         print_msg 21 "Does compress create .tar.gz for directory?" false
     fi
-    rm -rf "test_dir" 2>/dev/null || true
+    rm -rf "${TEST_DIR}" 2>/dev/null || true
 else
     if print_msg 21 "Does compress create .tar.gz for directory?" false; then
         printf "        (tar not available, skipping)\n"
     fi
 fi
 
-if command -v tar >/dev/null 2>&1 && [[ -f "test_dir.tar.gz" ]]; then
-    if extract "test_dir.tar.gz" >/dev/null 2>&1; then
-        if [[ -d "test_dir" ]] && [[ -f "test_dir/file1.txt" ]]; then
+if command -v tar >/dev/null 2>&1 && [[ -f "${TEST_DIR}.tar.gz" ]]; then
+    if extract "${TEST_DIR}.tar.gz" >/dev/null 2>&1; then
+        if [[ -d "${TEST_DIR}" ]] && [[ -f "${TEST_DIR}/file1.txt" ]]; then
             if print_msg 22 "Does extract .tar.gz file work correctly?" true; then
                 ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -419,7 +423,7 @@ if command -v tar >/dev/null 2>&1 && [[ -f "test_dir.tar.gz" ]]; then
     else
         print_msg 22 "Does extract .tar.gz file work correctly?" false
     fi
-    rm -rf "test_dir" "test_dir.tar.gz" 2>/dev/null || true
+    rm -rf "${TEST_DIR}" "${TEST_DIR}.tar.gz" 2>/dev/null || true
 else
     if print_msg 22 "Does extract .tar.gz file work correctly?" false; then
         printf "        (tar not available or no .tar.gz file, skipping)\n"
@@ -614,10 +618,10 @@ else
 fi
 
 if command -v tar >/dev/null 2>&1 && command -v bzip2 >/dev/null 2>&1; then
-    mkdir -p "test_format"
-    printf "content" > "test_format/file.txt"
-    if compress "test_format" "tbz2" >/dev/null 2>&1; then
-        if [[ -f "test_format.tar.bz2" ]]; then
+    mkdir -p "${TEST_PREFIX}_format"
+    printf "content" > "${TEST_PREFIX}_format/file.txt"
+    if compress "${TEST_PREFIX}_format" "tbz2" >/dev/null 2>&1; then
+        if [[ -f "${TEST_PREFIX}_format.tar.bz2" ]]; then
             if print_msg 33 "Does compress handle format alias (tbz2)?" true; then
                 ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -632,7 +636,7 @@ if command -v tar >/dev/null 2>&1 && command -v bzip2 >/dev/null 2>&1; then
     else
         print_msg 33 "Does compress handle format alias (tbz2)?" false
     fi
-    rm -rf "test_format" "test_format.tar.bz2" 2>/dev/null || true
+    rm -rf "${TEST_PREFIX}_format" "${TEST_PREFIX}_format.tar.bz2" 2>/dev/null || true
 else
     if print_msg 33 "Does compress handle format alias (tbz2)?" false; then
         printf "        (tar/bzip2 not available, skipping)\n"
@@ -690,7 +694,7 @@ cd "${__UNIT_TESTS_DIR}" || exit 91
 rm -f test_file.txt test_file.txt.gz test_file2.txt test_file2.txt.gz 2>/dev/null || true
 rm -f test_success.txt test_success.txt.gz test_msg.txt test_msg.txt.gz 2>/dev/null || true
 rm -f test_exists.txt test_exists.txt.gz test_preserve.txt test_preserve.txt.gz 2>/dev/null || true
-rm -rf test_dir test_dir.tar.gz test_format test_format.tar.bz2 2>/dev/null || true
+rm -rf ${TEST_DIR} ${TEST_DIR}.tar.gz ${TEST_PREFIX}_format ${TEST_PREFIX}_format.tar.bz2 2>/dev/null || true
 rm -f *.tar.gz *.tar.bz2 *.gz *.bz2 2>/dev/null || true
 printf "Cleanup complete.\n"
 

@@ -206,6 +206,100 @@ Note: This function is the opposite of extract(). It creates archives from
 EOF
                 return 0
                 ;;
+            dupefind|finddupes)
+                cat <<EOF
+dupefind - Find Duplicate Files
+
+Find duplicate files by comparing their content using hash algorithms.
+
+Usage: dupefind [OPTIONS] [directory|file]
+       finddupes [OPTIONS] [directory|file]
+
+Description:
+  - Finds duplicate files by comparing file content using hash algorithms
+  - Supports MD5 and SHA256 hash algorithms
+  - Works with files and directories
+  - Groups duplicates together for easy identification
+  - Shows file sizes and wasted space
+  - Can automatically delete duplicates or use interactive mode
+
+Options:
+  --md5, -m              Use MD5 hash algorithm (faster, less secure)
+  --sha256, -s           Use SHA256 hash algorithm (slower, more secure)
+  --delete, -d           Automatically delete duplicate files (keeps first file)
+  --interactive, -i      Interactive mode for manual selection of files to keep/delete
+  --no-size              Don't display file sizes
+  --min-size <size>      Only check files larger than specified size
+                        Supports suffixes: K (KB), M (MB), G (GB)
+                        Example: --min-size 1M (only files > 1MB)
+  --                     Separator for directory/file path
+
+Default Behavior:
+  - Uses MD5 hash if available (fallback to SHA256)
+  - Searches current directory if no path specified
+  - Displays duplicates grouped by hash
+  - Shows file sizes and wasted space
+  - Does not delete files (display only)
+
+Hash Algorithms:
+  - MD5: Faster, suitable for most use cases
+  - SHA256: More secure, slower, recommended for verification
+
+Modes:
+  Display Mode (default):
+    - Finds and displays all duplicate files
+    - Groups duplicates by content hash
+    - Shows which files are duplicates
+    - Displays wasted space
+
+  Delete Mode (--delete):
+    - Automatically keeps the first file in each duplicate group
+    - Deletes all other duplicates
+    - No confirmation (use with caution)
+    - Shows what files are kept and deleted
+
+  Interactive Mode (--interactive):
+    - Shows each duplicate group
+    - Allows manual selection of files to keep
+    - Prompts for confirmation before deletion
+    - Provides full control over which duplicates to remove
+
+Behavior:
+  - Scans all files in specified directory recursively
+  - Calculates hash for each file (respecting --min-size)
+  - Groups files with identical hashes
+  - Displays duplicates with file paths and sizes
+  - Shows total wasted space
+  - In delete mode: keeps first file, deletes rest
+  - In interactive mode: prompts for each deletion
+
+Dependencies:
+  - find (for file discovery)
+  - stat (for file size)
+  - md5sum or md5 (for MD5 hashing)
+  - sha256sum or sha256 (for SHA256 hashing)
+  - sort (for grouping duplicates)
+  - bc (optional, for size formatting)
+
+Examples:
+  dupefind                              # Find duplicates in current directory
+  dupefind ~/Documents                  # Find duplicates in Documents
+  dupefind --sha256 ~/Pictures          # Use SHA256 hash for Pictures
+  dupefind --min-size 1M                # Only check files larger than 1MB
+  dupefind --delete ~/Downloads         # Delete duplicates automatically
+  dupefind --interactive ~/Music        # Interactive mode for Music
+  dupefind --no-size ~/Videos           # Don't show file sizes
+  dupefind --min-size 10M --sha256      # Large files with SHA256
+
+Note: The function finds duplicates by comparing file content, not filenames.
+      Two files with different names but identical content will be identified
+      as duplicates. Use --delete with caution as it permanently removes files.
+      Interactive mode is safer for manual review. The --min-size option is
+      useful for skipping small files when looking for large duplicates.
+      Tab completion is available for directory/file paths.
+EOF
+                return 0
+                ;;
             calc)
                 cat <<EOF
 calc - Command Line Calculator
@@ -925,7 +1019,7 @@ pokefetch - System Information with Pokemon Logo
 
 Display system information using fastfetch with a random Pokemon ASCII art logo.
 
-Usage: pokefetch
+Usage: pokefetch [--relocate|--RELOCATE|-l|-L <file>]
 
 Description:
   - Displays system information using fastfetch
@@ -934,12 +1028,19 @@ Description:
   - Provides a fun and colorful way to view system info
   - Randomly selects from Pokemon #1-4 (Bulbasaur, Charmander, Squirtle, Pikachu)
 
+Options:
+  --relocate, --RELOCATE, -l, -L <file>
+                      Specify custom location for temporary Pokemon ASCII art file
+                      Default: /tmp/pokefetch.txt
+                      The function will use <file> and derive a second file (<file>2)
+                      for temporary processing
+
 Behavior:
   - Generates random Pokemon ASCII art using pokemon-colorscripts
   - Extracts Pokemon name from the art
   - Displays system information with Pokemon logo using fastfetch
   - Shows "[ Pokemon Name ] Joins The Battle!" message
-  - Uses temporary files in /tmp for processing
+  - Uses temporary files for processing (default: /tmp/pokefetch.txt)
   - Returns 0 on success
 
 Dependencies:
@@ -948,10 +1049,13 @@ Dependencies:
   - head, sed, mv (for text processing)
 
 Files:
-  - /tmp/pokefetch.txt - Temporary file storing Pokemon ASCII art
+  - /tmp/pokefetch.txt - Default temporary file storing Pokemon ASCII art
+  - <file> and <file>2 - Custom temporary files when --relocate is used
 
 Examples:
-  pokefetch              # Display system info with random Pokemon logo
+  pokefetch                          # Display system info with random Pokemon logo
+  pokefetch --relocate /path/to/file.dat    # Use custom file location
+  pokefetch -l ~/my-pokemon.txt      # Use custom file location (short form)
 
 Note: The function randomly selects from the first 4 Pokemon (Bulbasaur,
       Charmander, Squirtle, Pikachu) and displays them as ASCII art alongside
@@ -2056,60 +2160,73 @@ EOF
                 ;;
             timer)
                 cat <<EOF
-timer - Named Timer Management
+timer - Simple Timer Utility
 
-Create and manage named timers to track elapsed time.
+A lightweight timer utility that tracks elapsed time for named timers.
 
-Usage: timer [name]
-       timer list
-       timer clear
+Usage: timer [--use-dir|--USE-DIR|-ud|-UD <directory>] [<timer-name>|CLEAR|LIST]
 
 Description:
-  - Creates named timers that track elapsed time
-  - Displays elapsed time in HH:MM:SS format
-  - Supports multiple named timers simultaneously
-  - Can list all active timers
-  - Can clear all timers at once
-  - Timer names are sanitized for filesystem safety
+  - Creates and manages named timers
+  - Tracks elapsed time since timer was set
+  - Supports multiple concurrent timers
+  - Provides simple start/stop/reset functionality
+  - Stores timer data in files (default: /tmp/timer-*.txt)
+
+Options:
+  --use-dir, --USE-DIR, -ud, -UD <directory>
+                      Specify custom directory for timer files
+                      Default: /tmp
+                      Timer files will be stored as: <directory>/timer-<name>.txt
+                      Directory will be created if it doesn't exist
 
 Commands:
-  <name>        Create or check a named timer
-  list          List all active timers with elapsed times
-  clear         Clear all timers (prompts for confirmation)
+  <timer-name>        Start or check elapsed time for a named timer
+                      If timer doesn't exist, creates it and starts timing
+                      If timer exists, shows elapsed time and offers to reset
+                      Timer names are sanitized (spaces -> underscores, special chars removed)
+                      Default name: "Timer"
+
+  CLEAR              Clear all timers (requires confirmation)
+                      Prompts for confirmation before deleting all timer files
+                      Returns 0 on success, 4 on error
+
+  LIST               List all active timers with elapsed times
+                      Shows timer name and elapsed time in HH:MM:SS format
+                      Returns 0 on success
 
 Behavior:
-  - Without arguments: creates/checks a timer named "Timer"
-  - First call with a name: creates the timer and stores start time
-  - Subsequent calls: displays elapsed time and offers to reset
-  - Timer names are sanitized (spaces→underscores, special chars removed)
-  - Timers persist until explicitly reset or cleared
-  - Elapsed time displayed in HH:MM:SS format (e.g., 001:23:45)
+  - Timer files store Unix timestamp (seconds since epoch)
+  - Elapsed time calculated as: current_time - stored_timestamp
+  - Timer names are case-insensitive for commands (CLEAR, LIST)
+  - Timer names are sanitized: spaces become underscores, special chars removed
+  - Interactive prompts for reset/clear (10 second timeout in non-interactive mode)
+  - Returns appropriate exit codes for error handling
 
-Timer Files:
-  - Timers stored in /tmp/timer-<name>.txt
-  - Each file contains Unix timestamp of when timer was started
-  - Files persist until timer is reset or cleared
+Exit Codes:
+  0  - Success
+  1  - Error creating timer file
+  2  - Error reading timer file
+  3  - Error deleting timer file (reset failed)
+  4  - Error clearing timers
 
-Dependencies:
-  - date (for timestamps)
-  - read (for user input)
-  - rm (for clearing timers)
-  - printf (for formatted output)
-  - shopt (for nullglob)
+Files:
+  - /tmp/timer-<name>.txt - Default location for timer files
+  - <directory>/timer-<name>.txt - Custom location when --use-dir is used
 
 Examples:
-  timer                # Create/check default "Timer"
-  timer coding         # Create/check timer named "coding"
-  timer "work session" # Create timer (name sanitized to "work_session")
-  timer list           # List all active timers
-  timer clear          # Clear all timers
+  timer                    # Start/check default "Timer"
+  timer MyTask            # Start/check timer named "MyTask"
+  timer LIST              # List all active timers
+  timer CLEAR             # Clear all timers (with confirmation)
+  timer --use-dir ~/timers MyTask    # Use custom directory for timer files
+  timer -ud /tmp/mytimers MyTask     # Use custom directory (short form)
 
-Note: Timer names are automatically sanitized for filesystem safety. Spaces
+Note: Timer files persist across shell sessions. Use CLEAR to remove them.
+      Timer names are automatically sanitized for filesystem safety. Spaces
       are converted to underscores, and special characters are removed. If
       a timer already exists, calling it again will show the elapsed time
-      and prompt to reset. The "list" command shows all active timers with
-      their current elapsed times. The "clear" command removes all timer
-      files after confirmation. Tab completion is available for commands
+      and prompt to reset. Tab completion is available for commands
       (CLEAR, LIST) and timer names.
 EOF
                 return 0
@@ -2120,7 +2237,7 @@ runtests - Run DOGRC Unit Test Suite
 
 Launch the DOGRC unit test suite in a tmux session with real-time progress tracking.
 
-Usage: runtests [--ci] [--quiet|-q] [--fail-fast|-f]
+Usage: runtests [--ci] [--quiet|-q] [--fail-fast|-f] [--parallel|-p] [--stage|-s <test-name>]
        runtests --help|-h
 
 Description:
@@ -2137,11 +2254,26 @@ Modes:
     - Uses tmux with split panes for visual display
     - Real-time progress tracking with overview pane
     - Press 'q' to quit at any time
+    - Supports --parallel for simultaneous test execution
+    - Supports --stage for targeted testing (run specific test and neighbors)
+  
+  Parallel Mode (--parallel):
+    - Runs all tests simultaneously for faster execution
+    - Resource monitor (htop/top) displays in right tmux pane
+    - All test output redirected to /dev/null (cleaner display)
+    - Significantly faster test suite execution
+  
+  Stage Mode (--stage):
+    - Runs specific test and its adjacent tests (before and after)
+    - Useful for debugging specific test failures
+    - Faster than running entire test suite
+    - Example: --stage dupefind runs test-dupefind.sh, test before it, and test after it
   
   CI Mode (--ci):
     - Non-interactive mode suitable for CI/CD
     - No tmux dependency required
     - Supports --quiet and --fail-fast flags
+    - Supports --stage for targeted testing
     - Returns proper exit codes (0=pass, 1=fail, 2=no tests)
     - Minimal output option available
 
@@ -2154,14 +2286,19 @@ Display:
     - Color-coded status indicators
 
   Right Pane (Test Output):
-    - Live output from the currently running test
-    - Final summary after all tests complete
+    - Live output from the currently running test (interactive mode)
+    - Resource monitor (htop/top) during parallel execution
+    - Final summary after all tests complete (non-parallel mode)
     - Shows total score, percentage, and elapsed time
 
 Options:
   --ci              Run in CI mode (non-interactive, no tmux)
   --quiet, -q       Minimal output (CI mode only, shows only summary)
   --fail-fast, -f   Stop on first test failure (CI mode only)
+  --parallel, -p    Run tests in parallel mode (simultaneous execution)
+  --stage, -s       Run specific test and its adjacent tests
+                    Requires test name argument (e.g., --stage dupefind)
+                    Runs the target test plus the test before and after it
   --help, -h        Show this help message
 
 Controls (Interactive Mode):
@@ -2178,11 +2315,27 @@ Behavior:
     - Captures and displays final overview when session closes
     - Cleans up temporary files and tmux session on exit
   
+  Parallel Mode (--parallel):
+    - Runs all tests simultaneously in background
+    - Resource monitor (htop/top) displays in right pane during execution
+    - All test output redirected to /dev/null for cleaner display
+    - Significantly faster test execution for large test suites
+    - Protected resource monitor from interruption using exec and trap
+    - Resource monitor remains until user quits
+  
+  Stage Mode (--stage <test-name>):
+    - Finds target test in sorted test list
+    - Runs target test plus adjacent tests (before and after)
+    - Useful for debugging specific test failures
+    - Test name can be provided as full name (test-*.sh) or base name (without test- prefix)
+    - Example: --stage dupefind matches test-dupefind.sh
+  
   CI Mode (--ci):
     - Delegates to _test-all-fb.sh test runner
     - Runs tests sequentially without tmux
     - Supports --quiet for minimal output
     - Supports --fail-fast to stop on first failure
+    - Supports --stage for targeted testing
     - Returns exit code 0 if all tests pass, 1 if any fail, 2 if no tests found
 
 Test Results:
@@ -2205,9 +2358,13 @@ Files:
 
 Examples:
   runtests                    # Run all unit tests in tmux session (interactive)
+  runtests --parallel         # Run all tests in parallel mode (faster)
+  runtests --stage dupefind   # Run test-dupefind.sh and adjacent tests
+  runtests -s backup          # Run test-backup.sh and adjacent tests (short form)
   runtests --ci               # Run tests in CI mode (non-interactive)
   runtests --ci --quiet       # Run tests in CI mode with minimal output
   runtests --ci --fail-fast   # Run tests in CI mode, stop on first failure
+  runtests --ci --stage timer # Run specific test in CI mode
   runtests --ci -q -f         # Combine CI flags (quiet + fail-fast)
   runtests --help             # Show this help message
 
@@ -2223,10 +2380,14 @@ Note: Interactive mode requires tmux to be installed. If tmux is not available
       Use --ci flag for CI/CD environments or when tmux is not available.
       CI mode delegates to _test-all-fb.sh which provides proper exit codes
       for automated testing. The session automatically closes 5 seconds after
-      all tests complete in interactive mode, giving you time to review the
-      final results. You can press 'q' at any time to quit early in interactive
-      mode. The overview pane updates every second with the latest test progress.
-      All temporary files are automatically cleaned up when the session ends.
+      all tests complete in interactive mode (non-parallel), giving you time to
+      review the final results. You can press 'q' at any time to quit early in
+      interactive mode. The overview pane updates every second with the latest
+      test progress. Parallel mode runs tests simultaneously for faster execution
+      and displays a resource monitor (htop/top) in the right pane. Stage mode
+      is useful for debugging specific test failures by running only the target
+      test and its neighbors. All temporary files are automatically cleaned up
+      when the session ends.
 EOF
                 return 0
                 ;;
@@ -2418,6 +2579,7 @@ _drchelp_completion() {
         "command-not-found"
         "compress"
         "cpuinfo"
+        "dupefind"
         "cpx"
         "dl-paper"
         "dots"

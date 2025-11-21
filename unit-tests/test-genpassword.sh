@@ -115,6 +115,9 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_genpassword_$$"
+
 if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
     source "${__PLUGINS_DIR}/drchelp.sh" 2>/dev/null || true
 fi
@@ -723,8 +726,8 @@ printf "\nTesting length accuracy...\n"
 lengths=(1 5 10 16 20 32 50 64 100)
 length_accurate=true
 for len in "${lengths[@]}"; do
-    test_len_pass=$(genpassword "$len" 2>/dev/null)
-    if [[ -n "$test_len_pass" ]] && [[ ${#test_len_pass} -ne "$len" ]]; then
+    ${TEST_PREFIX}_len_pass=$(genpassword "$len" 2>/dev/null)
+    if [[ -n "$${TEST_PREFIX}_len_pass" ]] && [[ ${#${TEST_PREFIX}_len_pass} -ne "$len" ]]; then
         length_accurate=false
         break
     fi

@@ -30,7 +30,7 @@ print_msg() {
 }
 
 score=0
-total_tests=36  # Tests 1-35 plus 1 summary test with "*"
+total_tests=44  # Tests 1-6 (sanity), 7-22 (compare_versions), 23-43 (drcupdate), plus 1 summary test with "*"
 printf "Running unit tests for drcupdate.sh...\n\n"
 
 # Initialize progress tracking for real-time updates
@@ -132,7 +132,7 @@ cd "${__UNIT_TESTS_DIR}" || {
 }
 
 # Create test directory structure
-TEST_HOME=$(mktemp -d "${__UNIT_TESTS_DIR}/test_drcupdate_home.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/test_drcupdate_home.$$")
+TEST_HOME=$(mktemp -d "${__UNIT_TESTS_DIR}/test_drcupdate_home_$$.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/test_drcupdate_home_$$")
 TEST_DOGRC_DIR="${TEST_HOME}/DOGRC"
 TEST_CONFIG_DIR="${TEST_DOGRC_DIR}/config"
 mkdir -p "${TEST_CONFIG_DIR}" || {
@@ -163,7 +163,7 @@ cleanup_drcupdate_test() {
     fi
     
     # Remove any leftover test directories
-    rm -rf "${__UNIT_TESTS_DIR}"/test_drcupdate_home.* 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/test_drcupdate_home_$$.* 2>/dev/null || true
     
     exit $exit_code
 }
@@ -376,47 +376,145 @@ else
     print_msg 15 "Does compare_versions handle patch version differences?" false
 fi
 
+# Test 16: 4-part version equality
+compare_versions "0.1.5.1" "0.1.5.1"
+exit_code=$?
+if [[ $exit_code -eq 0 ]]; then
+    if print_msg 16 "Does compare_versions handle 4-part version equality (0.1.5.1 == 0.1.5.1)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 16 "Does compare_versions handle 4-part version equality (0.1.5.1 == 0.1.5.1)?" false
+fi
+
+# Test 17: 4-part version comparison (4th part)
+compare_versions "0.1.5.9" "0.1.5.1"
+exit_code=$?
+if [[ $exit_code -eq 1 ]]; then
+    if print_msg 17 "Does compare_versions compare 4th part (0.1.5.9 > 0.1.5.1)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 17 "Does compare_versions compare 4th part (0.1.5.9 > 0.1.5.1)?" false
+fi
+
+# Test 18: 4-part version comparison (larger 4th part)
+compare_versions "0.1.5.12" "0.1.5.9"
+exit_code=$?
+if [[ $exit_code -eq 1 ]]; then
+    if print_msg 18 "Does compare_versions compare 4th part numerically (0.1.5.12 > 0.1.5.9)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 18 "Does compare_versions compare 4th part numerically (0.1.5.12 > 0.1.5.9)?" false
+fi
+
+# Test 19: 3-part vs 4-part (3-part should be less)
+compare_versions "0.1.5" "0.1.5.1"
+exit_code=$?
+if [[ $exit_code -eq 2 ]]; then
+    if print_msg 19 "Does compare_versions treat 3-part < 4-part (0.1.5 < 0.1.5.1)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 19 "Does compare_versions treat 3-part < 4-part (0.1.5 < 0.1.5.1)?" false
+fi
+
+# Test 20: 4-part vs 3-part (4-part should be greater)
+compare_versions "0.1.5.1" "0.1.5"
+exit_code=$?
+if [[ $exit_code -eq 1 ]]; then
+    if print_msg 20 "Does compare_versions treat 4-part > 3-part (0.1.5.1 > 0.1.5)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 20 "Does compare_versions treat 4-part > 3-part (0.1.5.1 > 0.1.5)?" false
+fi
+
+# Test 21: 4-part with different 3rd part
+compare_versions "0.1.6" "0.1.5.12"
+exit_code=$?
+if [[ $exit_code -eq 1 ]]; then
+    if print_msg 21 "Does compare_versions prioritize 3rd part over 4th (0.1.6 > 0.1.5.12)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 21 "Does compare_versions prioritize 3rd part over 4th (0.1.6 > 0.1.5.12)?" false
+fi
+
+# Test 22: 5-part version comparison
+compare_versions "0.1.5.9.2" "0.1.5.9.1"
+exit_code=$?
+if [[ $exit_code -eq 1 ]]; then
+    if print_msg 22 "Does compare_versions handle 5-part versions (0.1.5.9.2 > 0.1.5.9.1)?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 22 "Does compare_versions handle 5-part versions (0.1.5.9.2 > 0.1.5.9.1)?" false
+fi
+
 printf "\nTesting drcupdate() function help flags...\n"
 
-# Test 16: drcupdate --help
+# Test 23: drcupdate --help
 if declare -f drchelp >/dev/null 2>&1; then
     if drcupdate --help >/dev/null 2>&1; then
-        if print_msg 16 "Does drcupdate --help work?" true; then
+        if print_msg 23 "Does drcupdate --help work?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 16 "Does drcupdate --help work?" false
+        print_msg 23 "Does drcupdate --help work?" false
     fi
 else
-    if print_msg 16 "Does drcupdate --help work?" false; then
+    if print_msg 23 "Does drcupdate --help work?" false; then
         printf "        (drchelp not available, skipping)\n"
     fi
 fi
 
-# Test 17: drcupdate -h
+# Test 24: drcupdate -h
 if declare -f drchelp >/dev/null 2>&1; then
     if drcupdate -h >/dev/null 2>&1; then
-        if print_msg 17 "Does drcupdate -h work?" true; then
+        if print_msg 24 "Does drcupdate -h work?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 17 "Does drcupdate -h work?" false
+        print_msg 24 "Does drcupdate -h work?" false
     fi
 else
-    if print_msg 17 "Does drcupdate -h work?" false; then
+    if print_msg 24 "Does drcupdate -h work?" false; then
         printf "        (drchelp not available, skipping)\n"
     fi
 fi
 
 printf "\nTesting drcupdate() function error handling...\n"
 
-# Test 18: Error when DOGRC.json not found
+# Test 25: Error when DOGRC.json not found
 # Remove the config file temporarily
 if [[ -f "${TEST_CONFIG_DIR}/DOGRC.json" ]]; then
     mv "${TEST_CONFIG_DIR}/DOGRC.json" "${TEST_CONFIG_DIR}/DOGRC.json.bak" 2>/dev/null || true
@@ -430,42 +528,42 @@ if [[ -f "${TEST_CONFIG_DIR}/DOGRC.json.bak" ]]; then
 fi
 # Check for error (exit code 1) and error message
 if [[ $exit_code -eq 1 ]]; then
-    if print_msg 18 "Does drcupdate error when DOGRC.json not found?" true; then
+    if print_msg 25 "Does drcupdate error when DOGRC.json not found?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    print_msg 18 "Does drcupdate error when DOGRC.json not found?" false
+        print_msg 25 "Does drcupdate error when DOGRC.json not found?" false
 fi
 
-# Test 19: Checks for curl dependency
+# Test 26: Checks for curl dependency
 if command -v curl >/dev/null 2>&1; then
     # curl is available, dependency check should pass
-    if print_msg 19 "Does drcupdate check for curl dependency?" true; then
+    if print_msg 26 "Does drcupdate check for curl dependency?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    if print_msg 19 "Does drcupdate check for curl dependency?" false; then
+    if         print_msg 26 "Does drcupdate check for curl dependency?" false; then
         printf "        (curl not available, cannot test)\n"
     fi
 fi
 
-# Test 20: Checks for jq dependency
+# Test 27: Checks for jq dependency
 if command -v jq >/dev/null 2>&1; then
     # jq is available, dependency check should pass
-    if print_msg 20 "Does drcupdate check for jq dependency?" true; then
+    if print_msg 27 "Does drcupdate check for jq dependency?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    if print_msg 20 "Does drcupdate check for jq dependency?" false; then
+    if print_msg 27 "Does drcupdate check for jq dependency?" false; then
         printf "        (jq not available, cannot test)\n"
     fi
 fi
@@ -479,25 +577,25 @@ cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 }
 EOF
 
-# Test 21: Reads version from DOGRC.json
+# Test 28: Reads version from DOGRC.json
 # We need to mock the curl call, so we'll create a patched version
 # For now, test that it can read the config
 if [[ -f "${TEST_CONFIG_DIR}/DOGRC.json" ]]; then
     if jq -r '.version // empty' "${TEST_CONFIG_DIR}/DOGRC.json" 2>/dev/null | grep -q "0.1.5"; then
-        if print_msg 21 "Can drcupdate read version from DOGRC.json?" true; then
+        if print_msg 28 "Can drcupdate read version from DOGRC.json?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 21 "Can drcupdate read version from DOGRC.json?" false
+        print_msg 28 "Can drcupdate read version from DOGRC.json?" false
     fi
 else
-    print_msg 21 "Can drcupdate read version from DOGRC.json?" false
+    print_msg 28 "Can drcupdate read version from DOGRC.json?" false
 fi
 
-# Test 22: Uses version.fake if it exists
+# Test 29: Uses version.fake if it exists
 echo "0.1.4" > "${TEST_CONFIG_DIR}/version.fake"
 # drcupdate should use version.fake instead of DOGRC.json
 # We'll test this with --return-only to avoid network calls
@@ -552,22 +650,22 @@ exit \$?
 TESTSCRIPT
     chmod +x "${TEST_HOME}/test_drcupdate_mock.sh"
     
-    # Test 22: Uses version.fake
+    # Test 29: Uses version.fake
     bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
     exit_code=$?
     # Exit code 2 means update available (0.2.0 > 0.1.4), which is correct
     if [[ $exit_code -eq 2 ]]; then
-        if print_msg 22 "Does drcupdate use version.fake when it exists?" true; then
+        if print_msg 29 "Does drcupdate use version.fake when it exists?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 22 "Does drcupdate use version.fake when it exists?" false
+        print_msg 29 "Does drcupdate use version.fake when it exists?" false
     fi
     
-    # Test 23: --return-only returns 0 when up-to-date
+    # Test 30: --return-only returns 0 when up-to-date
     # Update DOGRC.json to match remote version
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
@@ -578,17 +676,17 @@ EOF
     bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
-        if print_msg 23 "Does --return-only return 0 when up-to-date?" true; then
+        if print_msg 30 "Does --return-only return 0 when up-to-date?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 23 "Does --return-only return 0 when up-to-date?" false
+        print_msg 30 "Does --return-only return 0 when up-to-date?" false
     fi
     
-    # Test 24: --return-only returns 2 when update available
+    # Test 31: --return-only returns 2 when update available
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
   "version": "0.1.5"
@@ -597,17 +695,17 @@ EOF
     bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
     exit_code=$?
     if [[ $exit_code -eq 2 ]]; then
-        if print_msg 24 "Does --return-only return 2 when update available?" true; then
+        if print_msg 31 "Does --return-only return 2 when update available?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 24 "Does --return-only return 2 when update available?" false
+        print_msg 31 "Does --return-only return 2 when update available?" false
     fi
     
-    # Test 25: --return-only returns 3 when downgrade possible
+    # Test 32: --return-only returns 3 when downgrade possible
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
   "version": "0.3.0"
@@ -616,49 +714,49 @@ EOF
     bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
     exit_code=$?
     if [[ $exit_code -eq 3 ]]; then
-        if print_msg 25 "Does --return-only return 3 when downgrade possible?" true; then
+        if print_msg 32 "Does --return-only return 3 when downgrade possible?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 25 "Does --return-only return 3 when downgrade possible?" false
+        print_msg 32 "Does --return-only return 3 when downgrade possible?" false
     fi
     
-    # Test 26: --return-only suppresses output
+    # Test 33: --return-only suppresses output
     output=$(bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only 2>&1)
     if [[ -z "$output" ]]; then
-        if print_msg 26 "Does --return-only suppress all output?" true; then
+        if print_msg 33 "Does --return-only suppress all output?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 26 "Does --return-only suppress all output?" false
+        print_msg 33 "Does --return-only suppress all output?" false
     fi
 else
-    if print_msg 22 "Does drcupdate use version.fake when it exists?" false; then
+    if print_msg 29 "Does drcupdate use version.fake when it exists?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
-    if print_msg 23 "Does --return-only return 0 when up-to-date?" false; then
+    if print_msg 30 "Does --return-only return 0 when up-to-date?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
-    if print_msg 24 "Does --return-only return 2 when update available?" false; then
+    if print_msg 31 "Does --return-only return 2 when update available?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
-    if print_msg 25 "Does --return-only return 3 when downgrade possible?" false; then
+    if print_msg 32 "Does --return-only return 3 when downgrade possible?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
-    if print_msg 26 "Does --return-only suppress all output?" false; then
+    if print_msg 33 "Does --return-only suppress all output?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
 printf "\nTesting drcupdate() function argument parsing...\n"
 
-# Test 27: --silent flag
+# Test 34: --silent flag
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     # Create a version that's up-to-date to avoid update prompts
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
@@ -670,22 +768,22 @@ EOF
     output=$(bash "${TEST_HOME}/test_drcupdate_mock.sh" --silent 2>&1)
     # Silent mode should suppress "You are running the latest version" message
     if [[ -z "$output" ]]; then
-        if print_msg 27 "Does --silent flag suppress output?" true; then
+        if print_msg 34 "Does --silent flag suppress output?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 27 "Does --silent flag suppress output?" false
+        print_msg 34 "Does --silent flag suppress output?" false
     fi
 else
-    if print_msg 27 "Does --silent flag suppress output?" false; then
+    if print_msg 34 "Does --silent flag suppress output?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
-# Test 28: --ignore-this-version with --silent shows error
+# Test 35: --ignore-this-version with --silent shows error
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
@@ -694,24 +792,24 @@ if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
 EOF
     output=$(bash "${TEST_HOME}/test_drcupdate_mock.sh" --ignore-this-version --silent 2>&1)
     if echo "$output" | grep -q "Error.*cannot be used with --silent"; then
-        if print_msg 28 "Does --ignore-this-version error when used with --silent?" true; then
+        if print_msg 35 "Does --ignore-this-version error when used with --silent?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 28 "Does --ignore-this-version error when used with --silent?" false
+        print_msg 35 "Does --ignore-this-version error when used with --silent?" false
     fi
 else
-    if print_msg 28 "Does --ignore-this-version error when used with --silent?" false; then
+    if print_msg 35 "Does --ignore-this-version error when used with --silent?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
 printf "\nTesting drcupdate() function output formatting...\n"
 
-# Test 29: Update available message shows both versions
+# Test 36: Update available message shows both versions
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
@@ -721,22 +819,22 @@ EOF
     rm -f "${TEST_CONFIG_DIR}/version.fake"
     output=$(printf "n\n" | bash "${TEST_HOME}/test_drcupdate_mock.sh" 2>&1)
     if echo "$output" | grep -q "Update available" && echo "$output" | grep -q "0.1.5" && echo "$output" | grep -q "0.2.0"; then
-        if print_msg 29 "Does update available message show both versions?" true; then
+        if print_msg 36 "Does update available message show both versions?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 29 "Does update available message show both versions?" false
+        print_msg 36 "Does update available message show both versions?" false
     fi
 else
-    if print_msg 29 "Does update available message show both versions?" false; then
+    if print_msg 36 "Does update available message show both versions?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
-# Test 30: Up-to-date message shows version
+# Test 37: Up-to-date message shows version
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
@@ -745,58 +843,58 @@ if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
 EOF
     output=$(bash "${TEST_HOME}/test_drcupdate_mock.sh" 2>&1)
     if echo "$output" | grep -q "latest version" && echo "$output" | grep -q "0.2.0"; then
-        if print_msg 30 "Does up-to-date message show version?" true; then
+        if print_msg 37 "Does up-to-date message show version?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 30 "Does up-to-date message show version?" false
+        print_msg 37 "Does up-to-date message show version?" false
     fi
 else
-    if print_msg 30 "Does up-to-date message show version?" false; then
+    if print_msg 37 "Does up-to-date message show version?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
 printf "\nTesting bash completion...\n"
 
-# Test 31: _drcupdate_completion function exists
+# Test 38: _drcupdate_completion function exists
 if declare -f _drcupdate_completion >/dev/null 2>&1; then
-    if print_msg 31 "Is _drcupdate_completion function defined?" true; then
+    if print_msg 38 "Is _drcupdate_completion function defined?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    print_msg 31 "Is _drcupdate_completion function defined?" false
+    print_msg 38 "Is _drcupdate_completion function defined?" false
 fi
 
-# Test 32: Completion is registered
+# Test 39: Completion is registered
 if [[ -n "${BASH_VERSION:-}" ]] && command -v complete >/dev/null 2>&1; then
     if complete -p drcupdate >/dev/null 2>&1; then
-        if print_msg 32 "Is drcupdate completion registered with bash?" true; then
+        if print_msg 39 "Is drcupdate completion registered with bash?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        if print_msg 32 "Is drcupdate completion registered with bash?" false; then
+        if print_msg 39 "Is drcupdate completion registered with bash?" false; then
             printf "        (Completion function exists but may not be registered in test environment)\n"
         fi
     fi
 else
-    if print_msg 32 "Is drcupdate completion registered with bash?" false; then
+    if print_msg 39 "Is drcupdate completion registered with bash?" false; then
         printf "        (Bash completion not available, skipping)\n"
     fi
 fi
 
 printf "\nTesting edge cases...\n"
 
-# Test 33: Handles empty version.fake
+# Test 40: Handles empty version.fake
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     echo "" > "${TEST_CONFIG_DIR}/version.fake"
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
@@ -809,46 +907,46 @@ EOF
     exit_code=$?
     # Should detect update available (0.2.0 > 0.1.5)
     if [[ $exit_code -eq 2 ]]; then
-        if print_msg 33 "Does drcupdate handle empty version.fake?" true; then
+        if print_msg 40 "Does drcupdate handle empty version.fake?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 33 "Does drcupdate handle empty version.fake?" false
+        print_msg 40 "Does drcupdate handle empty version.fake?" false
     fi
     rm -f "${TEST_CONFIG_DIR}/version.fake"
 else
-    if print_msg 33 "Does drcupdate handle empty version.fake?" false; then
+    if print_msg 40 "Does drcupdate handle empty version.fake?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
-# Test 34: Handles whitespace in version.fake
+# Test 41: Handles whitespace in version.fake
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     echo "  0.1.4  " > "${TEST_CONFIG_DIR}/version.fake"
     bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
     exit_code=$?
     # Should trim whitespace and use 0.1.4
     if [[ $exit_code -eq 2 ]]; then
-        if print_msg 34 "Does drcupdate trim whitespace from version.fake?" true; then
+        if print_msg 41 "Does drcupdate trim whitespace from version.fake?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 34 "Does drcupdate trim whitespace from version.fake?" false
+        print_msg 41 "Does drcupdate trim whitespace from version.fake?" false
     fi
     rm -f "${TEST_CONFIG_DIR}/version.fake"
 else
-    if print_msg 34 "Does drcupdate trim whitespace from version.fake?" false; then
+    if print_msg 41 "Does drcupdate trim whitespace from version.fake?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi
 
-# Test 35: Return code on success
+# Test 42: Return code on success
 if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
     cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
 {
@@ -858,17 +956,50 @@ EOF
     bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
-        if print_msg 35 "Does drcupdate return 0 on success?" true; then
+        if print_msg 42 "Does drcupdate return 0 on success?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
     else
-        print_msg 35 "Does drcupdate return 0 on success?" false
+        print_msg 42 "Does drcupdate return 0 on success?" false
     fi
 else
-    if print_msg 35 "Does drcupdate return 0 on success?" false; then
+    if print_msg 42 "Does drcupdate return 0 on success?" false; then
+        printf "        (curl or jq not available, skipping)\n"
+    fi
+fi
+
+# Test 43: 4-part version comparison in drcupdate context
+if command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+    # Test with 4-part versions
+    cat > "${TEST_CONFIG_DIR}/DOGRC.json" << 'EOF'
+{
+  "version": "0.1.5.1"
+}
+EOF
+    # Update mock remote to a higher 4-part version
+    cat > "${MOCK_REMOTE_CONFIG}" << 'EOF'
+{
+  "version": "0.1.5.12"
+}
+EOF
+    bash "${TEST_HOME}/test_drcupdate_mock.sh" --return-only >/dev/null 2>&1
+    exit_code=$?
+    # Should detect update available (0.1.5.12 > 0.1.5.1)
+    if [[ $exit_code -eq 2 ]]; then
+        if print_msg 43 "Does drcupdate handle 4-part version comparison (0.1.5.12 > 0.1.5.1)?" true; then
+            ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+        fi
+    else
+        print_msg 43 "Does drcupdate handle 4-part version comparison (0.1.5.12 > 0.1.5.1)?" false
+    fi
+else
+    if print_msg 43 "Does drcupdate handle 4-part version comparison (0.1.5.12 > 0.1.5.1)?" false; then
         printf "        (curl or jq not available, skipping)\n"
     fi
 fi

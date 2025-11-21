@@ -118,7 +118,7 @@ cd "${__UNIT_TESTS_DIR}" || {
 }
 
 # Create test directory structure
-TEST_DOGRC_DIR=$(mktemp -d "${__UNIT_TESTS_DIR}/test_drcversion_dogrc.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/test_drcversion_dogrc.$$")
+TEST_DOGRC_DIR=$(mktemp -d "${__UNIT_TESTS_DIR}/test_drcversion_dogrc_$$.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/test_drcversion_dogrc_$$")
 TEST_CONFIG_DIR="${TEST_DOGRC_DIR}/config"
 mkdir -p "${TEST_CONFIG_DIR}" || {
     printf "Error: Failed to create test directories.\n" >&2
@@ -138,7 +138,7 @@ cleanup_drcversion_test() {
     fi
     
     # Remove any leftover test directories
-    rm -rf "${__UNIT_TESTS_DIR}"/test_drcversion_dogrc.* 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/test_drcversion_dogrc_$$.* 2>/dev/null || true
     
     exit $exit_code
 }

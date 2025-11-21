@@ -120,6 +120,10 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_pwd_$$"
+readonly TEST_DIR=$(mktemp -d "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir")
+
 # Setup trap to ensure cleanup happens even on failure
 cleanup_pwd_test() {
     local exit_code=$?
@@ -127,6 +131,9 @@ cleanup_pwd_test() {
     # Clean up mock clipboard file
     rm -f "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
     unset -f wl-copy 2>/dev/null || true
+    
+    # Clean up test directory
+    rm -rf "${TEST_DIR}" 2>/dev/null || true
     
     # Restore original directory
     cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
@@ -280,7 +287,7 @@ printf "\nTesting pwd() function clipboard functionality...\n"
 # Test 14: pwd c copies to clipboard
 # Use mock wrapper script to test clipboard functionality
 MOCK_CLIPBOARD_FILE=$(mktemp)
-cat > "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh" << 'CLIPBOARDTEST'
+cat > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard.sh" << 'CLIPBOARDTEST'
 #!/bin/bash
 MOCK_CLIPBOARD_FILE="$1"
 TEST_DIR="$2"
@@ -311,9 +318,9 @@ if echo "$output" | grep -q "Working directory copied to clipboard"; then
 fi
 exit 1
 CLIPBOARDTEST
-chmod +x "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh"
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard.sh"
 
-if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
+if timeout 3 bash "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 14 "Does pwd c copy to clipboard (mocked wl-copy)?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -323,12 +330,12 @@ if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh" "$MOCK_CLIPBOARD_F
 else
     print_msg 14 "Does pwd c copy to clipboard (mocked wl-copy)?" false
 fi
-rm -f "${__UNIT_TESTS_DIR}/test_pwd_clipboard.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
+rm -f "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
 
 # Test 15: pwd C copies to clipboard (case-insensitive)
 # Use mock wrapper script
 MOCK_CLIPBOARD_FILE=$(mktemp)
-cat > "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh" << 'CLIPBOARDTEST'
+cat > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard_C.sh" << 'CLIPBOARDTEST'
 #!/bin/bash
 MOCK_CLIPBOARD_FILE="$1"
 TEST_DIR="$2"
@@ -359,9 +366,9 @@ if echo "$output" | grep -q "Working directory copied to clipboard"; then
 fi
 exit 1
 CLIPBOARDTEST
-chmod +x "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh"
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard_C.sh"
 
-if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
+if timeout 3 bash "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard_C.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 15 "Does pwd C copy to clipboard (mocked, case-insensitive)?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -371,12 +378,12 @@ if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh" "$MOCK_CLIPBOARD
 else
     print_msg 15 "Does pwd C copy to clipboard (mocked, case-insensitive)?" false
 fi
-rm -f "${__UNIT_TESTS_DIR}/test_pwd_clipboard_C.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
+rm -f "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_clipboard_C.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
 
 # Test 16: pwd shows clipboard message
 # Use mock wrapper to test message
 MOCK_CLIPBOARD_FILE=$(mktemp)
-cat > "${__UNIT_TESTS_DIR}/test_pwd_message.sh" << 'MESSAGETEST'
+cat > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_message.sh" << 'MESSAGETEST'
 #!/bin/bash
 MOCK_CLIPBOARD_FILE="$1"
 TEST_DIR="$2"
@@ -403,9 +410,9 @@ if echo "$output" | grep -q "Working directory copied to clipboard"; then
 fi
 exit 1
 MESSAGETEST
-chmod +x "${__UNIT_TESTS_DIR}/test_pwd_message.sh"
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_message.sh"
 
-if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_message.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
+if timeout 3 bash "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_message.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 16 "Does pwd show clipboard message?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -415,12 +422,12 @@ if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_message.sh" "$MOCK_CLIPBOARD_FIL
 else
     print_msg 16 "Does pwd show clipboard message?" false
 fi
-rm -f "${__UNIT_TESTS_DIR}/test_pwd_message.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
+rm -f "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_message.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
 
 # Test 17: pwd checks for wl-copy dependency
 # Test with mock to verify dependency check
 MOCK_CLIPBOARD_FILE=$(mktemp)
-cat > "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh" << 'DEPTEST'
+cat > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dependency.sh" << 'DEPTEST'
 #!/bin/bash
 TEST_DIR="$1"
 PLUGINS_DIR="$2"
@@ -447,9 +454,9 @@ if echo "$output" | grep -q "Working directory copied to clipboard"; then
 fi
 exit 1
 DEPTEST
-chmod +x "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh"
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dependency.sh"
 
-if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
+if timeout 3 bash "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dependency.sh" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     if print_msg 17 "Does pwd check for wl-copy dependency?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -459,7 +466,7 @@ if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh" "${__UNIT_TESTS_D
 else
     print_msg 17 "Does pwd check for wl-copy dependency?" false
 fi
-rm -f "${__UNIT_TESTS_DIR}/test_pwd_dependency.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
+rm -f "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dependency.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
 
 # Test 18: pwd returns error code when wl-copy not available
 # Since we always mock wl-copy, skip this test (can't easily test error case with mocking)
@@ -530,7 +537,7 @@ fi
 # Test 23: pwd c returns 0 on success
 # Use mock wrapper
 MOCK_CLIPBOARD_FILE=$(mktemp)
-cat > "${__UNIT_TESTS_DIR}/test_pwd_return.sh" << 'RETURNTEST'
+cat > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_return.sh" << 'RETURNTEST'
 #!/bin/bash
 MOCK_CLIPBOARD_FILE="$1"
 TEST_DIR="$2"
@@ -553,9 +560,9 @@ cd "$TEST_DIR" || exit 1
 pwd c >/dev/null 2>&1
 exit $?
 RETURNTEST
-chmod +x "${__UNIT_TESTS_DIR}/test_pwd_return.sh"
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_return.sh"
 
-if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_return.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
+if timeout 3 bash "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_return.sh" "$MOCK_CLIPBOARD_FILE" "${__UNIT_TESTS_DIR}" "${__PLUGINS_DIR}" 2>/dev/null; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 23 "Does pwd c return 0 on success?" true; then
@@ -570,7 +577,7 @@ if timeout 3 bash "${__UNIT_TESTS_DIR}/test_pwd_return.sh" "$MOCK_CLIPBOARD_FILE
 else
     print_msg 23 "Does pwd c return 0 on success?" false
 fi
-rm -f "${__UNIT_TESTS_DIR}/test_pwd_return.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
+rm -f "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_return.sh" "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
 
 percentage=$((score * 100 / total_tests))
 # Write results file
@@ -592,9 +599,20 @@ printf "========================================\n"
 
 
 printf "\nCleaning up...\n"
+
+# Clean up test directory
+rm -rf "${TEST_DIR}" 2>/dev/null || true
+
+# Clean up mock clipboard file
+rm -f "$MOCK_CLIPBOARD_FILE" 2>/dev/null || true
+unset -f wl-copy 2>/dev/null || true
+
 printf "Cleanup complete.\n"
 
 cd "$original_dir" || exit 91
+
+# Disable trap since we've cleaned up manually
+trap - EXIT INT TERM
 
 exit 0
 

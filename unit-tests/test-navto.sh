@@ -9,7 +9,20 @@ readonly __CORE_DIR="$(cd "${__TESTING_DIR}/core" && pwd)"
 if [[ -f "${__UNIT_TESTS_DIR}/_test-results-helper.sh" ]]; then
     source "${__UNIT_TESTS_DIR}/_test-results-helper.sh"
 fi
-readonly __CONFIG_DIR="$(cd "${__TESTING_DIR}/config" && pwd)"
+
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_navto_$$"
+
+# Create test-specific config directory (before sourcing navto.sh)
+# This ensures navto.sh uses our test directory instead of the real config
+readonly TEST_CONFIG_DIR="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_config"
+mkdir -p "${TEST_CONFIG_DIR}" || {
+    printf "Error: Failed to create test config directory.\n" >&2
+    exit 91
+}
+
+# Override __CONFIG_DIR before sourcing navto.sh (plugin respects this if set)
+readonly __CONFIG_DIR="${TEST_CONFIG_DIR}"
 
 print_msg() {
     local test_num="$1"
@@ -138,58 +151,30 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
-# Backup original navto.json if it exists
-# IMPORTANT: We backup and restore to ensure no data loss
-original_navto_json="${__CONFIG_DIR}/navto.json"
-test_navto_json_backup="${__CONFIG_DIR}/navto.json.test_backup"
-backup_created=false
-
-if [[ -f "$original_navto_json" ]]; then
-    if cp "$original_navto_json" "$test_navto_json_backup" 2>/dev/null; then
-        backup_created=true
-        # Only remove original if backup was successful
-        rm -f "$original_navto_json" 2>/dev/null || true
-    else
-        printf "Warning: Could not backup original navto.json. Test may be destructive.\n" >&2
-        printf "Aborting to prevent data loss.\n" >&2
-        exit 100
-    fi
-fi
+# Test directories (already defined TEST_PREFIX above)
+readonly TEST_DIR1="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir1"
+readonly TEST_DIR2="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir2"
+readonly TEST_DIR3="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir3"
+readonly TEST_DIR_SPACE="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_space"
 
 # Create test directories
-test_dir1="${__UNIT_TESTS_DIR}/test_navto_dir1"
-test_dir2="${__UNIT_TESTS_DIR}/test_navto_dir2"
-test_dir3="${__UNIT_TESTS_DIR}/test_navto_dir3"
-mkdir -p "$test_dir1" "$test_dir2" "$test_dir3" 2>/dev/null || true
+mkdir -p "${TEST_DIR1}" "${TEST_DIR2}" "${TEST_DIR3}" 2>/dev/null || true
 
 # Save original directory
 original_dir=$(pwd)
 
-# Use the actual config directory for testing
-test_navto_json="${__CONFIG_DIR}/navto.json"
+# Test navto.json file (in test-specific config directory)
+readonly test_navto_json="${__CONFIG_DIR}/navto.json"
 
 # Setup trap to ensure cleanup happens even on failure
 cleanup_navto_test() {
     local exit_code=$?
     cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
     
-    # Always restore original navto.json if backup was created
-    if [[ "$backup_created" == "true" ]] && [[ -f "$test_navto_json_backup" ]]; then
-        mv "$test_navto_json_backup" "$original_navto_json" 2>/dev/null || {
-            printf "Error: Failed to restore original navto.json from backup!\n" >&2
-            printf "Backup is at: %s\n" "$test_navto_json_backup" >&2
-        }
-    fi
-    
     # Clean up test files and directories
-    rm -f "$test_navto_json" "${test_navto_json}".* 2>/dev/null || true
-    rm -rf "$test_dir1" "$test_dir2" "$test_dir3" 2>/dev/null || true
-    rm -rf "${__UNIT_TESTS_DIR}/test navto space" 2>/dev/null || true
-    
-    # Only exit with error if we couldn't restore the backup
-    if [[ "$backup_created" == "true" ]] && [[ ! -f "$original_navto_json" ]] && [[ -f "$test_navto_json_backup" ]]; then
-        exit 101
-    fi
+    rm -rf "${TEST_DIR1}" "${TEST_DIR2}" "${TEST_DIR3}" 2>/dev/null || true
+    rm -rf "${TEST_DIR_SPACE}" 2>/dev/null || true
+    rm -rf "${TEST_CONFIG_DIR}" 2>/dev/null || true
     
     exit $exit_code
 }
@@ -302,9 +287,9 @@ printf "\nTesting listing destinations (no key provided)...\n"
 # Create a test JSON file with test destinations
 cat > "$test_navto_json" <<EOF
 {
-  "T1": { "name": "Test Dir 1", "path": "$test_dir1" },
-  "T2": { "name": "Test Dir 2", "path": "$test_dir2" },
-  "T3": { "name": "Test Dir 3", "path": "$test_dir3" }
+  "T1": { "name": "Test Dir 1", "path": "${TEST_DIR1}" },
+  "T2": { "name": "Test Dir 2", "path": "${TEST_DIR2}" },
+  "T3": { "name": "Test Dir 3", "path": "${TEST_DIR3}" }
 }
 EOF
 
@@ -361,8 +346,8 @@ printf "\nTesting navigation to existing destinations...\n"
 # Create test JSON with valid destinations
 cat > "$test_navto_json" <<EOF
 {
-  "T1": { "name": "Test Dir 1", "path": "$test_dir1" },
-  "T2": { "name": "Test Dir 2", "path": "$test_dir2" }
+  "T1": { "name": "Test Dir 1", "path": "${TEST_DIR1}" },
+  "T2": { "name": "Test Dir 2", "path": "${TEST_DIR2}" }
 }
 EOF
 
@@ -370,7 +355,7 @@ EOF
 cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
 if navto T1 >/dev/null 2>&1; then
     current_dir=$(pwd)
-    if [[ "$current_dir" == "$test_dir1" ]]; then
+    if [[ "$current_dir" == "${TEST_DIR1}" ]]; then
         if print_msg 16 "Does navto navigate to existing destination?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -379,7 +364,7 @@ if navto T1 >/dev/null 2>&1; then
         fi
     else
         if print_msg 16 "Does navto navigate to existing destination?" false; then
-            printf "        (Expected: %s, Got: %s)\n" "$test_dir1" "$current_dir"
+            printf "        (Expected: %s, Got: %s)\n" "${TEST_DIR1}" "$current_dir"
         fi
     fi
 else
@@ -391,7 +376,7 @@ cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
 cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
 if navto t1 >/dev/null 2>&1; then
     current_dir=$(pwd)
-    if [[ "$current_dir" == "$test_dir1" ]]; then
+    if [[ "$current_dir" == "${TEST_DIR1}" ]]; then
         if print_msg 17 "Does navto handle case-insensitive keys?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -460,8 +445,8 @@ printf "\nTesting remove destination...\n"
 # Ensure we have a test JSON file
 cat > "$test_navto_json" <<EOF
 {
-  "T1": { "name": "Test Dir 1", "path": "$test_dir1" },
-  "T2": { "name": "Test Dir 2", "path": "$test_dir2" }
+  "T1": { "name": "Test Dir 1", "path": "${TEST_DIR1}" },
+  "T2": { "name": "Test Dir 2", "path": "${TEST_DIR2}" }
 }
 EOF
 
@@ -593,7 +578,7 @@ printf "\nTesting case-insensitive keys...\n"
 if command -v jq >/dev/null 2>&1; then
     cat > "$test_navto_json" <<EOF
 {
-  "TEST": { "name": "Test", "path": "$test_dir1" }
+  "TEST": { "name": "Test", "path": "${TEST_DIR1}" }
 }
 EOF
     # Test that lowercase key can access uppercase entry
@@ -682,7 +667,7 @@ printf "\nTesting JSON operations...\n"
 if command -v jq >/dev/null 2>&1; then
     echo "{}" > "$test_navto_json"
     # Simulate adding a destination (same logic as navto uses)
-    if jq --arg k "NEWKEY" --arg n "New Name" --arg p "$test_dir1" \
+    if jq --arg k "NEWKEY" --arg n "New Name" --arg p "${TEST_DIR1}" \
         '. + {($k): {name: $n, path: $p}}' "$test_navto_json" > "${test_navto_json}.tmp" 2>/dev/null && \
        mv "${test_navto_json}.tmp" "$test_navto_json" 2>/dev/null; then
         if jq -e 'has("NEWKEY")' "$test_navto_json" >/dev/null 2>&1; then
@@ -708,11 +693,11 @@ fi
 if command -v jq >/dev/null 2>&1; then
     cat > "$test_navto_json" <<EOF
 {
-  "EXISTING": { "name": "Existing", "path": "$test_dir1" }
+  "EXISTING": { "name": "Existing", "path": "${TEST_DIR1}" }
 }
 EOF
     # Add a new key
-    if jq --arg k "NEW" --arg n "New" --arg p "$test_dir2" \
+    if jq --arg k "NEW" --arg n "New" --arg p "${TEST_DIR2}" \
         '. + {($k): {name: $n, path: $p}}' "$test_navto_json" > "${test_navto_json}.tmp" 2>/dev/null && \
        mv "${test_navto_json}.tmp" "$test_navto_json" 2>/dev/null; then
         if jq -e 'has("EXISTING") and has("NEW")' "$test_navto_json" >/dev/null 2>&1; then
@@ -827,7 +812,7 @@ printf "\nTesting edge cases...\n"
 if command -v jq >/dev/null 2>&1; then
     cat > "$test_navto_json" <<EOF
 {
-  ".": { "name": "Dot", "path": "$test_dir1" }
+  ".": { "name": "Dot", "path": "${TEST_DIR1}" }
 }
 EOF
     if jq -e 'has(".")' "$test_navto_json" >/dev/null 2>&1; then
@@ -848,7 +833,7 @@ fi
 
 # Test handling of paths with spaces
 if command -v jq >/dev/null 2>&1; then
-    space_test_dir="${__UNIT_TESTS_DIR}/test navto space"
+    space_test_dir="${TEST_DIR_SPACE}"
     mkdir -p "$space_test_dir" 2>/dev/null || true
     cat > "$test_navto_json" <<EOF
 {
@@ -927,34 +912,11 @@ printf "\nCleaning up test files...\n"
 # Cleanup is handled by trap, but we do it here too for immediate cleanup
 cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
 
-# Restore original navto.json if it was backed up
-if [[ "$backup_created" == "true" ]] && [[ -f "$test_navto_json_backup" ]]; then
-    if mv "$test_navto_json_backup" "$original_navto_json" 2>/dev/null; then
-        backup_created=false  # Mark as restored so trap doesn't try again
-        # Verify restoration was successful
-        if [[ -f "$original_navto_json" ]]; then
-            printf "✅ Restored original navto.json\n"
-        else
-            printf "⚠️  Warning: Restoration may have failed. Check: %s\n" "$original_navto_json" >&2
-        fi
-    else
-        printf "⚠️  Warning: Could not restore original navto.json. Backup is at: %s\n" "$test_navto_json_backup" >&2
-    fi
-elif [[ "$backup_created" == "false" ]] && [[ ! -f "$original_navto_json" ]]; then
-    # No backup was created and no original file exists - this is fine (first run)
-    printf "ℹ️  No original navto.json to restore (this is normal if file didn't exist)\n"
-fi
-
 # Clean up test files and directories
-# Remove any temporary test JSON files (but not the restored original)
 rm -f "${test_navto_json}".return_test "${test_navto_json}".output_test "${test_navto_json}".atomic_test 2>/dev/null || true
-# Only remove the main test JSON if we didn't restore the original (i.e., if no backup was created)
-if [[ "$backup_created" == "false" ]] && [[ -f "$test_navto_json" ]]; then
-    # Only remove if no backup exists (meaning we created it for testing and it wasn't the original)
-    rm -f "$test_navto_json" 2>/dev/null || true
-fi
-rm -rf "$test_dir1" "$test_dir2" "$test_dir3" 2>/dev/null || true
-rm -rf "${__UNIT_TESTS_DIR}/test navto space" 2>/dev/null || true
+rm -rf "${TEST_DIR1}" "${TEST_DIR2}" "${TEST_DIR3}" 2>/dev/null || true
+rm -rf "${TEST_DIR_SPACE}" 2>/dev/null || true
+rm -rf "${TEST_CONFIG_DIR}" 2>/dev/null || true
 
 printf "Cleanup complete.\n"
 

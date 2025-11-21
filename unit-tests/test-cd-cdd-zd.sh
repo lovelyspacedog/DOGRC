@@ -137,16 +137,22 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_cd_cdd_zd_$$"
+readonly TEST_CD_DIR1="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_cd_dir1"
+readonly TEST_CDD_DIR1="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_cdd_dir1"
+readonly TEST_ZD_DIR1="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_zd_dir1"
+
 # Setup trap to ensure cleanup happens even on failure
 cleanup_cd_cdd_zd_test() {
     local exit_code=$?
     builtin cd "$original_dir" || builtin cd "${__UNIT_TESTS_DIR}" || true
     
     # Clean up test directories
-    rm -rf "${__UNIT_TESTS_DIR}"/test_cd_* 2>/dev/null || true
-    rm -rf "${__UNIT_TESTS_DIR}"/test_cdd_* 2>/dev/null || true
-    rm -rf "${__UNIT_TESTS_DIR}"/test_zd_* 2>/dev/null || true
-    rm -rf "${__UNIT_TESTS_DIR}"/"test dir with spaces" 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/${TEST_PREFIX}_cd_* 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/${TEST_PREFIX}_cdd_* 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/${TEST_PREFIX}_zd_* 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/${TEST_PREFIX}_dir_with_spaces 2>/dev/null || true
     
     exit $exit_code
 }
@@ -159,12 +165,12 @@ if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
 fi
 
 # Create test directories
-mkdir -p "${__UNIT_TESTS_DIR}/test_cd_dir1" || exit 92
-mkdir -p "${__UNIT_TESTS_DIR}/test_cdd_dir1" || exit 93
-mkdir -p "${__UNIT_TESTS_DIR}/test_zd_dir1" || exit 94
-mkdir -p "${__UNIT_TESTS_DIR}/test dir with spaces" || exit 95
-touch "${__UNIT_TESTS_DIR}/test_cdd_dir1/test_file.txt" || true
-touch "${__UNIT_TESTS_DIR}/test_zd_dir1/test_file.txt" || true
+mkdir -p "${TEST_CD_DIR1}" || exit 92
+mkdir -p "${TEST_CDD_DIR1}" || exit 93
+mkdir -p "${TEST_ZD_DIR1}" || exit 94
+mkdir -p "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir_with_spaces" || exit 95
+touch "${TEST_CDD_DIR1}/test_file.txt" || true
+touch "${TEST_ZD_DIR1}/test_file.txt" || true
 
 printf "\nTesting cd() function help flags...\n"
 
@@ -222,8 +228,8 @@ fi
 
 # Test 11: cd to valid directory
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-if cd "test_cd_dir1" >/dev/null 2>&1; then
-    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_cd_dir1" ]]; then
+if cd "${TEST_PREFIX}_cd_dir1" >/dev/null 2>&1; then
+    if [[ "$(pwd)" == "${TEST_CD_DIR1}" ]]; then
         if print_msg 11 "Does cd change to valid directory?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -253,7 +259,7 @@ else
 fi
 
 # Test 13: cd with absolute path
-abs_test_dir="${__UNIT_TESTS_DIR}/test_cd_dir1"
+abs_test_dir="${TEST_CD_DIR1}"
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
 if cd "$abs_test_dir" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$abs_test_dir" ]]; then
@@ -312,9 +318,9 @@ printf "\nTesting cdd() function basic functionality...\n"
 
 # Test 16: cdd to valid directory
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-cdd "test_cdd_dir1" >/dev/null 2>&1
+cdd "${TEST_PREFIX}_cdd_dir1" >/dev/null 2>&1
 exit_code=$?
-if [[ $exit_code -eq 0 ]] && [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_cdd_dir1" ]]; then
+if [[ $exit_code -eq 0 ]] && [[ "$(pwd)" == "${TEST_CDD_DIR1}" ]]; then
     if print_msg 16 "Does cdd change to valid directory?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -327,7 +333,7 @@ fi
 
 # Test 17: cdd shows directory path with emoji
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-output=$(cdd "test_cdd_dir1" 2>&1)
+output=$(cdd "${TEST_PREFIX}_cdd_dir1" 2>&1)
 if echo "$output" | grep -q "📁"; then
     if print_msg 17 "Does cdd output contain emoji (📁)?" true; then
         ((score++))
@@ -352,8 +358,8 @@ if [[ ${#output} -gt 20 ]]; then
 else
     # If output is minimal, check if cdd at least ran successfully (directory change worked)
     builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-    cdd "test_cdd_dir1" >/dev/null 2>&1
-    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_cdd_dir1" ]]; then
+    cdd "${TEST_PREFIX}_cdd_dir1" >/dev/null 2>&1
+    if [[ "$(pwd)" == "${TEST_CDD_DIR1}" ]]; then
         if print_msg 18 "Does cdd list directory contents?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -408,8 +414,8 @@ fi
 
 # Test 22: cdd with directory containing spaces
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-if cdd "test dir with spaces" >/dev/null 2>&1; then
-    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test dir with spaces" ]]; then
+if cdd "${TEST_PREFIX}_dir_with_spaces" >/dev/null 2>&1; then
+    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir_with_spaces" ]]; then
         if print_msg 22 "Does cdd work with directory names containing spaces?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -479,9 +485,9 @@ fi
 
 # Test 26: zd to valid directory (fallback mode)
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-zd "test_zd_dir1" >/dev/null 2>&1
+zd "${TEST_PREFIX}_zd_dir1" >/dev/null 2>&1
 exit_code=$?
-if [[ $exit_code -eq 0 ]] && [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_zd_dir1" ]]; then
+if [[ $exit_code -eq 0 ]] && [[ "$(pwd)" == "${TEST_ZD_DIR1}" ]]; then
     if print_msg 26 "Does zd change to valid directory (fallback)?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -494,7 +500,7 @@ fi
 
 # Test 27: zd shows directory path with emoji
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-output=$(zd "test_zd_dir1" 2>&1)
+output=$(zd "${TEST_PREFIX}_zd_dir1" 2>&1)
 if echo "$output" | grep -q "📁"; then
     if print_msg 27 "Does zd output contain emoji (📁)?" true; then
         ((score++))
@@ -519,8 +525,8 @@ if [[ ${#output} -gt 20 ]]; then
 else
     # If output is minimal, check if zd at least ran successfully (directory change worked)
     builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-    zd "test_zd_dir1" >/dev/null 2>&1
-    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_zd_dir1" ]]; then
+    zd "${TEST_PREFIX}_zd_dir1" >/dev/null 2>&1
+    if [[ "$(pwd)" == "${TEST_ZD_DIR1}" ]]; then
         if print_msg 28 "Does zd list directory contents?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -562,8 +568,8 @@ fi
 
 # Test 31: zd with directory containing spaces
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-if zd "test dir with spaces" >/dev/null 2>&1; then
-    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test dir with spaces" ]]; then
+if zd "${TEST_PREFIX}_dir_with_spaces" >/dev/null 2>&1; then
+    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir_with_spaces" ]]; then
         if print_msg 31 "Does zd work with directory names containing spaces?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -581,7 +587,7 @@ printf "\nTesting output formatting and dependencies...\n"
 
 # Test 32: cdd uses eza if available, falls back to ls
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-cdd_output=$(cdd "test_cdd_dir1" 2>&1)
+cdd_output=$(cdd "${TEST_PREFIX}_cdd_dir1" 2>&1)
 # Check if cdd attempts to list (either eza or ls is called)
 # Since cdd calls eza/ls, we verify the function works correctly
 # The actual listing output may vary, but the function should execute
@@ -599,7 +605,7 @@ fi
 
 # Test 33: zd uses eza if available, falls back to ls
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-zd_output=$(zd "test_zd_dir1" 2>&1)
+zd_output=$(zd "${TEST_PREFIX}_zd_dir1" 2>&1)
 # Check if zd attempts to list (either eza or ls is called)
 # Since zd calls eza/ls, we verify the function works correctly
 # The actual listing output may vary, but the function should execute
@@ -637,7 +643,7 @@ fi
 printf "\nTesting edge cases...\n"
 
 # Test 35: cd with parent directory
-builtin cd "${__UNIT_TESTS_DIR}/test_cd_dir1" || exit 91
+builtin cd "${TEST_CD_DIR1}" || exit 91
 if cd ".." >/dev/null 2>&1; then
     if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}" ]]; then
         if print_msg 35 "Does cd work with parent directory (..)?" true; then
@@ -671,7 +677,7 @@ else
 fi
 
 # Test 37: cdd with absolute path
-abs_cdd_dir="${__UNIT_TESTS_DIR}/test_cdd_dir1"
+abs_cdd_dir="${TEST_CDD_DIR1}"
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
 if cdd "$abs_cdd_dir" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$abs_cdd_dir" ]]; then
@@ -689,7 +695,7 @@ else
 fi
 
 # Test 38: zd with absolute path
-abs_zd_dir="${__UNIT_TESTS_DIR}/test_zd_dir1"
+abs_zd_dir="${TEST_ZD_DIR1}"
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
 if zd "$abs_zd_dir" >/dev/null 2>&1; then
     if [[ "$(pwd)" == "$abs_zd_dir" ]]; then
@@ -724,7 +730,7 @@ fi
 
 # Test 40: Return code on success
 builtin cd "${__UNIT_TESTS_DIR}" || exit 91
-if cd "test_cd_dir1" >/dev/null 2>&1; then
+if cd "${TEST_PREFIX}_cd_dir1" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 40 "Does cd return 0 on success?" true; then
@@ -760,8 +766,8 @@ printf "========================================\n"
 
 printf "\nCleaning up test directories...\n"
 builtin cd "${__UNIT_TESTS_DIR}" 2>/dev/null || true
-rm -rf test_cd_* test_cdd_* test_zd_* 2>/dev/null || true
-rm -rf "test dir with spaces" 2>/dev/null || true
+rm -rf "${TEST_CD_DIR1}" "${TEST_CDD_DIR1}" "${TEST_ZD_DIR1}" 2>/dev/null || true
+rm -rf "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir_with_spaces" 2>/dev/null || true
 printf "Cleanup complete.\n"
 
 builtin cd "$original_dir" || exit 91

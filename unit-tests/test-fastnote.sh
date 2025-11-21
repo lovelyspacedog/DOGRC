@@ -126,13 +126,28 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
-# Backup original fastnotes directory if it exists
-# Use a test-specific note number range (900000+) to avoid conflicts with real notes
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_fastnote_$$"
+readonly TEST_HOME="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home"
+readonly TEST_FASTNOTES_DIR="${TEST_HOME}/.fastnotes"
+
+# Backup original HOME
+original_home="$HOME"
+
+# Create test home directory
+mkdir -p "$TEST_HOME" || {
+    printf "Error: Failed to create test home directory.\n" >&2
+    exit 99
+}
+
+# Override HOME for tests (fastnote uses $HOME/.fastnotes)
+export HOME="$TEST_HOME"
+
+# Backup original fastnotes directory if it exists in test home
+# Use a test-specific note number range (900000+) to avoid conflicts
 readonly TEST_NOTE_BASE=900000
-original_fastnotes_dir="${HOME}/.fastnotes"
-test_fastnotes_dir="${HOME}/.fastnotes.test_backup"
-if [[ -d "$original_fastnotes_dir" ]]; then
-    mv "$original_fastnotes_dir" "$test_fastnotes_dir" 2>/dev/null || true
+if [[ -d "$TEST_FASTNOTES_DIR" ]]; then
+    mv "$TEST_FASTNOTES_DIR" "${TEST_FASTNOTES_DIR}.backup" 2>/dev/null || true
 fi
 
 # Create a mock editor script for testing OPEN command
@@ -195,7 +210,7 @@ fi
 printf "\nTesting directory initialization...\n"
 
 # Remove test directory if it exists
-rm -rf "${HOME}/.fastnotes" 2>/dev/null || true
+rm -rf "${TEST_FASTNOTES_DIR}" 2>/dev/null || true
 
 # Verify mock editor is available before testing (to prevent hangs)
 if ! command -v "$EDITOR" >/dev/null 2>&1; then
@@ -207,7 +222,7 @@ fi
 # Test directory creation
 # The mock editor should prevent any real editor from opening
 if fastnote 0 >/dev/null 2>&1; then
-    if [[ -d "${HOME}/.fastnotes" ]]; then
+    if [[ -d "${TEST_FASTNOTES_DIR}" ]]; then
         if print_msg 9 "Does fastnote create ~/.fastnotes directory if it doesn't exist?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -220,7 +235,7 @@ if fastnote 0 >/dev/null 2>&1; then
 else
     # Even if fastnote fails or times out, check if directory was created
     # (directory creation happens before editor is called)
-    if [[ -d "${HOME}/.fastnotes" ]]; then
+    if [[ -d "${TEST_FASTNOTES_DIR}" ]]; then
         if print_msg 9 "Does fastnote create ~/.fastnotes directory if it doesn't exist?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -233,7 +248,7 @@ else
 fi
 
 # Test that it works when directory already exists
-if [[ -d "${HOME}/.fastnotes" ]]; then
+if [[ -d "${TEST_FASTNOTES_DIR}" ]]; then
     if print_msg 10 "Does fastnote work when ~/.fastnotes already exists?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -244,11 +259,14 @@ else
     print_msg 10 "Does fastnote work when ~/.fastnotes already exists?" false
 fi
 
+# Ensure test fastnotes directory exists for remaining tests
+mkdir -p "${TEST_FASTNOTES_DIR}" 2>/dev/null || true
+
 printf "\nTesting LIST command...\n"
 
 # Clean up any existing test notes (only notes in our test range)
-rm -f "${HOME}/.fastnotes"/notes_${TEST_NOTE_BASE}*.txt 2>/dev/null || true
-rm -f "${HOME}/.fastnotes"/notes_0.txt "${HOME}/.fastnotes"/notes_30.txt "${HOME}/.fastnotes"/notes_42.txt 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}"/notes_${TEST_NOTE_BASE}*.txt 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}"/notes_0.txt "${TEST_FASTNOTES_DIR}"/notes_30.txt "${TEST_FASTNOTES_DIR}"/notes_42.txt 2>/dev/null || true
 
 # Test LIST with no notes
 if fastnote list 2>&1 | grep -q "No notes found"; then
@@ -262,11 +280,12 @@ else
     print_msg 11 "Does fastnote list show 'No notes found.' when empty?" false
 fi
 
-# Create test notes using very high numbers (900000+) to avoid conflicts with real notes
-printf "First line of note 1\nSecond line" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}01.txt"
-printf "This is a longer note that should be truncated in the preview because it exceeds sixty characters" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}02.txt"
-printf "" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}03.txt"
-printf "Short note" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}05.txt"
+# Create test notes using very high numbers (900000+) to avoid conflicts
+mkdir -p "${TEST_FASTNOTES_DIR}" 2>/dev/null || true
+printf "First line of note 1\nSecond line" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}01.txt"
+printf "This is a longer note that should be truncated in the preview because it exceeds sixty characters" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}02.txt"
+printf "" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}03.txt"
+printf "Short note" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}05.txt"
 
 # Test LIST with notes
 list_output=$(fastnote list 2>&1)
@@ -344,7 +363,7 @@ fi
 printf "\nTesting CLEAR command...\n"
 
 # Test CLEAR with no notes
-rm -f "${HOME}/.fastnotes"/notes_${TEST_NOTE_BASE}*.txt "${HOME}/.fastnotes"/notes_0.txt "${HOME}/.fastnotes"/notes_30.txt "${HOME}/.fastnotes"/notes_42.txt 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}"/notes_${TEST_NOTE_BASE}*.txt "${TEST_FASTNOTES_DIR}"/notes_0.txt "${TEST_FASTNOTES_DIR}"/notes_30.txt "${TEST_FASTNOTES_DIR}"/notes_42.txt 2>/dev/null || true
 if echo "n" | fastnote clear 2>&1 | grep -q "No notes found"; then
     if print_msg 18 "Does fastnote clear show 'No notes found.' when no notes exist?" true; then
         ((score++))
@@ -357,8 +376,8 @@ else
 fi
 
 # Create notes for CLEAR test
-printf "Note 1" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}10.txt"
-printf "Note 2" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}11.txt"
+printf "Note 1" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}10.txt"
+printf "Note 2" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}11.txt"
 
 # Test CLEAR cancellation
 if echo "n" | fastnote clear 2>&1 | grep -q "Cancelled"; then
@@ -373,7 +392,7 @@ else
 fi
 
 # Verify notes still exist after cancellation
-if [[ -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}10.txt" ]] && [[ -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}11.txt" ]]; then
+if [[ -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}10.txt" ]] && [[ -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}11.txt" ]]; then
     if print_msg 20 "Does fastnote clear preserve notes when cancelled?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -397,7 +416,7 @@ else
 fi
 
 # Verify notes are deleted
-if [[ ! -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}10.txt" ]] && [[ ! -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}11.txt" ]]; then
+if [[ ! -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}10.txt" ]] && [[ ! -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}11.txt" ]]; then
     if print_msg 22 "Does fastnote clear remove note files when confirmed?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -409,7 +428,7 @@ else
 fi
 
 # Test CLEAR return code on cancellation
-printf "Note 1" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}12.txt"
+printf "Note 1" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}12.txt"
 if echo "n" | fastnote clear >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
@@ -425,12 +444,12 @@ if echo "n" | fastnote clear >/dev/null 2>&1; then
 else
     print_msg 23 "Does fastnote clear return 0 on cancellation?" false
 fi
-rm -f "${HOME}/.fastnotes"/notes_${TEST_NOTE_BASE}*.txt "${HOME}/.fastnotes"/notes_0.txt "${HOME}/.fastnotes"/notes_30.txt "${HOME}/.fastnotes"/notes_42.txt 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}"/notes_${TEST_NOTE_BASE}*.txt "${TEST_FASTNOTES_DIR}"/notes_0.txt "${TEST_FASTNOTES_DIR}"/notes_30.txt "${TEST_FASTNOTES_DIR}"/notes_42.txt 2>/dev/null || true
 
 printf "\nTesting DELETE command...\n"
 
 # Create a test note
-printf "Test note content" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}20.txt"
+printf "Test note content" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}20.txt"
 
 # Test DELETE with existing note
 if fastnote ${TEST_NOTE_BASE}20 delete 2>&1 | grep -q "Deleted note ${TEST_NOTE_BASE}20"; then
@@ -445,7 +464,7 @@ else
 fi
 
 # Verify note is deleted
-if [[ ! -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}20.txt" ]]; then
+if [[ ! -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}20.txt" ]]; then
     if print_msg 25 "Does fastnote delete remove the note file?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -457,7 +476,7 @@ else
 fi
 
 # Test DELETE short form
-printf "Test note" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}21.txt"
+printf "Test note" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}21.txt"
 if fastnote ${TEST_NOTE_BASE}21 d 2>&1 | grep -q "Deleted note ${TEST_NOTE_BASE}21"; then
     if print_msg 26 "Does fastnote <num> d work (short form)?" true; then
         ((score++))
@@ -468,7 +487,7 @@ if fastnote ${TEST_NOTE_BASE}21 d 2>&1 | grep -q "Deleted note ${TEST_NOTE_BASE}
 else
     print_msg 26 "Does fastnote <num> d work (short form)?" false
 fi
-rm -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}21.txt" 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}21.txt" 2>/dev/null || true
 
 # Test DELETE with non-existent note
 if ! fastnote ${TEST_NOTE_BASE}99 delete 2>/dev/null; then
@@ -494,7 +513,7 @@ else
 fi
 
 # Test DELETE return code on success
-printf "Test note" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}22.txt"
+printf "Test note" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}22.txt"
 if fastnote ${TEST_NOTE_BASE}22 delete >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
@@ -529,7 +548,7 @@ printf "\nTesting CAT command...\n"
 
 # Create a test note
 test_content="This is test content for CAT command\nLine 2\nLine 3"
-printf "${test_content}" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}30.txt"
+printf "${test_content}" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}30.txt"
 
 # Test CAT with existing note
 cat_output=$(fastnote ${TEST_NOTE_BASE}30 cat 2>&1)
@@ -597,7 +616,7 @@ else
 fi
 
 # Test CAT with empty note
-printf "" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}31.txt"
+printf "" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}31.txt"
 cat_output=$(fastnote ${TEST_NOTE_BASE}31 cat 2>&1)
 if [[ -z "$cat_output" ]] || [[ "$cat_output" == "" ]]; then
     if print_msg 36 "Does fastnote <num> cat handle empty notes correctly?" true; then
@@ -609,12 +628,12 @@ if [[ -z "$cat_output" ]] || [[ "$cat_output" == "" ]]; then
 else
     print_msg 36 "Does fastnote <num> cat handle empty notes correctly?" false
 fi
-rm -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}31.txt" 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}31.txt" 2>/dev/null || true
 
 printf "\nTesting OPEN command (default action)...\n"
 
 # Remove test note if it exists
-rm -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}40.txt" 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}40.txt" 2>/dev/null || true
 
 # Test OPEN creates note file if it doesn't exist
 # EDITOR should already be set to mock_editor.sh from earlier
@@ -625,7 +644,7 @@ if ! command -v "$EDITOR" >/dev/null 2>&1; then
 fi
 # Call fastnote with output redirected to prevent any editor output
 if fastnote ${TEST_NOTE_BASE}40 >/dev/null 2>&1; then
-    if [[ -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}40.txt" ]]; then
+    if [[ -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}40.txt" ]]; then
         if print_msg 37 "Does fastnote <num> create note file if it doesn't exist?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -637,7 +656,7 @@ if fastnote ${TEST_NOTE_BASE}40 >/dev/null 2>&1; then
     fi
 else
     # Even if it fails, check if file was created
-    if [[ -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}40.txt" ]]; then
+    if [[ -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}40.txt" ]]; then
         if print_msg 37 "Does fastnote <num> create note file if it doesn't exist?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -684,7 +703,7 @@ fi
 printf "\nTesting note number validation...\n"
 
 # Test valid numbers
-if fastnote 0 >/dev/null 2>&1 || [[ -f "${HOME}/.fastnotes/notes_0.txt" ]]; then
+if fastnote 0 >/dev/null 2>&1 || [[ -f "${TEST_FASTNOTES_DIR}/notes_0.txt" ]]; then
     if print_msg 40 "Does fastnote accept valid positive numbers (0)?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -695,7 +714,7 @@ else
     print_msg 40 "Does fastnote accept valid positive numbers (0)?" false
 fi
 
-if fastnote 42 >/dev/null 2>&1 || [[ -f "${HOME}/.fastnotes/notes_42.txt" ]]; then
+if fastnote 42 >/dev/null 2>&1 || [[ -f "${TEST_FASTNOTES_DIR}/notes_42.txt" ]]; then
     if print_msg 41 "Does fastnote accept valid positive numbers (42)?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -741,7 +760,7 @@ else
 fi
 
 # Test extraction from "number - preview" format
-printf "Test note" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}50.txt"
+printf "Test note" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}50.txt"
 if fastnote "${TEST_NOTE_BASE}50 - Test note" cat 2>&1 | grep -q "Test note"; then
     if print_msg 45 "Does fastnote extract number from 'number - preview' format?" true; then
         ((score++))
@@ -752,12 +771,12 @@ if fastnote "${TEST_NOTE_BASE}50 - Test note" cat 2>&1 | grep -q "Test note"; th
 else
     print_msg 45 "Does fastnote extract number from 'number - preview' format?" false
 fi
-rm -f "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}50.txt" 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}50.txt" 2>/dev/null || true
 
 printf "\nTesting edge cases...\n"
 
 # Test zero note
-if fastnote 0 >/dev/null 2>&1 || [[ -f "${HOME}/.fastnotes/notes_0.txt" ]]; then
+if fastnote 0 >/dev/null 2>&1 || [[ -f "${TEST_FASTNOTES_DIR}/notes_0.txt" ]]; then
     if print_msg 46 "Does fastnote 0 work (zero is valid)?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -769,9 +788,9 @@ else
 fi
 
 # Test multiple notes
-printf "Note 1" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}60.txt"
-printf "Note 2" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}61.txt"
-printf "Note 3" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}62.txt"
+printf "Note 1" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}60.txt"
+printf "Note 2" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}61.txt"
+printf "Note 3" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}62.txt"
 list_output=$(fastnote list 2>&1)
 if echo "$list_output" | grep -q "note ${TEST_NOTE_BASE}60" && echo "$list_output" | grep -q "note ${TEST_NOTE_BASE}61" && echo "$list_output" | grep -q "note ${TEST_NOTE_BASE}62"; then
     if print_msg 47 "Does fastnote handle multiple notes correctly?" true; then
@@ -786,7 +805,7 @@ fi
 
 # Test note content preservation
 test_content="Original content\nLine 2\nLine 3"
-printf "${test_content}" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}70.txt"
+printf "${test_content}" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}70.txt"
 cat_output=$(fastnote ${TEST_NOTE_BASE}70 cat 2>&1)
 if [[ "$cat_output" == *"Original content"* ]]; then
     if print_msg 48 "Does fastnote preserve note content across operations?" true; then
@@ -878,7 +897,7 @@ if fastnote ${TEST_NOTE_BASE}80 delete 2>&1 | grep -q "Deleted note ${TEST_NOTE_
     fi
 else
     # Create note first
-    printf "Test" > "${HOME}/.fastnotes/notes_${TEST_NOTE_BASE}80.txt"
+    printf "Test" > "${TEST_FASTNOTES_DIR}/notes_${TEST_NOTE_BASE}80.txt"
     if fastnote ${TEST_NOTE_BASE}80 delete 2>&1 | grep -q "Deleted note ${TEST_NOTE_BASE}80"; then
         if print_msg 53 "Does fastnote output success messages correctly?" true; then
             ((score++))
@@ -924,17 +943,20 @@ printf "========================================\n"
 printf "\nCleaning up test files...\n"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 # Only remove test notes (900000+ range) and specific test notes (0, 30, 42) to avoid deleting real notes
-rm -f "${HOME}/.fastnotes"/notes_${TEST_NOTE_BASE}*.txt 2>/dev/null || true
-rm -f "${HOME}/.fastnotes"/notes_0.txt "${HOME}/.fastnotes"/notes_30.txt "${HOME}/.fastnotes"/notes_42.txt 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}"/notes_${TEST_NOTE_BASE}*.txt 2>/dev/null || true
+rm -f "${TEST_FASTNOTES_DIR}"/notes_0.txt "${TEST_FASTNOTES_DIR}"/notes_30.txt "${TEST_FASTNOTES_DIR}"/notes_42.txt 2>/dev/null || true
 # Only remove .fastnotes directory if it's empty (to avoid deleting real notes)
-if [[ -d "${HOME}/.fastnotes" ]] && [[ -z "$(ls -A "${HOME}/.fastnotes" 2>/dev/null)" ]]; then
-    rm -rf "${HOME}/.fastnotes" 2>/dev/null || true
+if [[ -d "${TEST_FASTNOTES_DIR}" ]] && [[ -z "$(ls -A "${TEST_FASTNOTES_DIR}" 2>/dev/null)" ]]; then
+    rm -rf "${TEST_FASTNOTES_DIR}" 2>/dev/null || true
 fi
 rm -f "$mock_editor" 2>/dev/null || true
 
+# Restore original HOME
+export HOME="$original_home"
+
 # Restore original fastnotes directory if it was backed up
-if [[ -d "$test_fastnotes_dir" ]]; then
-    mv "$test_fastnotes_dir" "$original_fastnotes_dir" 2>/dev/null || true
+if [[ -d "${TEST_FASTNOTES_DIR}.backup" ]]; then
+    mv "${TEST_FASTNOTES_DIR}.backup" "$TEST_FASTNOTES_DIR" 2>/dev/null || true
 fi
 
 # Restore original editor and PATH
@@ -948,6 +970,9 @@ original_path="${PATH#${__UNIT_TESTS_DIR}:}"
 if [[ "$PATH" != "$original_path" ]]; then
     export PATH="$original_path"
 fi
+
+# Clean up test home directory
+rm -rf "$TEST_HOME" 2>/dev/null || true
 
 printf "Cleanup complete.\n"
 

@@ -1,5 +1,95 @@
 # DOGRC Changelog
 
+## [0.1.6] - 2025-11-21
+
+### New Features
+- **dupefind Plugin**: Added new file-operations plugin for finding duplicate files
+  - Finds duplicate files by content hash (MD5/SHA256)
+  - Recursive directory scanning
+  - Detailed duplicate grouping and reporting
+  - Full drchelp documentation integration
+  - Comprehensive unit test suite (45 tests)
+
+- **Parallel Test Execution**: Added parallel test execution support
+  - `--parallel` flag (`-p`, `-P`) for running tests simultaneously
+  - Resource monitor (`htop`/`top`) in right tmux pane during parallel execution
+  - Improved test execution time for large test suites
+  - All test files updated for parallel execution safety
+
+- **Test Runner Enhancements**: Added `--stage` flag for targeted testing
+  - `--stage` flag (`-s`, `-S`) to test specific test and its adjacent tests
+  - Useful for debugging specific test failures
+  - Improved test runner efficiency
+
+- **pokefetch Enhancement**: Added `--relocate` flag for custom output location
+  - `--relocate` flag (`-l`, `-L`) to specify output file location
+  - Defaults to `/tmp/pokefetch.txt` if not specified
+  - Enables test isolation for parallel execution
+  - Full unit test coverage for new flag
+
+- **timer Enhancement**: Added `--use-dir` flag for custom timer directory
+  - `--use-dir` flag (`-ud`, `-UD`) to specify custom directory for timer files
+  - Enables test isolation for parallel execution
+  - Full unit test coverage for new flag
+
+### Enhancements
+- **Version Comparison**: Enhanced to handle 4+ part version strings
+  - Now correctly compares versions like `0.1.5.12`, `0.1.5.1`, etc.
+  - Iterates through all available parts with proper padding
+  - Updated both `drcupdate.sh` and `_UPDATE.sh` with improved logic
+  - Comprehensive unit tests for 4-part version comparison
+
+- **Test Suite Improvements**: Enhanced for parallel execution safety
+  - All test files updated with unique process ID prefixes (`TEST_PREFIX="test_name_$$"`)
+  - Fixed race conditions in `test-backup.sh` using before/after directory tracking
+  - Improved cleanup logic to remove all temporary files and directories
+  - Enhanced test file isolation for parallel execution
+
+- **Test Runner Stability**: Improved parallel mode stability
+  - All test output redirected to `/dev/null` in parallel mode
+  - Protected resource monitor from interruption using `exec` and `trap`
+  - Prevented summary from overwriting resource monitor in parallel mode
+
+- **Update Script Enhancements**: Improved migration logic
+  - Added preservation of `disabled.json` user customizations
+  - Added preservation of user-created test files in `unit-tests/` directory
+  - Enhanced migration summary messages
+
+### Bug Fixes
+- **Test Score Tabulation**: Fixed score calculation with proper integer conversion
+  - Added explicit integer conversion for score and total variables
+  - Fixed logic to only count tests with `total > 0`
+  - Corrected percentage calculations
+
+- **Test Cleanup**: Fixed cleanup issues in multiple test files
+  - Fixed `test-pwd.sh` cleanup to remove test directories
+  - Fixed `test-timer.sh` cleanup to remove timer directories
+  - Enhanced `_TEST-ALL.sh` and `_test-all-fb.sh` cleanup functions
+  - Improved cleanup to remove all temporary files and directories
+
+- **Test Race Conditions**: Fixed parallel execution conflicts
+  - Fixed `test-backup.sh` to use before/after directory tracking instead of glob patterns
+  - Fixed `test-navto.sh` to use test-specific config directory
+  - Fixed `test-dots.sh` to use `TEST_PREFIX` for config directory
+  - Fixed all test files to use unique file/directory naming
+
+- **Test Failures**: Fixed various test issues
+  - Fixed `test-pokefetch.sh` score calculation (was showing 36/35)
+  - Fixed `test-timer.sh` LIST and CLEAR commands with `--use-dir` flag
+  - Fixed test file cleanup patterns to prevent accidental deletion
+
+- **Update Script**: Fixed `--fail-fast` logic in `_test-all-fb.sh`
+  - Now correctly stops on first non-100% test result
+  - Improved regex pattern for parsing "Tests Passed: X / Y"
+
+### Infrastructure
+- Added `dupefind.sh` to installation verification in `_INSTALL.sh`
+- Enhanced update script to preserve user configurations (`disabled.json`, user tests)
+- Updated drchelp documentation for new plugins and flags
+- Improved test runner cleanup and resource management
+
+---
+
 ## [0.1.5] - 2025-11-20
 
 ### New Features

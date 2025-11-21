@@ -116,6 +116,9 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="${TEST_PREFIX}_$$"
+
 if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
     source "${__PLUGINS_DIR}/drchelp.sh" 2>/dev/null || true
 fi
@@ -159,7 +162,7 @@ fi
 printf "\nTesting basic functionality...\n"
 
 # Test 8: Create new directory
-test_dir="test_mkcd_new"
+test_dir="${TEST_PREFIX}_new"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 if mkcd "$test_dir" >/dev/null 2>&1; then
     # After mkcd, we're inside the directory, so check absolute path
@@ -182,7 +185,7 @@ else
 fi
 
 # Test 9: Create nested directory
-test_dir="test_mkcd_nested/subdir/another"
+test_dir="${TEST_PREFIX}_nested/subdir/another"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 if mkcd "$test_dir" >/dev/null 2>&1; then
     # After mkcd, we're inside the directory, so check absolute path
@@ -197,15 +200,15 @@ if mkcd "$test_dir" >/dev/null 2>&1; then
         print_msg 9 "Does mkcd create nested directories?" false
     fi
     cd "${__UNIT_TESTS_DIR}" || exit 91
-    rm -rf test_mkcd_nested 2>/dev/null || true
+    rm -rf ${TEST_PREFIX}_nested 2>/dev/null || true
 else
     print_msg 9 "Does mkcd create nested directories?" false
     cd "${__UNIT_TESTS_DIR}" || exit 91
-    rm -rf test_mkcd_nested 2>/dev/null || true
+    rm -rf ${TEST_PREFIX}_nested 2>/dev/null || true
 fi
 
 # Test 10: Change into existing directory
-test_dir="test_mkcd_existing"
+test_dir="${TEST_PREFIX}_existing"
 mkdir -p "$test_dir"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 if mkcd "$test_dir" >/dev/null 2>&1; then
@@ -228,7 +231,7 @@ else
 fi
 
 # Test 11: Return code on success
-test_dir="test_mkcd_return"
+test_dir="${TEST_PREFIX}_return"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 if mkcd "$test_dir" >/dev/null 2>&1; then
     exit_code=$?
@@ -253,7 +256,7 @@ fi
 printf "\nTesting output messages...\n"
 
 # Test 12: Output message contains pwd
-test_dir="test_mkcd_output"
+test_dir="${TEST_PREFIX}_output"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 output=$(mkcd "$test_dir" 2>&1)
 if echo "$output" | grep -q "$test_dir"; then
@@ -270,10 +273,10 @@ cd "${__UNIT_TESTS_DIR}" || exit 91
 rm -rf "$test_dir" 2>/dev/null || true
 
 # Test 13: Output includes listing
-test_dir="test_mkcd_listing"
+test_dir="${TEST_PREFIX}_listing"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 output=$(mkcd "$test_dir" 2>&1)
-if echo "$output" | grep -q "test_mkcd_listing" && [[ ${#output} -gt 10 ]]; then
+if echo "$output" | grep -q "${TEST_PREFIX}_listing" && [[ ${#output} -gt 10 ]]; then
     if print_msg 13 "Does mkcd output directory listing?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -304,7 +307,7 @@ fi
 # Test 15: Error on permission denied (if possible)
 if [[ -d "/root" ]] && [[ ! -r "/root" ]] 2>/dev/null; then
     cd "${__UNIT_TESTS_DIR}" || exit 91
-    if ! mkcd "/root/test_mkcd_no_permission" 2>/dev/null; then
+    if ! mkcd "/root/${TEST_PREFIX}_no_permission" 2>/dev/null; then
         if print_msg 15 "Does mkcd error on permission denied?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -375,7 +378,7 @@ else
 fi
 
 # Test 19: Absolute path
-test_dir="${__UNIT_TESTS_DIR}/test_mkcd_absolute"
+test_dir="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_absolute"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 if mkcd "$test_dir" >/dev/null 2>&1; then
     if [[ -d "$test_dir" ]] && [[ "$(pwd)" == "$test_dir" ]]; then
@@ -397,7 +400,7 @@ else
 fi
 
 # Test 20: Relative path
-test_dir="test_mkcd_relative"
+test_dir="${TEST_PREFIX}_relative"
 cd "${__UNIT_TESTS_DIR}" || exit 91
 if mkcd "./$test_dir" >/dev/null 2>&1; then
     # After mkcd, we're inside the directory, so check absolute path
@@ -421,8 +424,8 @@ fi
 
 # Test 21: Multiple mkcd calls
 cd "${__UNIT_TESTS_DIR}" || exit 91
-if mkcd "test_mkcd_multi1" >/dev/null 2>&1 && mkcd "../test_mkcd_multi2" >/dev/null 2>&1; then
-    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/test_mkcd_multi2" ]]; then
+if mkcd "${TEST_PREFIX}_multi1" >/dev/null 2>&1 && mkcd "../${TEST_PREFIX}_multi2" >/dev/null 2>&1; then
+    if [[ "$(pwd)" == "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_multi2" ]]; then
         if print_msg 21 "Does mkcd work correctly with multiple calls?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -433,11 +436,11 @@ if mkcd "test_mkcd_multi1" >/dev/null 2>&1 && mkcd "../test_mkcd_multi2" >/dev/n
         print_msg 21 "Does mkcd work correctly with multiple calls?" false
     fi
     cd "${__UNIT_TESTS_DIR}" || exit 91
-    rm -rf test_mkcd_multi1 test_mkcd_multi2 2>/dev/null || true
+    rm -rf ${TEST_PREFIX}_multi1 ${TEST_PREFIX}_multi2 2>/dev/null || true
 else
     print_msg 21 "Does mkcd work correctly with multiple calls?" false
     cd "${__UNIT_TESTS_DIR}" || exit 91
-    rm -rf test_mkcd_multi1 test_mkcd_multi2 2>/dev/null || true
+    rm -rf ${TEST_PREFIX}_multi1 ${TEST_PREFIX}_multi2 2>/dev/null || true
 fi
 
 percentage=$((score * 100 / total_tests))
@@ -460,7 +463,7 @@ printf "========================================\n"
 
 printf "\nCleaning up test files...\n"
 cd "${__UNIT_TESTS_DIR}" || exit 91
-rm -rf test_mkcd_* 2>/dev/null || true
+rm -rf ${TEST_PREFIX}_* 2>/dev/null || true
 printf "Cleanup complete.\n"
 
 cd "$original_dir" || exit 91

@@ -128,6 +128,9 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_analyze_$$"
+
 # Setup trap to ensure cleanup happens even on failure
 cleanup_analyze_file_test() {
     local exit_code=$?
@@ -135,15 +138,15 @@ cleanup_analyze_file_test() {
     
     # Clean up test files (handle files with spaces)
     cd "${__UNIT_TESTS_DIR}" 2>/dev/null || true
-    rm -f test_analyze_* 2>/dev/null || true
-    rm -f test_analyze_*.txt 2>/dev/null || true
-    rm -f test_analyze_*.sh 2>/dev/null || true
-    rm -f test_analyze_*.tar 2>/dev/null || true
-    rm -f test_analyze_*.jpg 2>/dev/null || true
-    rm -f test_analyze_*.mp4 2>/dev/null || true
-    rm -f test_analyze_*.mp3 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_* 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_*.txt 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_*.sh 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_*.tar 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_*.jpg 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_*.mp4 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_*.mp3 2>/dev/null || true
     # Explicitly remove file with spaces
-    rm -f "test analyze file with spaces.txt" 2>/dev/null || true
+    rm -f "${TEST_PREFIX}_file_with_spaces.txt" 2>/dev/null || true
     
     exit $exit_code
 }
@@ -244,33 +247,33 @@ test_text_content="This is a test file for analyze-file.
 It has multiple lines.
 Line 3 with some words.
 End of file."
-printf "%s\n" "$test_text_content" > "${__UNIT_TESTS_DIR}/test_analyze_text.txt" || {
+printf "%s\n" "$test_text_content" > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_text.txt" || {
     printf "Error: Failed to create test text file.\n" >&2
     exit 92
 }
 
 # Create test executable script with shebang
-printf "#!/bin/bash\necho 'test'\n" > "${__UNIT_TESTS_DIR}/test_analyze_executable.sh" || {
+printf "#!/bin/bash\necho 'test'\n" > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_executable.sh" || {
     printf "Error: Failed to create test executable file.\n" >&2
     exit 93
 }
-chmod +x "${__UNIT_TESTS_DIR}/test_analyze_executable.sh" 2>/dev/null || true
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_executable.sh" 2>/dev/null || true
 
 # Create test executable without shebang
-printf "echo 'test without shebang'\n" > "${__UNIT_TESTS_DIR}/test_analyze_no_shebang.sh" || {
+printf "echo 'test without shebang'\n" > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_no_shebang.sh" || {
     printf "Error: Failed to create test executable without shebang.\n" >&2
     exit 94
 }
-chmod +x "${__UNIT_TESTS_DIR}/test_analyze_no_shebang.sh" 2>/dev/null || true
+chmod +x "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_no_shebang.sh" 2>/dev/null || true
 
 # Create empty file
-touch "${__UNIT_TESTS_DIR}/test_analyze_empty.txt" || {
+touch "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_empty.txt" || {
     printf "Error: Failed to create empty test file.\n" >&2
     exit 95
 }
 
 # Create file with spaces in name
-printf "test content\n" > "${__UNIT_TESTS_DIR}/test analyze file with spaces.txt" || {
+printf "test content\n" > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_file_with_spaces.txt" || {
     printf "Error: Failed to create test file with spaces.\n" >&2
     exit 96
 }
@@ -323,8 +326,8 @@ fi
 printf "\nTesting basic file information...\n"
 
 # Test 16: Output contains file path
-output=$(analyze-file "test_analyze_text.txt" 2>&1)
-if echo "$output" | grep -q "File:.*test_analyze_text.txt"; then
+output=$(analyze-file "${TEST_PREFIX}_text.txt" 2>&1)
+if echo "$output" | grep -q "File:.*${TEST_PREFIX}_text.txt"; then
     if print_msg 16 "Does output contain file path?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -462,7 +465,7 @@ fi
 printf "\nTesting executable file analysis...\n"
 
 # Test 27: Executable file shows executable section
-exec_output=$(analyze-file "test_analyze_executable.sh" 2>&1)
+exec_output=$(analyze-file "${TEST_PREFIX}_executable.sh" 2>&1)
 if echo "$exec_output" | grep -q "Executable File:"; then
     if print_msg 27 "Does executable file show 'Executable File' section?" true; then
         ((score++))
@@ -499,7 +502,7 @@ else
 fi
 
 # Test 30: Shows "None" when no shebang
-no_shebang_output=$(analyze-file "test_analyze_no_shebang.sh" 2>&1)
+no_shebang_output=$(analyze-file "${TEST_PREFIX}_no_shebang.sh" 2>&1)
 if echo "$no_shebang_output" | grep -q "Shebang:" && echo "$no_shebang_output" | grep -q "None"; then
     if print_msg 30 "Does output show 'None' when no shebang present?" true; then
         ((score++))
@@ -514,8 +517,8 @@ fi
 printf "\nTesting file type detection...\n"
 
 # Test 31: Archive file detection by extension (create a fake archive file)
-touch "${__UNIT_TESTS_DIR}/test_analyze_archive.tar" 2>/dev/null || true
-archive_output=$(analyze-file "test_analyze_archive.tar" 2>&1)
+touch "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_archive.tar" 2>/dev/null || true
+archive_output=$(analyze-file "${TEST_PREFIX}_archive.tar" 2>&1)
 if echo "$archive_output" | grep -q "Archive File:" || echo "$archive_output" | grep -qi "archive\|compressed"; then
     if print_msg 31 "Does analyze-file detect archive files?" true; then
         ((score++))
@@ -528,8 +531,8 @@ else
 fi
 
 # Test 32: Image file detection by extension
-touch "${__UNIT_TESTS_DIR}/test_analyze_image.jpg" 2>/dev/null || true
-image_output=$(analyze-file "test_analyze_image.jpg" 2>&1)
+touch "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_image.jpg" 2>/dev/null || true
+image_output=$(analyze-file "${TEST_PREFIX}_image.jpg" 2>&1)
 if echo "$image_output" | grep -q "Image File:" || echo "$image_output" | grep -qi "image"; then
     if print_msg 32 "Does analyze-file detect image files?" true; then
         ((score++))
@@ -542,8 +545,8 @@ else
 fi
 
 # Test 33: Video file detection by extension
-touch "${__UNIT_TESTS_DIR}/test_analyze_video.mp4" 2>/dev/null || true
-video_output=$(analyze-file "test_analyze_video.mp4" 2>&1)
+touch "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_video.mp4" 2>/dev/null || true
+video_output=$(analyze-file "${TEST_PREFIX}_video.mp4" 2>&1)
 if echo "$video_output" | grep -q "Video File:" || echo "$video_output" | grep -qi "video"; then
     if print_msg 33 "Does analyze-file detect video files?" true; then
         ((score++))
@@ -556,8 +559,8 @@ else
 fi
 
 # Test 34: Audio file detection by extension
-touch "${__UNIT_TESTS_DIR}/test_analyze_audio.mp3" 2>/dev/null || true
-audio_output=$(analyze-file "test_analyze_audio.mp3" 2>&1)
+touch "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_audio.mp3" 2>/dev/null || true
+audio_output=$(analyze-file "${TEST_PREFIX}_audio.mp3" 2>&1)
 if echo "$audio_output" | grep -q "Audio File:" || echo "$audio_output" | grep -qi "audio"; then
     if print_msg 34 "Does analyze-file detect audio files?" true; then
         ((score++))
@@ -598,7 +601,7 @@ fi
 
 # Test 37: Hash matches expected value for known file
 # Calculate expected hash
-expected_hash=$(sha256sum "test_analyze_text.txt" 2>/dev/null | cut -d' ' -f1)
+expected_hash=$(sha256sum "${TEST_PREFIX}_text.txt" 2>/dev/null | cut -d' ' -f1)
 if [[ -n "$expected_hash" ]] && echo "$output" | grep -q "$expected_hash"; then
     if print_msg 37 "Does SHA256 hash match expected value?" true; then
         ((score++))
@@ -689,8 +692,8 @@ fi
 printf "\nTesting edge cases...\n"
 
 # Test 44: Empty file handling
-empty_output=$(analyze-file "test_analyze_empty.txt" 2>&1)
-if [[ $? -eq 0 ]] && echo "$empty_output" | grep -q "test_analyze_empty.txt"; then
+empty_output=$(analyze-file "${TEST_PREFIX}_empty.txt" 2>&1)
+if [[ $? -eq 0 ]] && echo "$empty_output" | grep -q "${TEST_PREFIX}_empty.txt"; then
     if print_msg 44 "Does analyze-file handle empty files?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -702,8 +705,8 @@ else
 fi
 
 # Test 45: File with spaces in name
-spaces_output=$(analyze-file "test analyze file with spaces.txt" 2>&1)
-if [[ $? -eq 0 ]] && echo "$spaces_output" | grep -q "test analyze file with spaces.txt"; then
+spaces_output=$(analyze-file "${TEST_PREFIX}_file_with_spaces.txt" 2>&1)
+if [[ $? -eq 0 ]] && echo "$spaces_output" | grep -q "${TEST_PREFIX}_file_with_spaces.txt"; then
     if print_msg 45 "Does analyze-file work with files containing spaces?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -715,7 +718,7 @@ else
 fi
 
 # Test 46: Absolute path handling
-abs_path="${__UNIT_TESTS_DIR}/test_analyze_text.txt"
+abs_path="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_text.txt"
 abs_output=$(analyze-file "$abs_path" 2>&1)
 if [[ $? -eq 0 ]] && echo "$abs_output" | grep -q "$abs_path"; then
     if print_msg 46 "Does analyze-file work with absolute paths?" true; then
@@ -729,7 +732,7 @@ else
 fi
 
 # Test 47: Return code on success
-if analyze-file "test_analyze_text.txt" >/dev/null 2>&1; then
+if analyze-file "${TEST_PREFIX}_text.txt" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 47 "Does analyze-file return 0 on success?" true; then
@@ -748,8 +751,8 @@ fi
 printf "\nTesting alias function...\n"
 
 # Test 48: analyze_file alias works
-alias_output=$(analyze_file "test_analyze_text.txt" 2>&1)
-if [[ $? -eq 0 ]] && echo "$alias_output" | grep -q "test_analyze_text.txt"; then
+alias_output=$(analyze_file "${TEST_PREFIX}_text.txt" 2>&1)
+if [[ $? -eq 0 ]] && echo "$alias_output" | grep -q "${TEST_PREFIX}_text.txt"; then
     if print_msg 48 "Does analyze_file alias function work?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -761,8 +764,8 @@ else
 fi
 
 # Test 49: Alias produces same output as main function
-main_output=$(analyze-file "test_analyze_text.txt" 2>&1)
-alias_output2=$(analyze_file "test_analyze_text.txt" 2>&1)
+main_output=$(analyze-file "${TEST_PREFIX}_text.txt" 2>&1)
+alias_output2=$(analyze_file "${TEST_PREFIX}_text.txt" 2>&1)
 # Compare outputs (excluding potential timing differences in modified date)
 main_hash=$(echo "$main_output" | grep -v "Modified:" | sha256sum | cut -d' ' -f1)
 alias_hash=$(echo "$alias_output2" | grep -v "Modified:" | sha256sum | cut -d' ' -f1)
@@ -798,15 +801,15 @@ printf "========================================\n"
 
 printf "\nCleaning up test files...\n"
 cd "${__UNIT_TESTS_DIR}" 2>/dev/null || true
-rm -f test_analyze_* 2>/dev/null || true
-rm -f test_analyze_*.txt 2>/dev/null || true
-rm -f test_analyze_*.sh 2>/dev/null || true
-rm -f test_analyze_*.tar 2>/dev/null || true
-rm -f test_analyze_*.jpg 2>/dev/null || true
-rm -f test_analyze_*.mp4 2>/dev/null || true
-rm -f test_analyze_*.mp3 2>/dev/null || true
+rm -f ${TEST_PREFIX}_* 2>/dev/null || true
+rm -f ${TEST_PREFIX}_*.txt 2>/dev/null || true
+rm -f ${TEST_PREFIX}_*.sh 2>/dev/null || true
+rm -f ${TEST_PREFIX}_*.tar 2>/dev/null || true
+rm -f ${TEST_PREFIX}_*.jpg 2>/dev/null || true
+rm -f ${TEST_PREFIX}_*.mp4 2>/dev/null || true
+rm -f ${TEST_PREFIX}_*.mp3 2>/dev/null || true
 # Explicitly remove file with spaces
-rm -f "test analyze file with spaces.txt" 2>/dev/null || true
+rm -f "${TEST_PREFIX}_file_with_spaces.txt" 2>/dev/null || true
 printf "Cleanup complete.\n"
 
 cd "$original_dir" || exit 91

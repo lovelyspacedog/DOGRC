@@ -115,6 +115,27 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_backup_$$"
+readonly TEST_BACKUP_DIR="${TEST_PREFIX}_dir"
+
+# Clean up any leftover backup directories from previous test runs (older than 10 minutes)
+# This helps prevent interference in parallel mode
+original_dir=$(basename "${__UNIT_TESTS_DIR}")
+current_time=$(date +%s)
+shopt -s nullglob
+for bak_dir in "${original_dir}".bak.*; do
+    if [[ -d "$bak_dir" ]]; then
+        file_time=$(stat -c %Y "$bak_dir" 2>/dev/null || echo 0)
+        time_diff=$((current_time - file_time))
+        # Remove if older than 10 minutes (600 seconds) - old leftover from previous runs
+        if [[ $time_diff -gt 600 ]]; then
+            rm -rf "$bak_dir" 2>/dev/null || true
+        fi
+    fi
+done
+shopt -u nullglob
+
 if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
     source "${__PLUGINS_DIR}/drchelp.sh" 2>/dev/null || true
 fi
@@ -158,16 +179,16 @@ fi
 printf "\nCreating test files...\n"
 test_content="This is a test file for backup.\nLine 2 of test file.\nEnd of test file.\n"
 
-if printf "${test_content}" > "${__UNIT_TESTS_DIR}/test_backup_file.txt"; then
-    if print_msg 8 "Can I create test_backup_file.txt?" true; then
+if printf "${test_content}" > "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_file.txt"; then
+    if print_msg 8 "Can I create ${TEST_PREFIX}_file.txt?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
 else
-    print_msg 8 "Can I create test_backup_file.txt?" false
-    printf "Error: Test cannot continue. Failed to create test_backup_file.txt.\n" >&2
+    print_msg 8 "Can I create ${TEST_PREFIX}_file.txt?" false
+    printf "Error: Test cannot continue. Failed to create ${TEST_PREFIX}_file.txt.\n" >&2
     exit 8
 fi
 
@@ -214,8 +235,8 @@ fi
 
 printf "\nTesting basic file backup...\n"
 
-if backup "test_backup_file.txt" >/dev/null 2>&1; then
-    backup_file=$(ls -1 test_backup_file.txt.bak.* 2>/dev/null | head -1)
+if backup "${TEST_PREFIX}_file.txt" >/dev/null 2>&1; then
+    backup_file=$(ls -1 ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null | head -1)
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if print_msg 12 "Does backup create .bak.* file?" true; then
             ((score++))
@@ -226,12 +247,12 @@ if backup "test_backup_file.txt" >/dev/null 2>&1; then
     else
         print_msg 12 "Does backup create .bak.* file?" false
     fi
-    rm -f test_backup_file.txt.bak.* 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 else
     print_msg 12 "Does backup create .bak.* file?" false
 fi
 
-if backup "test_backup_file.txt" >/dev/null 2>&1; then
+if backup "${TEST_PREFIX}_file.txt" >/dev/null 2>&1; then
     exit_code=$?
     if [[ $exit_code -eq 0 ]]; then
         if print_msg 13 "Does backup return 0 on success?" true; then
@@ -243,12 +264,12 @@ if backup "test_backup_file.txt" >/dev/null 2>&1; then
     else
         print_msg 13 "Does backup return 0 on success?" false
     fi
-    rm -f test_backup_file.txt.bak.* 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 else
     print_msg 13 "Does backup return 0 on success?" false
 fi
 
-if backup "test_backup_file.txt" 2>&1 | grep -q "Backup created"; then
+if backup "${TEST_PREFIX}_file.txt" 2>&1 | grep -q "Backup created"; then
     if print_msg 14 "Does backup output success message?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -258,12 +279,12 @@ if backup "test_backup_file.txt" 2>&1 | grep -q "Backup created"; then
 else
     print_msg 14 "Does backup output success message?" false
 fi
-rm -f test_backup_file.txt.bak.* 2>/dev/null || true
+rm -f ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 
-backup "test_backup_file.txt" >/dev/null 2>&1
-backup_file=$(ls -1 test_backup_file.txt.bak.* 2>/dev/null | head -1)
+backup "${TEST_PREFIX}_file.txt" >/dev/null 2>&1
+backup_file=$(ls -1 ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null | head -1)
 if [[ -n "$backup_file" ]]; then
-    original_content="$(cat test_backup_file.txt)"
+    original_content="$(cat ${TEST_PREFIX}_file.txt)"
     backup_content="$(cat "$backup_file")"
     if [[ "$original_content" == "$backup_content" ]]; then
         if print_msg 15 "Does backup preserve file content?" true; then
@@ -283,8 +304,8 @@ fi
 printf "\nTesting --store flag...\n"
 
 if [[ -d "${HOME}/Documents/BAK" ]] || mkdir -p "${HOME}/Documents/BAK" 2>/dev/null; then
-    if backup --store "test_backup_file.txt" >/dev/null 2>&1; then
-        backup_file=$(ls -1 "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* 2>/dev/null | head -1)
+    if backup --store "${TEST_PREFIX}_file.txt" >/dev/null 2>&1; then
+        backup_file=$(ls -1 "${HOME}/Documents/BAK"/${TEST_PREFIX}_file.txt.bak.* 2>/dev/null | head -1)
         if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
             if print_msg 16 "Does backup --store create backup in ~/Documents/BAK?" true; then
                 ((score++))
@@ -295,7 +316,7 @@ if [[ -d "${HOME}/Documents/BAK" ]] || mkdir -p "${HOME}/Documents/BAK" 2>/dev/n
         else
             print_msg 16 "Does backup --store create backup in ~/Documents/BAK?" false
         fi
-        rm -f "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* 2>/dev/null || true
+        rm -f "${HOME}/Documents/BAK"/${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
     else
         print_msg 16 "Does backup --store create backup in ~/Documents/BAK?" false
     fi
@@ -305,8 +326,8 @@ else
     fi
 fi
 
-if backup -s "test_backup_file.txt" >/dev/null 2>&1; then
-    backup_file=$(ls -1 "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* 2>/dev/null | head -1)
+if backup -s "${TEST_PREFIX}_file.txt" >/dev/null 2>&1; then
+    backup_file=$(ls -1 "${HOME}/Documents/BAK"/${TEST_PREFIX}_file.txt.bak.* 2>/dev/null | head -1)
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if print_msg 17 "Does backup -s create backup in ~/Documents/BAK?" true; then
             ((score++))
@@ -317,22 +338,35 @@ if backup -s "test_backup_file.txt" >/dev/null 2>&1; then
     else
         print_msg 17 "Does backup -s create backup in ~/Documents/BAK?" false
     fi
-    rm -f "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* 2>/dev/null || true
+    rm -f "${HOME}/Documents/BAK"/${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 else
     print_msg 17 "Does backup -s create backup in ~/Documents/BAK?" false
 fi
 
 printf "\nTesting directory backup...\n"
 
-mkdir -p "test_backup_dir"
-printf "content1" > "test_backup_dir/file1.txt"
-printf "content2" > "test_backup_dir/file2.txt"
+mkdir -p "${TEST_BACKUP_DIR}"
+printf "content1" > "${TEST_BACKUP_DIR}/file1.txt"
+printf "content2" > "${TEST_BACKUP_DIR}/file2.txt"
 
-if backup --directory >/dev/null 2>&1; then
-    backup_dir=$(ls -1d *.bak.* 2>/dev/null | head -1)
-    if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
-        # backup --directory backs up the current directory, so test_backup_dir should be a subdirectory
-        if [[ -f "$backup_dir/test_backup_dir/file1.txt" ]] && [[ -f "$backup_dir/test_backup_dir/file2.txt" ]]; then
+# Get list of existing backup directories before creating new one
+existing_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+backup_output=$(backup --directory 2>&1)
+backup_exit_code=$?
+if [[ $backup_exit_code -eq 0 ]]; then
+    # Extract backup directory path from output: "Backup created at /path/to/backup"
+    backup_dir=$(echo "$backup_output" | sed -n 's/.*Backup created at \(.*\)/\1/p')
+    # If extraction failed, find the new backup directory by comparing before/after
+    if [[ -z "$backup_dir" ]] || [[ ! -d "$backup_dir" ]]; then
+        current_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+        # Find the difference - the new backup directory
+        backup_dir=$(comm -13 <(echo "$existing_baks" || echo "") <(echo "$current_baks" || echo "") | head -1 | xargs)
+    fi
+    # Extract just the basename if full path was extracted
+    backup_dir_basename=$(basename "$backup_dir" 2>/dev/null || echo "$backup_dir")
+    if [[ -n "$backup_dir_basename" ]] && [[ -d "$backup_dir_basename" ]]; then
+        # backup --directory backs up the current directory, so ${TEST_BACKUP_DIR} should be a subdirectory
+        if [[ -f "$backup_dir_basename/${TEST_BACKUP_DIR}/file1.txt" ]] && [[ -f "$backup_dir_basename/${TEST_BACKUP_DIR}/file2.txt" ]]; then
             if print_msg 18 "Does backup --directory create directory backup?" true; then
                 ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -342,45 +376,64 @@ if backup --directory >/dev/null 2>&1; then
         else
             print_msg 18 "Does backup --directory create directory backup?" false
         fi
+        # Remove the specific backup directory we created
+        rm -rf "$backup_dir_basename" 2>/dev/null || true
     else
         print_msg 18 "Does backup --directory create directory backup?" false
     fi
-    rm -rf *.bak.* 2>/dev/null || true
 else
     print_msg 18 "Does backup --directory create directory backup?" false
 fi
-rm -rf "test_backup_dir" 2>/dev/null || true
+rm -rf "${TEST_BACKUP_DIR}" 2>/dev/null || true
 
-if backup -d >/dev/null 2>&1; then
-    backup_dir=$(ls -1d *.bak.* 2>/dev/null | head -1)
-    if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
+existing_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+backup_output=$(backup -d 2>&1)
+backup_exit_code=$?
+if [[ $backup_exit_code -eq 0 ]]; then
+    # Extract backup directory path from output
+    backup_dir=$(echo "$backup_output" | sed -n 's/.*Backup created at \(.*\)/\1/p')
+    if [[ -z "$backup_dir" ]] || [[ ! -d "$backup_dir" ]]; then
+        current_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+        backup_dir=$(comm -13 <(echo "$existing_baks" || echo "") <(echo "$current_baks" || echo "") | head -1 | xargs)
+    fi
+    backup_dir_basename=$(basename "$backup_dir" 2>/dev/null || echo "$backup_dir")
+    if [[ -n "$backup_dir_basename" ]] && [[ -d "$backup_dir_basename" ]]; then
         if print_msg 19 "Does backup -d create directory backup?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
+        rm -rf "$backup_dir_basename" 2>/dev/null || true
     else
         print_msg 19 "Does backup -d create directory backup?" false
     fi
-    rm -rf *.bak.* 2>/dev/null || true
 else
     print_msg 19 "Does backup -d create directory backup?" false
 fi
 
-if backup --dir >/dev/null 2>&1; then
-    backup_dir=$(ls -1d *.bak.* 2>/dev/null | head -1)
-    if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
+existing_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+backup_output=$(backup --dir 2>&1)
+backup_exit_code=$?
+if [[ $backup_exit_code -eq 0 ]]; then
+    # Extract backup directory path from output
+    backup_dir=$(echo "$backup_output" | sed -n 's/.*Backup created at \(.*\)/\1/p')
+    if [[ -z "$backup_dir" ]] || [[ ! -d "$backup_dir" ]]; then
+        current_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+        backup_dir=$(comm -13 <(echo "$existing_baks" || echo "") <(echo "$current_baks" || echo "") | head -1 | xargs)
+    fi
+    backup_dir_basename=$(basename "$backup_dir" 2>/dev/null || echo "$backup_dir")
+    if [[ -n "$backup_dir_basename" ]] && [[ -d "$backup_dir_basename" ]]; then
         if print_msg 20 "Does backup --dir create directory backup?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
+        rm -rf "$backup_dir_basename" 2>/dev/null || true
     else
         print_msg 20 "Does backup --dir create directory backup?" false
     fi
-    rm -rf *.bak.* 2>/dev/null || true
 else
     print_msg 20 "Does backup --dir create directory backup?" false
 fi
@@ -413,10 +466,10 @@ fi
 
 printf "\nTesting multiple backups...\n"
 
-backup "test_backup_file.txt" >/dev/null 2>&1
+backup "${TEST_PREFIX}_file.txt" >/dev/null 2>&1
 sleep 1
-backup "test_backup_file.txt" >/dev/null 2>&1
-backup_count=$(ls -1 test_backup_file.txt.bak.* 2>/dev/null | wc -l)
+backup "${TEST_PREFIX}_file.txt" >/dev/null 2>&1
+backup_count=$(ls -1 ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null | wc -l)
 if [[ $backup_count -ge 2 ]]; then
     if print_msg 22 "Does backup create multiple backups?" true; then
         ((score++))
@@ -427,7 +480,7 @@ if [[ $backup_count -ge 2 ]]; then
 else
     print_msg 22 "Does backup create multiple backups?" false
 fi
-rm -f test_backup_file.txt.bak.* 2>/dev/null || true
+rm -f ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 
 printf "\nTesting return codes...\n"
 
@@ -446,9 +499,10 @@ fi
 
 printf "\nTesting edge cases...\n"
 
-printf "test with spaces" > "test file with spaces.txt"
-if backup "test file with spaces.txt" >/dev/null 2>&1; then
-    backup_file=$(find . -maxdepth 1 -name "test file with spaces.txt.bak.*" -print0 | xargs -0 | head -1)
+test_file_with_spaces="${TEST_PREFIX}_test file with spaces.txt"
+printf "test with spaces" > "$test_file_with_spaces"
+if backup "$test_file_with_spaces" >/dev/null 2>&1; then
+    backup_file=$(find . -maxdepth 1 -name "${TEST_PREFIX}_test file with spaces.txt.bak.*" -print0 | xargs -0 | head -1)
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if print_msg 24 "Does backup work with filenames containing spaces?" true; then
             ((score++))
@@ -459,15 +513,16 @@ if backup "test file with spaces.txt" >/dev/null 2>&1; then
     else
         print_msg 24 "Does backup work with filenames containing spaces?" false
     fi
-    rm -f "test file with spaces.txt"* 2>/dev/null || true
+    rm -f "${TEST_PREFIX}_test file with spaces.txt"* 2>/dev/null || true
 else
     print_msg 24 "Does backup work with filenames containing spaces?" false
-    rm -f "test file with spaces.txt"* 2>/dev/null || true
+    rm -f "${TEST_PREFIX}_test file with spaces.txt"* 2>/dev/null || true
 fi
 
-printf "" > "empty_file.txt"
-if backup "empty_file.txt" >/dev/null 2>&1; then
-    backup_file=$(ls -1 empty_file.txt.bak.* 2>/dev/null | head -1)
+empty_test_file="${TEST_PREFIX}_empty_file.txt"
+printf "" > "$empty_test_file"
+if backup "$empty_test_file" >/dev/null 2>&1; then
+    backup_file=$(ls -1 ${TEST_PREFIX}_empty_file.txt.bak.* 2>/dev/null | head -1)
     if [[ -n "$backup_file" ]] && [[ -f "$backup_file" ]]; then
         if [[ ! -s "$backup_file" ]]; then
             if print_msg 25 "Does backup work with empty files?" true; then
@@ -482,32 +537,41 @@ if backup "empty_file.txt" >/dev/null 2>&1; then
     else
         print_msg 25 "Does backup work with empty files?" false
     fi
-    rm -f empty_file.txt empty_file.txt.bak.* 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_empty_file.txt ${TEST_PREFIX}_empty_file.txt.bak.* 2>/dev/null || true
 else
     print_msg 25 "Does backup work with empty files?" false
-    rm -f empty_file.txt empty_file.txt.bak.* 2>/dev/null || true
+    rm -f ${TEST_PREFIX}_empty_file.txt ${TEST_PREFIX}_empty_file.txt.bak.* 2>/dev/null || true
 fi
 
-mkdir -p "empty_test"
-cd "empty_test" || exit 91
-if backup --directory >/dev/null 2>&1; then
-    backup_dir=$(ls -1d *.bak.* 2>/dev/null | head -1)
-    if [[ -n "$backup_dir" ]] && [[ -d "$backup_dir" ]]; then
+mkdir -p "${TEST_PREFIX}_empty_test"
+cd "${TEST_PREFIX}_empty_test" || exit 91
+existing_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+backup_output=$(backup --directory 2>&1)
+backup_exit_code=$?
+if [[ $backup_exit_code -eq 0 ]]; then
+    # Extract backup directory path from output
+    backup_dir=$(echo "$backup_output" | sed -n 's/.*Backup created at \(.*\)/\1/p')
+    if [[ -z "$backup_dir" ]] || [[ ! -d "$backup_dir" ]]; then
+        current_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+        backup_dir=$(comm -13 <(echo "$existing_baks" || echo "") <(echo "$current_baks" || echo "") | head -1 | xargs)
+    fi
+    backup_dir_basename=$(basename "$backup_dir" 2>/dev/null || echo "$backup_dir")
+    if [[ -n "$backup_dir_basename" ]] && [[ -d "$backup_dir_basename" ]]; then
         if print_msg 26 "Does backup work with empty directories?" true; then
             ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
         fi
+        rm -rf "$backup_dir_basename" 2>/dev/null || true
     else
         print_msg 26 "Does backup work with empty directories?" false
     fi
-    rm -rf *.bak.* 2>/dev/null || true
 else
     print_msg 26 "Does backup work with empty directories?" false
 fi
 cd "${__UNIT_TESTS_DIR}" || exit 91
-rm -rf "empty_test" 2>/dev/null || true
+rm -rf "${TEST_PREFIX}_empty_test" 2>/dev/null || true
 
 printf "\nTesting bash completion (if available)...\n"
 
@@ -530,7 +594,7 @@ fi
 
 printf "\nTesting output messages...\n"
 
-output=$(backup "test_backup_file.txt" 2>&1)
+output=$(backup "${TEST_PREFIX}_file.txt" 2>&1)
 if echo "$output" | grep -q "Backup created"; then
     if print_msg 28 "Does backup output success message?" true; then
         ((score++))
@@ -541,7 +605,7 @@ if echo "$output" | grep -q "Backup created"; then
 else
     print_msg 28 "Does backup output success message?" false
 fi
-rm -f test_backup_file.txt.bak.* 2>/dev/null || true
+rm -f ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 
 error_output=$(backup "nonexistent.txt" 2>&1)
 if echo "$error_output" | grep -q "Error:"; then
@@ -555,7 +619,7 @@ else
     print_msg 29 "Does backup output error message?" false
 fi
 
-if backup --store "test_backup_file.txt" 2>&1 | grep -q "Backup created at.*Documents/BAK"; then
+if backup --store "${TEST_PREFIX}_file.txt" 2>&1 | grep -q "Backup created at.*Documents/BAK"; then
     if print_msg 30 "Does backup output store location in message?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
@@ -565,19 +629,29 @@ if backup --store "test_backup_file.txt" 2>&1 | grep -q "Backup created at.*Docu
 else
     print_msg 30 "Does backup output store location in message?" false
 fi
-rm -f "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* 2>/dev/null || true
+rm -f "${HOME}/Documents/BAK"/${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
 
-if backup --directory 2>&1 | grep -q "Backup created"; then
+existing_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+backup_output=$(backup --directory 2>&1)
+backup_exit_code=$?
+if echo "$backup_output" | grep -q "Backup created"; then
     if print_msg 31 "Does backup output directory backup message?" true; then
         ((score++))
         if type update_progress_from_score >/dev/null 2>&1; then
             update_progress_from_score
         fi
     fi
+    # Extract and remove the specific backup directory we created
+    backup_dir=$(echo "$backup_output" | sed -n 's/.*Backup created at \(.*\)/\1/p')
+    if [[ -z "$backup_dir" ]] || [[ ! -d "$backup_dir" ]]; then
+        current_baks=$(ls -1d *.bak.* 2>/dev/null | sort || true)
+        backup_dir=$(comm -13 <(echo "$existing_baks" || echo "") <(echo "$current_baks" || echo "") | head -1 | xargs)
+    fi
+    backup_dir_basename=$(basename "$backup_dir" 2>/dev/null || echo "$backup_dir")
+    [[ -n "$backup_dir_basename" ]] && [[ -d "$backup_dir_basename" ]] && rm -rf "$backup_dir_basename" 2>/dev/null || true
 else
     print_msg 31 "Does backup output directory backup message?" false
 fi
-rm -rf *.bak.* 2>/dev/null || true
 
 percentage=$((score * 100 / total_tests))
 
@@ -600,10 +674,51 @@ printf "========================================\n"
 
 printf "\nCleaning up test files...\n"
 cd "${__UNIT_TESTS_DIR}" || exit 91
-rm -f test_backup_file.txt test_backup_file.txt.bak.* 2>/dev/null || true
-rm -f "test file with spaces.txt"* empty_file.txt empty_file.txt.bak.* 2>/dev/null || true
-rm -rf *.bak.* empty_test 2>/dev/null || true
-rm -rf "${HOME}/Documents/BAK"/test_backup_file.txt.bak.* "${HOME}/Documents/BAK"/*.bak.* 2>/dev/null || true
+
+# Clean up test-specific files
+rm -f ${TEST_PREFIX}_file.txt ${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
+rm -f "${TEST_PREFIX}_test file with spaces.txt"* "${TEST_PREFIX}_empty_file.txt" "${TEST_PREFIX}_empty_file.txt.bak.*" 2>/dev/null || true
+rm -rf "${TEST_PREFIX}_empty_test" 2>/dev/null || true
+rm -rf "${TEST_BACKUP_DIR}" 2>/dev/null || true
+
+# Clean up file backups in ~/Documents/BAK
+rm -rf "${HOME}/Documents/BAK"/${TEST_PREFIX}_file.txt.bak.* 2>/dev/null || true
+
+# Clean up directory backups in ~/Documents/BAK (only those created during this test run)
+# We track backup directories by checking their modification time (within last 5 minutes to be safe)
+if [[ -d "${HOME}/Documents/BAK" ]]; then
+    original_dir=$(basename "${__UNIT_TESTS_DIR}")
+    current_time=$(date +%s)
+    # Remove directory backups that were created during this test run (within last 5 minutes)
+    for bak_dir in "${HOME}/Documents/BAK"/${original_dir}.bak.*; do
+        if [[ -d "$bak_dir" ]]; then
+            file_time=$(stat -c %Y "$bak_dir" 2>/dev/null || echo 0)
+            time_diff=$((current_time - file_time))
+            # Remove if created within last 5 minutes (300 seconds) - should cover entire test duration
+            if [[ $time_diff -le 300 ]]; then
+                rm -rf "$bak_dir" 2>/dev/null || true
+            fi
+        fi
+    done 2>/dev/null || true
+fi
+
+# Clean up directory backups in current directory (unit-tests.bak.*)
+# Only remove those created during this test run (within last 5 minutes)
+original_dir=$(basename "${__UNIT_TESTS_DIR}")
+current_time=$(date +%s)
+shopt -s nullglob
+for bak_dir in "${original_dir}".bak.*; do
+    if [[ -d "$bak_dir" ]]; then
+        file_time=$(stat -c %Y "$bak_dir" 2>/dev/null || echo 0)
+        time_diff=$((current_time - file_time))
+        # Remove if created within last 5 minutes (300 seconds) - should cover entire test duration
+        if [[ $time_diff -le 300 ]]; then
+            rm -rf "$bak_dir" 2>/dev/null || true
+        fi
+    fi
+done
+shopt -u nullglob
+
 printf "Cleanup complete.\n"
 
 exit 0

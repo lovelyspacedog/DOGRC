@@ -110,15 +110,18 @@ if type update_progress_from_score >/dev/null 2>&1; then
     update_progress_from_score
 fi
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_dots_$$"
+
 # Save original directory and .config path
 original_dir=$(pwd)
 original_config="$HOME/.config"
-test_config="${__UNIT_TESTS_DIR}/.config_test"
-test_config_backup=""
+test_config="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_config"
+test_dots_config_backup=""
 
 # Backup original .config if it exists
 if [[ -d "$original_config" ]]; then
-    test_config_backup="${original_config}.dots_test_backup.$(date +%s)"
+    test_dots_config_backup="${original_config}.dots_test_backup.$(date +%s)"
     # We'll create a symlink or use the test config, but preserve original
     # For safety, we'll work in a test directory instead
 fi
@@ -129,16 +132,27 @@ cleanup_dots_test() {
     cd "$original_dir" || cd "${__UNIT_TESTS_DIR}" || true
     
     # Restore original .config if we backed it up
-    if [[ -n "$test_config_backup" ]] && [[ -d "$test_config_backup" ]]; then
+    if [[ -n "$test_dots_config_backup" ]] && [[ -d "$test_dots_config_backup" ]]; then
         # We didn't actually move it, so no restore needed
-        rm -rf "$test_config_backup" 2>/dev/null || true
+        rm -rf "$test_dots_config_backup" 2>/dev/null || true
     fi
     
     # Clean up test .config directory
     rm -rf "$test_config" 2>/dev/null || true
     
-    # Clean up any test directories we created
-    rm -rf "${__UNIT_TESTS_DIR}/test_dots_"* 2>/dev/null || true
+    # Clean up any test directories we created (only match our specific prefix)
+    # IMPORTANT: Only match files/dirs starting with our TEST_PREFIX to avoid deleting _TEST-ALL.sh etc.
+    if [[ -n "$TEST_PREFIX" ]] && [[ "$TEST_PREFIX" == "test_dots_"* ]]; then
+        # Use a loop with explicit checks to avoid matching files starting with just "_"
+        for item in "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_"* "${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots"*; do
+            [[ ! -e "$item" ]] && continue  # Skip if file doesn't exist (glob didn't match)
+            # Double-check the basename starts with our prefix to avoid false matches
+            local basename_item=$(basename "$item" 2>/dev/null || echo "")
+            if [[ "$basename_item" == "${TEST_PREFIX}"* ]] && [[ "$basename_item" != "_"* ]]; then
+                rm -rf "$item" 2>/dev/null || true
+            fi
+        done 2>/dev/null || true
+    fi
     
     exit $exit_code
 }
@@ -258,7 +272,7 @@ printf "\nTesting 'dots ls' command...\n"
 test_dots_ls() {
     local old_home_config="$HOME/.config"
     # Temporarily override HOME for this test
-    local test_home="${__UNIT_TESTS_DIR}/test_home_dots"
+    local test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots"
     mkdir -p "$test_home/.config" || return 1
     cp -r "$test_config"/* "$test_home/.config/" 2>/dev/null || true
     
@@ -288,7 +302,7 @@ else
 fi
 
 # Test 12: dots ls output is sorted
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_sorted"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_sorted"
 mkdir -p "$test_home/.config" || exit 91
 cp -r "$test_config"/* "$test_home/.config/" 2>/dev/null || true
 
@@ -311,7 +325,7 @@ else
 fi
 
 # Test 13: dots ls with specific directory
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_lsdir"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_lsdir"
 mkdir -p "$test_home/.config/hypr" || exit 91
 touch "$test_home/.config/hypr/test.conf" || true
 
@@ -334,7 +348,7 @@ else
 fi
 
 # Test 14: dots ls .config special case
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_config"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_config"
 mkdir -p "$test_home/.config/hypr" || exit 91
 touch "$test_home/.config/test_file" || true
 
@@ -357,7 +371,7 @@ else
 fi
 
 # Test 15: dots ls with invalid directory
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_invalid"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_invalid"
 mkdir -p "$test_home/.config" || exit 91
 
 old_home="$HOME"
@@ -381,7 +395,7 @@ fi
 printf "\nTesting directory navigation...\n"
 
 # Test 16: dots <valid_dir> changes directory
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_nav"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_nav"
 mkdir -p "$test_home/.config/hypr" || exit 91
 touch "$test_home/.config/hypr/test.conf" || true
 
@@ -413,7 +427,7 @@ else
 fi
 
 # Test 17: dots .config navigates to ~/.config
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_nav_config"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_nav_config"
 mkdir -p "$test_home/.config" || exit 91
 
 old_home="$HOME"
@@ -444,7 +458,7 @@ else
 fi
 
 # Test 18: dots <invalid_dir> returns error code 3
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_nav_invalid"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_nav_invalid"
 mkdir -p "$test_home/.config" || exit 91
 
 old_home="$HOME"
@@ -476,7 +490,7 @@ fi
 printf "\nTesting output formatting...\n"
 
 # Test 19: Output contains emoji
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_emoji"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_emoji"
 mkdir -p "$test_home/.config/hypr" || exit 91
 
 old_home="$HOME"
@@ -497,7 +511,7 @@ else
 fi
 
 # Test 20: Output shows full path
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_path"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_path"
 mkdir -p "$test_home/.config/hypr" || exit 91
 
 old_home="$HOME"
@@ -518,7 +532,7 @@ else
 fi
 
 # Test 21: Uses eza if available, falls back to ls
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_eza"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_eza"
 mkdir -p "$test_home/.config/hypr" || exit 91
 touch "$test_home/.config/hypr/test.conf" || true
 
@@ -543,7 +557,7 @@ fi
 printf "\nTesting edge cases...\n"
 
 # Test 22: Empty .config directory
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_empty"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_empty"
 mkdir -p "$test_home/.config" || exit 91
 
 old_home="$HOME"
@@ -566,7 +580,7 @@ else
 fi
 
 # Test 23: .config doesn't exist
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_no_config"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_no_config"
 rm -rf "$test_home/.config" 2>/dev/null || true
 
 old_home="$HOME"
@@ -589,7 +603,7 @@ else
 fi
 
 # Test 24: Directory name with spaces
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_spaces"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_spaces"
 mkdir -p "$test_home/.config/my config" || exit 91
 
 old_home="$HOME"
@@ -620,7 +634,7 @@ else
 fi
 
 # Test 25: Return code on success
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_return"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_return"
 mkdir -p "$test_home/.config/hypr" || exit 91
 
 old_home="$HOME"
@@ -642,7 +656,7 @@ else
 fi
 
 # Test 26: Error message format for invalid directory
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_errmsg"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_errmsg"
 mkdir -p "$test_home/.config" || exit 91
 
 old_home="$HOME"
@@ -663,7 +677,7 @@ else
 fi
 
 # Test 27: First letter coloring in dots ls
-test_home="${__UNIT_TESTS_DIR}/test_home_dots_color"
+test_home="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_home_dots_color"
 mkdir -p "$test_home/.config"/{apple,banana,cherry} || exit 91
 
 old_home="$HOME"

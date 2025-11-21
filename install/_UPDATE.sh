@@ -34,52 +34,49 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
 # Update changelog (current release changes only)
 __UPDATE_CHANGELOG="$(cat <<'EOF'
-Changes in this update (version 0.1.5):
+Changes in this update (version 0.1.6):
+Type 'changelog' to view the complete changelog.
 
 ### New Features
-- **Unit Test Runner**: Added comprehensive test runner with tmux interface
-  - Real-time progress tracking with split pane display (overview + live test output)
-  - Elapsed time tracking for suite and individual tests
-  - Auto-close after 5 seconds when tests complete
-  - 'q' key binding to quit early
-  - Helper functions for real-time test progress updates
+- **dupefind Plugin**: Added new file-operations plugin for finding duplicate files
+  - Finds duplicate files by content hash (MD5/SHA256)
+  - Recursive directory scanning with detailed duplicate grouping
+  - Comprehensive unit test suite (45 tests)
 
-- **Unit Test Infrastructure**: Added comprehensive unit test suite
-  - Added `_TEST-ALL.sh`: Main test runner script
-  - Added `_test-results-helper.sh`: Helper functions for test results
-  - Added unit tests for all 25 plugins with real-time progress tracking
-  - Enhanced test-weather.sh with N/A test handling (excludes N/A from percentage)
+- **Parallel Test Execution**: Added `--parallel` flag for simultaneous test execution
+  - Significantly faster test suite execution
+  - Resource monitor (htop/top) in right tmux pane during parallel runs
+  - All test files updated for parallel execution safety
 
-- **prepfile Utility**: Deprecated prepsh, added prepfile with multi-language support
-  - Supports multiple programming languages (bash, python, rust, go, javascript, typescript, C, C++, java, ruby, perl, php, lua, zsh, fish)
-  - Automatic file extension handling
-  - Makes script files executable automatically
+- **Test Runner Enhancements**: Added `--stage` flag for targeted testing
+  - Test specific test and its adjacent tests for faster debugging
 
-- **runtests Plugin**: Added new utility plugin to run unit test suite
-  - Full drchelp documentation integration
-  - Help flags delegate to drchelp
+- **pokefetch Enhancement**: Added `--relocate` flag for custom output location
+  - Enables test isolation and custom file paths
+
+- **timer Enhancement**: Added `--use-dir` flag for custom timer directory
+  - Enables test isolation and custom timer file locations
 
 ### Enhancements
-- **motd.sh**: Added pager support for long messages (>20 lines)
-  - Shows preview for long messages
-  - Opens full content in read-only pager
-  - Updated drchelp documentation
+- **Version Comparison**: Enhanced to handle 4+ part version strings (e.g., `0.1.5.12`)
+  - Updated both `drcupdate.sh` and `_UPDATE.sh` with improved comparison logic
+  - Comprehensive unit tests for 4-part version comparison
 
-- **compress()**: Fixed exit code capture for gz and bz2 formats
+- **Test Suite Improvements**: Enhanced for parallel execution safety
+  - All test files use unique process ID prefixes to prevent conflicts
+  - Fixed race conditions in `test-backup.sh` and other test files
+  - Improved cleanup logic for all temporary files and directories
 
-- **Installation**: Added optional unit-tests installation prompt in _INSTALL.sh
+- **Update Script Enhancements**: Improved migration logic
+  - Added preservation of `disabled.json` user customizations
+  - Added preservation of user-created test files
+  - Enhanced migration summary messages
 
-- **Documentation**: 
-  - Regenerated README.md based on current project state
-  - Added comprehensive comparison report between DOGRC and BASHRC
-  - Enhanced drchelp documentation for all utilities
-
-### Testing
-- Added comprehensive unit tests for all 25 plugins with real-time progress tracking
-
-### Infrastructure
-- Moved unit-tests from testing/unit-tests to root level
-- Added runtests.sh to plugin check in _INSTALL.sh
+### Bug Fixes
+- Fixed test score tabulation with proper integer conversion
+- Fixed parallel execution conflicts and race conditions
+- Fixed test cleanup issues in multiple test files
+- Fixed `--fail-fast` logic in `_test-all-fb.sh`
 EOF
 )"
 
@@ -109,6 +106,12 @@ compare_versions() {
     IFS='.' read -ra v1_parts <<< "$v1"
     IFS='.' read -ra v2_parts <<< "$v2"
     
+    # Find the maximum number of parts
+    local max_parts=${#v1_parts[@]}
+    if [[ ${#v2_parts[@]} -gt $max_parts ]]; then
+        max_parts=${#v2_parts[@]}
+    fi
+    
     # Ensure both arrays have at least 3 elements (pad with 0 if needed)
     while [[ ${#v1_parts[@]} -lt 3 ]]; do
         v1_parts+=("0")
@@ -117,11 +120,12 @@ compare_versions() {
         v2_parts+=("0")
     done
     
-    # Compare major, minor, patch
-    for i in 0 1 2; do
+    # Compare all parts up to max_parts
+    for ((i=0; i<max_parts; i++)); do
         local num1="${v1_parts[$i]//[!0-9]/0}"  # Remove non-numeric, default to 0
         local num2="${v2_parts[$i]//[!0-9]/0}"
         
+        # If part doesn't exist, treat as 0
         num1=$((10#${num1:-0}))  # Force base-10 interpretation
         num2=$((10#${num2:-0}))
         
@@ -760,13 +764,56 @@ main() {
     if [[ "$include_unit_tests" == "y" ]]; then
         local source_unit_tests="${INSTALL_DIR}/unit-tests"
         local dest_unit_tests="${INSTALLED_DOGRC}/unit-tests"
+        local backup_unit_tests="${__BACKUP_DOGRC}/unit-tests"
         
         if [[ -d "$source_unit_tests" ]]; then
             echo -e "${BLUE}Copying unit-tests directory...${NC}"
+            
+            # First, copy new unit-tests from install directory
             if cp -r "$source_unit_tests" "$dest_unit_tests" 2>/dev/null; then
                 # Set executable permissions on test scripts
                 find "$dest_unit_tests" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
                 echo -e "  ${GREEN}✓${NC} Copied unit-tests directory"
+                
+                # Preserve any user-created test files from backup
+                # User test files are those that don't match the standard naming patterns:
+                # - test-*.sh (standard plugin tests)
+                # - _TEST-ALL.sh, _test-all-fb.sh, _test-results-helper.sh (test infrastructure)
+                if [[ -d "$backup_unit_tests" ]]; then
+                    local user_test_count=0
+                    for user_test in "$backup_unit_tests"/*; do
+                        [[ -f "$user_test" ]] || continue
+                        local test_basename=$(basename "$user_test")
+                        
+                        # Check if this is a non-standard test file (user-created)
+                        # Standard patterns: test-*.sh, _TEST-*.sh, _test-*.sh
+                        if [[ ! "$test_basename" =~ ^test-.*\.sh$ ]] && \
+                           [[ ! "$test_basename" =~ ^_TEST-.*\.sh$ ]] && \
+                           [[ ! "$test_basename" =~ ^_test-.*\.sh$ ]]; then
+                            # This is likely a user-created test file
+                            if cp "$user_test" "$dest_unit_tests/" 2>/dev/null; then
+                                chmod +x "$dest_unit_tests/$test_basename" 2>/dev/null || true
+                                ((user_test_count++))
+                            fi
+                        fi
+                    done
+                    
+                    # Also preserve any subdirectories that might contain user tests
+                    if [[ -d "$backup_unit_tests/user-tests" ]] || [[ -d "$backup_unit_tests/custom" ]]; then
+                        for user_dir in "$backup_unit_tests/user-tests" "$backup_unit_tests/custom"; do
+                            [[ -d "$user_dir" ]] || continue
+                            local dir_basename=$(basename "$user_dir")
+                            if cp -r "$user_dir" "$dest_unit_tests/" 2>/dev/null; then
+                                find "$dest_unit_tests/$dir_basename" -type f -name "*.sh" -exec chmod +x {} \; 2>/dev/null || true
+                                ((user_test_count++))
+                            fi
+                        done
+                    fi
+                    
+                    if [[ $user_test_count -gt 0 ]]; then
+                        echo -e "  ${GREEN}✓${NC} Preserved $user_test_count user-created test file(s)/directories"
+                    fi
+                fi
             else
                 echo -e "  ${YELLOW}⚠${NC} Failed to copy unit-tests directory" >&2
             fi
@@ -803,6 +850,43 @@ main() {
             echo -e "  ${GREEN}✓${NC} Restored config/navto.json"
         else
             echo -e "  ${YELLOW}⚠${NC} Failed to restore config/navto.json" >&2
+        fi
+    fi
+    
+    # Restore disabled.json if it exists in backup (user may have customized it)
+    if [[ -f "${__BACKUP_DOGRC}/config/disabled.json" ]]; then
+        # Only restore if the backup disabled.json has been customized (not just template values)
+        local backup_is_customized=false
+        if command -v jq >/dev/null 2>&1; then
+            # Check if any array has items beyond the template examples
+            local do_not_source=$(jq -r '.do_not_source_these_plugins | length' "${__BACKUP_DOGRC}/config/disabled.json" 2>/dev/null || echo "0")
+            local do_not_enable=$(jq -r '.do_not_enable_these_functions | length' "${__BACKUP_DOGRC}/config/disabled.json" 2>/dev/null || echo "0")
+            local do_not_alias=$(jq -r '.do_not_source_these_aliases | length' "${__BACKUP_DOGRC}/config/disabled.json" 2>/dev/null || echo "0")
+            
+            # If backup has any non-template entries, consider it customized
+            # Template has: 1 plugin (example.sh), 2 functions, 1 alias
+            if [[ $do_not_source -gt 1 ]] || [[ $do_not_enable -gt 2 ]] || [[ $do_not_alias -gt 1 ]]; then
+                backup_is_customized=true
+            fi
+            # Also check if content differs from template (user removed examples or added different items)
+            if ! jq -e '.do_not_source_these_plugins == ["plugins/example.sh"]' "${__BACKUP_DOGRC}/config/disabled.json" >/dev/null 2>&1 || \
+               ! jq -e '.do_not_enable_these_functions == ["example_function", "another_example_function"]' "${__BACKUP_DOGRC}/config/disabled.json" >/dev/null 2>&1 || \
+               ! jq -e '.do_not_source_these_aliases == ["example_alias"]' "${__BACKUP_DOGRC}/config/disabled.json" >/dev/null 2>&1; then
+                backup_is_customized=true
+            fi
+        else
+            # Without jq, assume it's customized if file exists (safe to restore)
+            backup_is_customized=true
+        fi
+        
+        if [[ "$backup_is_customized" == true ]]; then
+            if cp "${__BACKUP_DOGRC}/config/disabled.json" "${INSTALLED_DOGRC}/config/disabled.json" 2>/dev/null; then
+                echo -e "  ${GREEN}✓${NC} Restored config/disabled.json (user customizations preserved)"
+            else
+                echo -e "  ${YELLOW}⚠${NC} Failed to restore config/disabled.json" >&2
+            fi
+        else
+            echo -e "  ${GREEN}✓${NC} config/disabled.json using default template (no customizations to preserve)"
         fi
     fi
     
@@ -879,6 +963,8 @@ Customization:
   • Your preamble snippets have been restored
   • Your user plugins have been copied over
   • Your enable_ settings have been preserved
+  • Your disabled.json configuration has been preserved
+  • Your navto.json bookmarks have been preserved
 
 Backup:
   • Old installation backed up to: $__BACKUP_DOGRC

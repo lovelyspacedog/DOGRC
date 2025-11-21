@@ -27,7 +27,47 @@ timer() {
         return $?
     }
 
-    local safe_name="${1:-Timer}"
+    # Default timer directory
+    local timer_dir="/tmp"
+    
+    # Parse --use-dir, --USE-DIR, -ud, -UD flags
+    local args=()
+    local i=0
+    while [[ $i -lt $# ]]; do
+        ((i++))
+        local arg="${!i}"
+        
+        # Check for use-dir flag (case-insensitive for long form, case-sensitive for short)
+        if [[ "${arg}" == "--use-dir" ]] || [[ "${arg}" == "--USE-DIR" ]] || \
+           [[ "${arg}" == "-ud" ]] || [[ "${arg}" == "-UD" ]]; then
+            # Get the next argument as the directory path
+            ((i++))
+            if [[ $i -le $# ]]; then
+                timer_dir="${!i}"
+                # Validate that it's not another flag
+                if [[ "$timer_dir" == --* ]] || [[ "$timer_dir" == -* ]]; then
+                    echo "Error: --use-dir requires a directory path argument" >&2
+                    return 1
+                fi
+                # Validate directory exists or can be created
+                if [[ ! -d "$timer_dir" ]]; then
+                    if ! mkdir -p "$timer_dir" 2>/dev/null; then
+                        echo "Error: Cannot create or access directory: $timer_dir" >&2
+                        return 1
+                    fi
+                fi
+            else
+                echo "Error: --use-dir requires a directory path argument" >&2
+                return 1
+            fi
+        else
+            # Not a use-dir flag, keep it in args
+            args+=("$arg")
+        fi
+    done
+    
+    # Use the first remaining argument as the timer name/command
+    local safe_name="${args[0]:-Timer}"
 
     local -r -i MINUTES_IN_SEC=60
     local -r -i HOURS_IN_SEC=$((60*60))
@@ -38,7 +78,7 @@ timer() {
     safe_name="${safe_name:-Timer}"
     # Default to 'Timer' if no name provided
 
-    if [[ "${1^^}" == "CLEAR" ]]; then
+    if [[ "${safe_name^^}" == "CLEAR" ]]; then
         # Check if stdin is a terminal for interactive prompt
         if [[ -t 0 ]]; then
             read -t 10 -n 1 -r -p "Are you sure you want to clear all timers? (y/N): " clear ||
@@ -49,7 +89,7 @@ timer() {
             read -t 10 -n 1 -r clear < /dev/stdin 2>/dev/null || clear="N"
         fi
         [[ "${clear^^}" == "Y" ]] && {
-            if rm -f /tmp/timer-*.txt; then
+            if rm -f ${timer_dir}/timer-*.txt; then
                 printf "All timers cleared!\n"
                 return 0
             else
@@ -61,13 +101,13 @@ timer() {
         return 0
     fi
 
-    if [[ "${1^^}" == "LIST" ]]; then
+    if [[ "${safe_name^^}" == "LIST" ]]; then
         printf "Listing all timers:\n"
 
         shopt -s nullglob
         local timer_files=()
         local file
-        for file in /tmp/timer-*.txt; do
+        for file in ${timer_dir}/timer-*.txt; do
             [[ -f "$file" ]] || continue
             timer_files+=("$file")
         done
@@ -82,7 +122,7 @@ timer() {
         now="$(date +%s)"
 
         for file in "${timer_files[@]}"; do
-            name="${file#/tmp/timer-}"
+            name="${file#${timer_dir}/timer-}"
             name="${name%.txt}"
 
             if ! starttime="$(<"$file")"; then
@@ -100,7 +140,7 @@ timer() {
         return 0
     fi
 
-    local flagfile="/tmp/timer-$safe_name.txt"
+    local flagfile="${timer_dir}/timer-$safe_name.txt"
 
     local -i starttime=0
     local -i endtime=0
@@ -186,11 +226,14 @@ _timer_completion() {
         command_completions+=("LIST")
     fi
     
-    # Extract timer names from /tmp/timer-*.txt files
+    # Extract timer names from timer directory
+    # Note: We can't access timer_dir from completion, so we default to /tmp
+    # This is a limitation of bash completion - it doesn't have access to function arguments
+    local completion_timer_dir="/tmp"
     shopt -s nullglob
     local timer_files=()
     local file
-    for file in /tmp/timer-*.txt; do
+    for file in "${completion_timer_dir}/timer-*.txt"; do
         [[ -f "$file" ]] || continue
         timer_files+=("$file")
     done
@@ -199,7 +242,7 @@ _timer_completion() {
     # Extract timer names from filenames
     local name
     for file in "${timer_files[@]}"; do
-        name="${file#/tmp/timer-}"
+        name="${file#${completion_timer_dir}/timer-}"
         name="${name%.txt}"
         # Only add if it matches the current prefix (case-insensitive)
         if [[ -z "$cur" ]] || [[ "${name,,}" == "${cur,,}"* ]]; then

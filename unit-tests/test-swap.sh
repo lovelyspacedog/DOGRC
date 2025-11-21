@@ -117,6 +117,11 @@ cd "${__UNIT_TESTS_DIR}" || {
     exit 91
 }
 
+# Unique prefix for this test run (process ID + test name)
+readonly TEST_PREFIX="test_swap_$$"
+readonly TEST_DIR="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir"
+readonly TEST_DIR2="${__UNIT_TESTS_DIR}/${TEST_PREFIX}_dir2"
+
 # Source drchelp if available for help flag tests
 if [[ -f "${__PLUGINS_DIR}/drchelp.sh" ]]; then
     source "${__PLUGINS_DIR}/drchelp.sh" 2>/dev/null || true
@@ -248,7 +253,7 @@ else
 fi
 
 # Test 14: swap with directory instead of file
-if mkdir -p "${__UNIT_TESTS_DIR}/test_dir"; then
+if mkdir -p "${TEST_DIR}"; then
     if ! swap "test_dir" "file2.txt" 2>/dev/null; then
         if print_msg 14 "Does swap error when first argument is a directory?" true; then
             ((score++))
@@ -259,13 +264,13 @@ if mkdir -p "${__UNIT_TESTS_DIR}/test_dir"; then
     else
         print_msg 14 "Does swap error when first argument is a directory?" false
     fi
-    rm -rf "${__UNIT_TESTS_DIR}/test_dir"
+    rm -rf "${TEST_DIR}"
 else
     print_msg 14 "Does swap error when first argument is a directory?" false
 fi
 
 # Test 15: swap with directory as second argument
-if mkdir -p "${__UNIT_TESTS_DIR}/test_dir2"; then
+if mkdir -p "${TEST_DIR2}"; then
     if ! swap "file1.txt" "test_dir2" 2>/dev/null; then
         if print_msg 15 "Does swap error when second argument is a directory?" true; then
             ((score++))
@@ -276,7 +281,7 @@ if mkdir -p "${__UNIT_TESTS_DIR}/test_dir2"; then
     else
         print_msg 15 "Does swap error when second argument is a directory?" false
     fi
-    rm -rf "${__UNIT_TESTS_DIR}/test_dir2"
+    rm -rf "${TEST_DIR2}"
 else
     print_msg 15 "Does swap error when second argument is a directory?" false
 fi

@@ -149,7 +149,7 @@ cd "${__UNIT_TESTS_DIR}" || {
 }
 
 # Create test directory structure
-TEST_SLASHBACK_DIR=$(mktemp -d "${__UNIT_TESTS_DIR}/test_slashback.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/test_slashback.$$")
+TEST_SLASHBACK_DIR=$(mktemp -d "${__UNIT_TESTS_DIR}/test_slashback_$$.XXXXXX" 2>/dev/null || echo "${__UNIT_TESTS_DIR}/test_slashback_$$")
 mkdir -p "${TEST_SLASHBACK_DIR}/level1/level2/level3/level4/level5/level6/level7" || {
     printf "Error: Failed to create test directories.\n" >&2
     exit 92
@@ -168,7 +168,7 @@ cleanup_slashback_test() {
     fi
     
     # Remove any leftover test directories
-    rm -rf "${__UNIT_TESTS_DIR}"/test_slashback.* 2>/dev/null || true
+    rm -rf "${__UNIT_TESTS_DIR}"/test_slashback_$$.* 2>/dev/null || true
     
     exit $exit_code
 }
