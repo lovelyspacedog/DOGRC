@@ -2237,7 +2237,8 @@ runtests - Run DOGRC Unit Test Suite
 
 Launch the DOGRC unit test suite in a tmux session with real-time progress tracking.
 
-Usage: runtests [--ci] [--quiet|-q] [--fail-fast|-f] [--parallel|-p] [--stage|-s <test-name>]
+Usage: runtests [--ci] [--quiet|-q] [--fail-fast|-f] [--parallel|-p]
+                [--stage|-s <test-name>] [--egg|-EGG]
        runtests --help|-h
 
 Description:
@@ -2248,6 +2249,7 @@ Description:
   - Tracks elapsed time for individual tests and overall suite
   - Automatically closes after tests complete (with 5 second delay)
   - Provides comprehensive test results summary
+  - Flags can be combined (e.g., --parallel --stage backup)
 
 Modes:
   Interactive Mode (default):
@@ -2256,18 +2258,29 @@ Modes:
     - Press 'q' to quit at any time
     - Supports --parallel for simultaneous test execution
     - Supports --stage for targeted testing (run specific test and neighbors)
+    - Can combine --parallel and --stage for faster targeted testing
   
   Parallel Mode (--parallel):
     - Runs all tests simultaneously for faster execution
     - Resource monitor (htop/top) displays in right tmux pane
     - All test output redirected to /dev/null (cleaner display)
     - Significantly faster test suite execution
+    - Can be combined with --stage to run selected tests in parallel
   
   Stage Mode (--stage):
     - Runs specific test and its adjacent tests (before and after)
     - Useful for debugging specific test failures
     - Faster than running entire test suite
+    - Test name can be provided as full name (test-*.sh) or base name (without test- prefix)
     - Example: --stage dupefind runs test-dupefind.sh, test before it, and test after it
+    - Can be combined with --parallel for faster execution of selected tests
+  
+  EGG Mode (--egg, -EGG):
+    - Easter egg mode: displays animated bonsai tree (cbonsai) in right pane
+    - Requires cbonsai to be installed (shows message if unavailable)
+    - Provides visual entertainment while tests run
+    - Bonsai tree remains until user quits
+    - Can be combined with other flags for fun testing experience
   
   CI Mode (--ci):
     - Non-interactive mode suitable for CI/CD
@@ -2276,6 +2289,7 @@ Modes:
     - Supports --stage for targeted testing
     - Returns proper exit codes (0=pass, 1=fail, 2=no tests)
     - Minimal output option available
+    - Flags can be combined (e.g., --ci --quiet --fail-fast --stage backup)
 
 Display:
   Left Pane (Overview):
@@ -2286,9 +2300,10 @@ Display:
     - Color-coded status indicators
 
   Right Pane (Test Output):
-    - Live output from the currently running test (interactive mode)
+    - Live output from the currently running test (interactive mode, sequential)
     - Resource monitor (htop/top) during parallel execution
-    - Final summary after all tests complete (non-parallel mode)
+    - Animated bonsai tree (cbonsai) in EGG mode (--egg)
+    - Final summary after all tests complete (non-parallel, non-EGG mode)
     - Shows total score, percentage, and elapsed time
 
 Options:
@@ -2296,10 +2311,22 @@ Options:
   --quiet, -q       Minimal output (CI mode only, shows only summary)
   --fail-fast, -f   Stop on first test failure (CI mode only)
   --parallel, -p    Run tests in parallel mode (simultaneous execution)
+                    Can be combined with --stage for parallel targeted testing
   --stage, -s       Run specific test and its adjacent tests
                     Requires test name argument (e.g., --stage dupefind)
                     Runs the target test plus the test before and after it
+                    Can be combined with --parallel for faster execution
+  --egg, -EGG       Easter egg mode: display animated bonsai tree (cbonsai) in right pane
+                    Requires cbonsai to be installed
+                    Can be combined with other flags for visual entertainment
   --help, -h        Show this help message
+
+Flag Combinations:
+  - --parallel --stage <test>  Run selected tests (target + neighbors) in parallel
+  - --ci --quiet --fail-fast   CI mode with minimal output, stop on first failure
+  - --ci --stage <test>        CI mode running only selected tests
+  - --ci --quiet --stage <test> CI mode with minimal output for selected tests
+  - --egg, -EGG                Display bonsai tree in right pane (easter egg mode)
 
 Controls (Interactive Mode):
   - Press 'q' to quit the test session at any time
@@ -2322,6 +2349,14 @@ Behavior:
     - Significantly faster test execution for large test suites
     - Protected resource monitor from interruption using exec and trap
     - Resource monitor remains until user quits
+    - When combined with --stage, runs only selected tests in parallel
+  
+  EGG Mode (--egg, -EGG):
+    - Displays animated bonsai tree (cbonsai) in right pane
+    - Requires cbonsai to be installed (shows message if unavailable)
+    - Provides visual entertainment while tests run
+    - Bonsai tree remains until user quits
+    - Can be combined with other flags for fun testing experience
   
   Stage Mode (--stage <test-name>):
     - Finds target test in sorted test list
@@ -2329,6 +2364,7 @@ Behavior:
     - Useful for debugging specific test failures
     - Test name can be provided as full name (test-*.sh) or base name (without test- prefix)
     - Example: --stage dupefind matches test-dupefind.sh
+    - When combined with --parallel, runs selected tests simultaneously
   
   CI Mode (--ci):
     - Delegates to _test-all-fb.sh test runner
@@ -2337,6 +2373,7 @@ Behavior:
     - Supports --fail-fast to stop on first failure
     - Supports --stage for targeted testing
     - Returns exit code 0 if all tests pass, 1 if any fail, 2 if no tests found
+    - All flags can be combined for flexible CI/CD usage
 
 Test Results:
   - Each test writes results to a .results file
@@ -2347,6 +2384,8 @@ Test Results:
 Dependencies:
   - tmux (required for interactive mode only, not needed for --ci)
   - bash (for running test scripts)
+  - cbonsai (optional, required for --egg mode)
+  - htop or top (optional, used in --parallel mode for resource monitoring)
   - All test dependencies (varies by test)
 
 Files:
@@ -2357,16 +2396,20 @@ Files:
   - /tmp/dogrc_*_$$.txt - Temporary files (cleaned up on exit)
 
 Examples:
-  runtests                    # Run all unit tests in tmux session (interactive)
-  runtests --parallel         # Run all tests in parallel mode (faster)
-  runtests --stage dupefind   # Run test-dupefind.sh and adjacent tests
-  runtests -s backup          # Run test-backup.sh and adjacent tests (short form)
-  runtests --ci               # Run tests in CI mode (non-interactive)
-  runtests --ci --quiet       # Run tests in CI mode with minimal output
-  runtests --ci --fail-fast   # Run tests in CI mode, stop on first failure
-  runtests --ci --stage timer # Run specific test in CI mode
-  runtests --ci -q -f         # Combine CI flags (quiet + fail-fast)
-  runtests --help             # Show this help message
+  runtests                            # Run all unit tests in tmux session (interactive)
+  runtests --parallel                 # Run all tests in parallel mode (faster)
+  runtests --stage dupefind           # Run test-dupefind.sh and adjacent tests
+  runtests -s backup                  # Run test-backup.sh and adjacent tests (short form)
+  runtests --parallel --stage backup  # Run selected tests in parallel mode
+  runtests --egg                      # Run tests with animated bonsai tree (easter egg)
+  runtests -EGG                       # Run tests with bonsai tree (short form)
+  runtests --ci                       # Run tests in CI mode (non-interactive)
+  runtests --ci --quiet               # Run tests in CI mode with minimal output
+  runtests --ci --fail-fast           # Run tests in CI mode, stop on first failure
+  runtests --ci --stage timer         # Run specific test in CI mode
+  runtests --ci -q -f                 # Combine CI flags (quiet + fail-fast)
+  runtests --ci --quiet --stage backup # CI mode with minimal output for selected tests
+  runtests --help                     # Show this help message
 
 CI/CD Usage:
   # GitHub Actions / GitLab CI / Jenkins
@@ -2374,6 +2417,9 @@ CI/CD Usage:
   
   # With fail-fast for faster feedback
   bash unit-tests/_TEST-ALL.sh --ci --quiet --fail-fast
+  
+  # Run specific test in CI mode
+  bash unit-tests/_TEST-ALL.sh --ci --quiet --stage backup
 
 Note: Interactive mode requires tmux to be installed. If tmux is not available
       and --ci is not specified, the function will display an error message.
