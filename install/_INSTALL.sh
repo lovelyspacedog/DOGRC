@@ -726,6 +726,7 @@ verify_installation() {
         "plugins/drchelp.sh"
         "plugins/file-operations/archive.sh"
         "plugins/file-operations/backup.sh"
+        "plugins/file-operations/blank.sh"
         "plugins/file-operations/mkcd.sh"
         "plugins/file-operations/swap.sh"
         "plugins/information/analyze-file.sh"
