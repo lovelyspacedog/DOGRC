@@ -7,6 +7,7 @@
 # Usage:
 #   ./_TEST-ALL.sh                  # Interactive mode with tmux (default, sequential)
 #   ./_TEST-ALL.sh --parallel       # Interactive mode with parallel execution
+#   ./_TEST-ALL.sh -EGG             # Interactive mode with cbonsai in right pane
 #   ./_TEST-ALL.sh --ci             # CI mode (delegates to _test-all-fb.sh)
 #   ./_TEST-ALL.sh --ci --quiet --fail-fast  # CI mode with options
 
@@ -18,6 +19,7 @@ readonly __TESTING_DIR="$(cd "${__UNIT_TESTS_DIR}/.." && pwd)"
 CI_MODE=false
 STAGE_MODE=false
 PARALLEL_MODE=false
+EGG_MODE=false
 STAGE_TARGET=""
 for arg in "$@"; do
     # Check for --ci (case-insensitive)
@@ -35,6 +37,10 @@ for arg in "$@"; do
         PARALLEL_MODE=true
         # Debug: confirm parallel mode was detected
         echo "Parallel mode enabled" >&2
+    fi
+    # Check for -EGG, --EGG, -egg, --egg (case-insensitive)
+    if [[ "${arg,,}" == "-egg" ]] || [[ "${arg,,}" == "--egg" ]] || [[ "$arg" == "-EGG" ]] || [[ "$arg" == "--EGG" ]]; then
+        EGG_MODE=true
     fi
 done
 
@@ -821,7 +827,9 @@ main() {
     
     # Set pane titles based on mode
     tmux select-pane -t "$left_pane" -T "Overview"
-    if [[ "$PARALLEL_MODE" == "true" ]]; then
+    if [[ "$EGG_MODE" == "true" ]]; then
+        tmux select-pane -t "$right_pane" -T "Bonsai"
+    elif [[ "$PARALLEL_MODE" == "true" ]]; then
         tmux select-pane -t "$right_pane" -T "Resource Monitor"
     else
         tmux select-pane -t "$right_pane" -T "Test Output"
@@ -856,7 +864,25 @@ INITLEFT
     tmux send-keys -t "$left_pane" "export PS1='$ '; unset PROMPT_COMMAND; unset -f command_not_found_handle pokefetch drcfortune 2>/dev/null; set +H; set +m; bash '$init_left'" C-m 2>/dev/null
     
     # Initialize right pane based on mode
-    if [[ "$PARALLEL_MODE" == "true" ]]; then
+    if [[ "$EGG_MODE" == "true" ]]; then
+        # EGG mode: Launch cbonsai in the right pane
+        # Use exec to replace shell with cbonsai so it can't be interrupted
+        if command -v cbonsai >/dev/null 2>&1; then
+            # Launch cbonsai with -l -i -L 40 flags
+            # Use exec so shell is replaced by cbonsai
+            tmux send-keys -t "$right_pane" "export PS1='$ '; unset PROMPT_COMMAND; unset -f command_not_found_handle pokefetch drcfortune 2>/dev/null; set +H; set +m; trap '' INT TERM; exec cbonsai -l -i -L 40" C-m 2>/dev/null
+        else
+            # If cbonsai is not available, show a message
+            local init_right="/tmp/dogrc_init_right_$$.txt"
+            printf '\033[2J\033[H' > "$init_right"
+            printf '%b\n' "${CYAN}DOGRC Unit Test Suite - EGG Mode${NC}" >> "$init_right"
+            printf '%b\n' "${BLUE}cbonsai Unavailable${NC}" >> "$init_right"
+            printf '%b\n' "${YELLOW}cbonsai not found. Install cbonsai for bonsai tree display.${NC}" >> "$init_right"
+            printf '%b\n' "${BLUE}Tests are running.${NC}" >> "$init_right"
+            printf '%b\n' "${BLUE}Check the overview pane (left) for progress.${NC}" >> "$init_right"
+            tmux send-keys -t "$right_pane" "export PS1='$ '; unset PROMPT_COMMAND; unset -f command_not_found_handle pokefetch drcfortune 2>/dev/null; set +H; set +m; cat '$init_right'" C-m 2>/dev/null
+        fi
+    elif [[ "$PARALLEL_MODE" == "true" ]]; then
         # Parallel mode: Launch htop (or top as fallback) for resource monitoring
         # Use exec to replace shell with htop/top so it can't be interrupted
         # Also disable job control signals that might interfere
@@ -1058,13 +1084,13 @@ INITLEFT
             printf '%b\n' "${CYAN}Press 'q' to quit (or wait 5 seconds for auto-close)${NC}"
         } > "$summary_file"
         
-        # Only show summary in right pane if not in parallel mode
-        # In parallel mode, keep htop/top running until user quits
-        if [[ "$PARALLEL_MODE" != "true" ]]; then
+        # Only show summary in right pane if not in parallel or EGG mode
+        # In parallel/EGG mode, keep htop/top/cbonsai running until user quits
+        if [[ "$PARALLEL_MODE" != "true" ]] && [[ "$EGG_MODE" != "true" ]]; then
             tmux send-keys -t "$right_pane" "export PS1='$ '; unset PROMPT_COMMAND; unset -f command_not_found_handle pokefetch drcfortune 2>/dev/null; set +H; set +m; printf '\033[2J\033[H'; cat '$summary_file'" C-m 2>/dev/null
         else
-            # In parallel mode, show summary in overview pane only
-            # Right pane continues showing htop/top
+            # In parallel/EGG mode, show summary in overview pane only
+            # Right pane continues showing htop/top/cbonsai
             # Update overview to show completion status instead
             echo "All tests completed. Check overview pane for results. Press 'q' to quit." >/dev/null
         fi
