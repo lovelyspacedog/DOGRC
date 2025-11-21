@@ -79,6 +79,68 @@ Note: The timestamp ensures backups are unique and sortable. Directory backups
 EOF
                 return 0
                 ;;
+            blank)
+                cat <<EOF
+blank - Empty File Contents
+
+Remove all contents from a file without deleting it, leaving it empty.
+
+Usage: blank [OPTIONS] <filename>
+       blank <filename> [OPTIONS]
+
+Description:
+  - Empties the contents of an existing file
+  - File remains but contains no data (0 bytes)
+  - Optionally creates the file if it doesn't exist
+  - Preserves file permissions and metadata
+  - Useful for clearing log files or resetting configuration files
+
+Options:
+  --touch, --TOUCH, -t, -T
+                      Create the file if it doesn't exist
+                      Shows a warning message when creating a new file
+                      If file exists, empties it as normal (no warning)
+  -x, --no-countdown, --skip-countdown
+                      Skip the 3-second countdown and empty immediately
+                      Useful for scripts and automated operations
+                      Still shows countdown if used in non-interactive contexts
+
+Behavior:
+  - Without --touch: requires file to exist, returns error if missing
+  - With --touch: creates empty file if it doesn't exist (with warning)
+  - Shows 3-second countdown before clearing (interactive shells only)
+  - Countdown can be cancelled by pressing any key
+  - Use -x flag to skip countdown and clear immediately
+  - Always empties the file after creation/verification
+  - File size becomes 0 bytes
+  - File permissions and ownership are preserved
+  - Returns error if file creation fails (when --touch is used)
+
+Dependencies:
+  - touch (for creating files when --touch flag is used)
+  - Shell redirection (for emptying files)
+
+Examples:
+  blank file.txt                    # Empty file.txt with 3-second countdown
+  blank -x file.txt                 # Immediately empty file.txt (no countdown)
+  blank --touch newfile.txt         # Create and empty newfile.txt (with warning + countdown)
+  blank -t -x log.txt               # Create and immediately empty log.txt (no countdown)
+  blank existing.log                # Empty existing.log with countdown
+  blank -x existing.log             # Immediately empty existing.log
+  blank --touch existing.log        # Empty existing.log (touch ignored, shows countdown)
+
+Note: The function safely empties files without removing them. This is useful
+      for clearing log files, resetting configuration files, or initializing
+      empty files. By default, a 3-second countdown is shown before clearing
+      (in interactive shells), allowing you to cancel by pressing any key. Use
+      the -x flag to skip the countdown and clear immediately, which is useful
+      for scripts and automated operations. Use --touch to create the file if
+      it doesn't exist, which will show a warning message. If the file already
+      exists, the --touch flag is ignored and no warning is shown. The function
+      preserves file permissions and metadata, only removing the file contents.
+EOF
+                return 0
+                ;;
             compress)
                 cat <<EOF
 compress - Create Archives
