@@ -2,7 +2,7 @@
 
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
 
-> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.4). Features may change, and there may be bugs. Use at your own discretion.
+> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.5). Features may change, and there may be bugs. Use at your own discretion.
 
 ## Features
 
@@ -77,6 +77,7 @@ DOGRC/
 │   ├── file-operations/   # File management plugins
 │   │   ├── archive.sh     # Archive extraction and compression
 │   │   ├── backup.sh      # Timestamped backups
+│   │   ├── blank.sh       # Empty files with safety countdown
 │   │   ├── mkcd.sh        # Create directory and cd into it
 │   │   └── swap.sh        # Swap file names
 │   ├── information/       # System information plugins
@@ -98,6 +99,8 @@ DOGRC/
 │   │   ├── fastnote.sh
 │   │   ├── genpassword.sh
 │   │   ├── motd.sh
+│   │   ├── prepfile.sh    # Prepare new script files
+│   │   ├── runtests.sh    # Run unit test suite
 │   │   ├── timer.sh
 │   │   ├── update.sh
 │   │   └── ... (many more)
@@ -122,7 +125,7 @@ Edit `~/DOGRC/config/DOGRC.json` to enable/disable features:
 
 ```json
 {
-    "version": "0.1.4",
+    "version": "0.1.5",
     "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
@@ -177,6 +180,11 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 - **`swap`** - Safely swap two file names
   - `swap file1.txt file2.txt` - Swap filenames
 
+- **`blank`** - Empty files with safety countdown
+  - `blank file.txt` - Empty file after countdown confirmation
+  - `blank file.txt --touch` - Create file if it doesn't exist
+  - Supports `--help` or `-h` for detailed help
+
 - **`mkcd`** - Create directory and change into it
   - `mkcd newdir` - Create and cd into directory
   - Automatically lists directory contents
@@ -229,6 +237,17 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 - **`update`** - System update helper (Arch Linux)
 
 - **`motd`** - Message of the day management
+  - Supports pager for long messages (>20 lines)
+
+- **`prepfile`** - Prepare new script files with proper headers
+  - `prepfile script.sh` - Create bash script with header
+  - `prepfile script.py` - Create Python script with header
+  - Supports multiple languages (bash, python, rust, go, javascript, typescript, C, C++, java, ruby, perl, php, lua, zsh, fish)
+  - Automatically makes script files executable
+
+- **`runtests`** - Run unit test suite
+  - `runtests` - Run all unit tests interactively
+  - `runtests --ci` - Run tests in CI mode
 
 - **`bashrc`** - Manage .bashrc files
   - `bashrc --edit` - Edit .bashrc
@@ -285,17 +304,26 @@ Automatic update checks can be enabled/disabled via `enable_update_check` in `DO
 
 ## Testing
 
-DOGRC includes unit tests for core file operations plugins:
+DOGRC includes comprehensive unit tests for all plugins:
 
 ```bash
 cd ~/DOGRC/unit-tests
+./_TEST-ALL.sh            # Run all tests interactively with tmux interface
+./_TEST-ALL.sh --ci       # Run tests in CI mode
 ./test-archive.sh         # Test archive.sh (extract, compress)
 ./test-backup.sh          # Test backup.sh
 ./test-mkcd.sh            # Test mkcd.sh
 ./test-swap.sh            # Test swap.sh
+# ... and many more
 ```
 
-All tests report pass/fail status with percentage completion.
+The test suite includes:
+- Real-time progress tracking with split pane display
+- Elapsed time tracking for suite and individual tests
+- 26+ test files covering all major plugins
+- All tests report pass/fail status with percentage completion
+
+You can also use the `runtests` command from anywhere to run the test suite.
 
 ## Uninstallation
 
@@ -390,18 +418,39 @@ When contributing:
 
 ## Version History
 
-**v0.1.4** (Current)
+**v0.1.5** (Current)
+- **Unit Test Infrastructure**: Added comprehensive test runner with tmux interface
+  - Real-time progress tracking with split pane display
+  - Added unit tests for all 25+ plugins
+  - Enhanced test infrastructure with helper functions
+- **prepfile Utility**: Added new utility for preparing script files with proper headers
+  - Multi-language support (bash, python, rust, go, javascript, typescript, C, C++, java, ruby, perl, php, lua, zsh, fish)
+  - Automatic file extension handling and executable permissions
+- **runtests Plugin**: Added utility plugin to run unit test suite
+- **blank Plugin**: Added file emptying utility with safety countdown
+- **motd Enhancement**: Added pager support for long messages (>20 lines)
+- **compress() Fix**: Fixed exit code capture for gz and bz2 formats
+- Enhanced drchelp documentation for all utilities
+- Moved unit-tests to root level for better organization
+
+**v0.1.4**
 - Added `enable_update_check` configuration option
 - Standardized `--help/-h` flag support across all plugins
 - Enhanced `bashrc.sh` with new `--edit` options
 - Improved various plugins with help flag support
 - Bug fixes and improvements
 
-See `install/_UPDATE.sh` for detailed changelog.
+See `install/changelog.txt` for detailed changelog.
 
 ## License
 
-[Add your license here]
+This project is licensed under the GNU General Public License v3.0 (GPLv3).
+
+DOGRC is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://www.gnu.org/licenses/gpl-3.0.html) for more details.
+
+See the [LICENSE](LICENSE) file for the full license text.
 
 ## Acknowledgments
 
