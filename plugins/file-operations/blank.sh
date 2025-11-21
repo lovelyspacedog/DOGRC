@@ -126,6 +126,8 @@ blank() {
     # Empty the file by redirecting nothing to it
     > "$filename"
     
+    printf "Successfully emptied %s\n" "$filename" >&2
+    
     return 0
 }
 
