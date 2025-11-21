@@ -4,11 +4,28 @@ if declare -f navto >/dev/null 2>&1; then
     return 0
 fi
 
+# Use directory variables already set by .bashrc, or calculate from plugin location if not set
 [[ -z "${__NAVIGATION_DIR:-}" ]] && readonly __NAVIGATION_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [[ -z "${__PLUGINS_DIR:-}" ]] && readonly __PLUGINS_DIR="$(cd "${__NAVIGATION_DIR}/.." && pwd)"
 [[ -z "${__CORE_DIR:-}" ]] && readonly __CORE_DIR="$(cd "${__NAVIGATION_DIR}/../../core" && pwd)"
+# Only calculate __DOGRC_DIR if not already set (respects values from .bashrc in test environment)
 [[ -z "${__DOGRC_DIR:-}" ]] && readonly __DOGRC_DIR="$(cd "${__NAVIGATION_DIR}/../.." && pwd)"
-[[ -z "${__CONFIG_DIR:-}" ]] && readonly __CONFIG_DIR="${__DOGRC_DIR}/config"
+# Use __CONFIG_DIR from .bashrc if already set (respects test environment), otherwise calculate it
+# IMPORTANT: Always use __CONFIG_DIR from .bashrc if it exists - never recalculate it!
+# This ensures test environments use the correct config directory set by .bashrc
+if [[ -z "${__CONFIG_DIR:-}" ]]; then
+    # Only calculate if __DOGRC_DIR is set (either from .bashrc or calculated above)
+    if [[ -n "${__DOGRC_DIR:-}" ]]; then
+        readonly __CONFIG_DIR="${__DOGRC_DIR}/config"
+    else
+        # Fallback: calculate from navigation directory
+        readonly __CONFIG_DIR="$(cd "${__NAVIGATION_DIR}/../../config" && pwd)"
+    fi
+else
+    # __CONFIG_DIR is already set by .bashrc - don't touch it!
+    # This is the expected case in all environments (installed, dev, test)
+    :
+fi
 
 source "${__CORE_DIR}/dependency_check.sh"
 

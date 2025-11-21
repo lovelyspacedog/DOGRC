@@ -7,11 +7,49 @@
 #/_____/\____/\____/  /_/ |_|\____/   
 
 # Add directory variables (must be defined first)
-[[ -z "${__DOGRC_DIR:-}" ]] && readonly __DOGRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Set __DOGRC_DIR from BASH_SOURCE[0] (the location of this .bashrc file)
+# In test environment, prioritize $HOME/DOGRC over development directory
+if [[ -z "${__DOGRC_DIR:-}" ]]; then
+    # Calculate directory from BASH_SOURCE[0]
+    bashrc_path="${BASH_SOURCE[0]}"
+    calculated_dir="$(cd "$(dirname "$bashrc_path")" && pwd)"
+    
+    # ALWAYS check if calculated_dir is the development directory (*/git/DOGRC)
+    # and if $HOME/DOGRC exists with the required files - if so, use $HOME/DOGRC
+    # This handles the test environment case where BASH_SOURCE might point to dev dir
+    if [[ "$calculated_dir" == *"/git/DOGRC" ]] || [[ "$calculated_dir" == *"/git/DOGRC/" ]]; then
+        # Calculated dir is development directory - check if test environment exists
+        if [[ -d "$HOME/DOGRC" ]] && [[ -f "$HOME/DOGRC/.bashrc" ]] && [[ -f "$HOME/DOGRC/config/DOGRC.json" ]]; then
+            # Use test environment instead of development directory
+            __DOGRC_DIR="$HOME/DOGRC"
+        else
+            # No test environment, use calculated (dev) directory
+            __DOGRC_DIR="$calculated_dir"
+        fi
+    elif [[ -f "$calculated_dir/.bashrc" ]] && [[ -f "$calculated_dir/config/DOGRC.json" ]]; then
+        # Calculated directory has expected files - use it
+        __DOGRC_DIR="$calculated_dir"
+    elif [[ -d "$HOME/DOGRC" ]] && [[ -f "$HOME/DOGRC/.bashrc" ]] && [[ -f "$HOME/DOGRC/config/DOGRC.json" ]]; then
+        # Fallback: use $HOME/DOGRC if it exists
+        __DOGRC_DIR="$HOME/DOGRC"
+    else
+        # Last resort: use calculated directory
+        __DOGRC_DIR="$calculated_dir"
+    fi
+    
+    readonly __DOGRC_DIR
+    unset bashrc_path calculated_dir
+fi
 [[ -z "${__CONFIG_DIR:-}" ]] && readonly __CONFIG_DIR="$(cd "${__DOGRC_DIR}/config" && pwd)"
 [[ -z "${__CORE_DIR:-}" ]] && readonly __CORE_DIR="$(cd "${__DOGRC_DIR}/core" && pwd)"
 [[ -z "${__PLUGINS_DIR:-}" ]] && readonly __PLUGINS_DIR="$(cd "${__DOGRC_DIR}/plugins" && pwd)"
-[[ -z "${__USER_PLUGINS_DIR:-}" ]] && readonly __USER_PLUGINS_DIR="$(cd "${__DOGRC_DIR}/plugins/user-plugins" && pwd)"
+# Create user-plugins directory if it doesn't exist (for dev/test environments), then set path
+if [[ -z "${__USER_PLUGINS_DIR:-}" ]]; then
+    mkdir -p "${__DOGRC_DIR}/plugins/user-plugins" 2>/dev/null || true
+    # Get absolute path (cd will work if directory exists or was just created)
+    __USER_PLUGINS_DIR="$(cd "${__DOGRC_DIR}/plugins/user-plugins" && pwd 2>/dev/null)" || __USER_PLUGINS_DIR="${__DOGRC_DIR}/plugins/user-plugins"
+    readonly __USER_PLUGINS_DIR
+fi
 
 # Set up preamble.sh for user-configurable content
 # This .bashrc file will get overwritten by updates,
