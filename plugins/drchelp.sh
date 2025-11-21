@@ -1817,8 +1817,9 @@ prepfile - Prepare New File with Language Templates
 
 Create a new file with appropriate template based on language type.
 
-Usage: prepfile [--type] [filename]
-       prepfile [filename] [--type]
+Usage: prepfile [--type] [filename] [--override]
+       prepfile [--override] [--type] [filename]
+       prepfile [filename] [--type] [--override]
 
 Description:
   - Creates a new file with language-specific template
@@ -1826,8 +1827,13 @@ Description:
   - Automatically adds appropriate file extension
   - Makes script files executable automatically
   - Optionally opens the file in your default editor
-  - Prevents overwriting existing files
+  - Prevents overwriting existing files (unless --override is used)
   - Defaults to bash script if no type specified
+
+Options:
+  --override, --OVERRIDE, -or, -OR
+                      Overwrite existing files without prompting
+                      Shows a warning message when enabled
 
 Supported Types:
   --bash, --sh          Bash shell script (default)
@@ -1850,7 +1856,9 @@ Behavior:
   - Without arguments: creates "main.sh" (bash template)
   - Type flag can appear before or after filename
   - Automatically adds appropriate extension if not present
-  - Checks if file already exists before creating
+  - Checks if file already exists before creating (prevents accidental overwrite)
+  - Use --override flag to overwrite existing files
+  - When overriding, displays "Warning: Override enabled!" message
   - Makes script files executable (bash, python, ruby, etc.)
   - Prompts to open in editor (y/n)
   - Uses \$EDITOR environment variable (defaults to nvim)
@@ -1879,11 +1887,18 @@ Examples:
   prepfile --cpp program            # Create program.cpp
   prepfile --java Main              # Create Main.java
   prepfile test --ruby              # Create test.rb
+  prepfile --override --python app  # Overwrite app.py (if exists)
+  prepfile -or script --go          # Overwrite script.go (if exists)
+  prepfile --bash test.sh --override # Overwrite test.sh (if exists)
 
-Note: The function prevents accidental overwriting of existing files. Type flags
-      can appear anywhere in the arguments. Script files (bash, python, ruby, etc.)
-      are automatically made executable. Compiled language files (C, C++, Rust, Go,
-      Java) are not made executable as they need to be compiled first.
+Note: By default, the function prevents accidental overwriting of existing files
+      and will display an error message with instructions to use --override.
+      Use --override, --OVERRIDE, -or, or -OR to overwrite existing files.
+      Type flags can appear anywhere in the arguments. Script files (bash, python,
+      ruby, etc.) are automatically made executable. Compiled language files
+      (C, C++, Rust, Go, Java) are not made executable as they need to be compiled
+      first. The override flag is case-insensitive and can appear anywhere in the
+      argument list.
 EOF
                 return 0
                 ;;

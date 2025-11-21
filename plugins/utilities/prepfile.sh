@@ -29,12 +29,17 @@ prepfile() {
     
     local file_type="bash"
     local filename=""
+    local override=false
     
-    # Parse arguments to find type flag and filename
+    # Parse arguments to find type flag, override flag, and filename
     local i=1
     while [[ $i -le $# ]]; do
         local arg="${!i}"
         case "${arg,,}" in
+            --override|-or)
+                override=true
+                printf "Warning: Override enabled!\n" >&2
+                ;;
             --bash|--sh)
                 file_type="bash"
                 ;;
@@ -81,7 +86,7 @@ prepfile() {
                 file_type="fish"
                 ;;
             *)
-                # Not a type flag, treat as filename (first non-flag argument)
+                # Not a type flag or override flag, treat as filename (first non-flag argument)
                 if [[ -z "$filename" ]] && [[ "$arg" != -* ]]; then
                     filename="$arg"
                 fi
@@ -163,11 +168,12 @@ prepfile() {
         esac
     fi
     
-    # Check if file already exists
-    [[ -f "$filename" ]] && {
+    # Check if file already exists (unless override is set)
+    if [[ "$override" == false ]] && [[ -f "$filename" ]]; then
         printf "Can't create %s, file already exists\n" "$filename" >&2
+        printf "Use --override to overwrite the file\n" >&2
         return 1
-    }
+    fi
     
     ensure_commands_present --caller "prepfile" chmod || {
         return $?
@@ -301,7 +307,11 @@ BASH_EOF
             ;;
     esac
     
-    printf "Created %s (%s template)\n" "$filename" "$file_type"
+    if [[ "$override" == true ]] && [[ -f "$filename" ]]; then
+        printf "Overwritten %s (%s template)\n" "$filename" "$file_type"
+    else
+        printf "Created %s (%s template)\n" "$filename" "$file_type"
+    fi
     printf "Would you like to edit the file? (y/n): "
     read -n 1 -r ans
     echo
