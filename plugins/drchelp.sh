@@ -809,6 +809,135 @@ Note: The function provides a quick snapshot of CPU usage. For continuous
 EOF
                 return 0
                 ;;
+            disk-usage|diskusage)
+                cat <<EOF
+disk-usage - Enhanced Disk Usage Analyzer
+
+Enhanced disk usage analyzer with tree view and cleanup suggestions.
+
+Usage: disk-usage [OPTIONS] [directory]
+       disk-usage [directory] [OPTIONS]
+       diskusage [OPTIONS] [directory]
+
+Description:
+  - Shows disk usage tree for a directory (default: current directory)
+  - Displays top N largest directories with --top flag
+  - Suggests files to clean (temp files, caches) with --clean flag
+  - Uses human-readable file sizes throughout
+  - Provides comprehensive disk space analysis
+
+Options:
+  --top, -t <number>       Show top N largest directories
+                           Example: disk-usage --top 10
+                           Shortcut: disk-usage 10
+  --clean, -c              Suggest files to clean (temp files, caches)
+                           Scans common cache/temp locations
+                           Shows estimated total cleanable space
+  --help, -h               Show this help message
+  --                       Separator for directory path (useful when path starts with -)
+
+Modes:
+  Default Mode:
+    - Shows disk usage tree using du command
+    - Uses tree command if available (optional dependency)
+    - Displays up to 2 levels deep by default
+    - Output sorted by size (human-readable)
+    - Defaults to current directory if no path specified
+
+  Top N Mode (--top):
+    - Shows only the N largest directories
+    - Sorted by size (largest first)
+    - Numbered list format
+    - Faster than full tree view
+
+  Clean Mode (--clean):
+    - Scans common temp/cache locations:
+      * ~/.cache, ~/.tmp, ~/tmp
+      * /tmp, /var/tmp
+      * ~/.local/share/Trash, ~/.thumbnails
+      * ~/.npm, ~/.yarn
+      * ~/.pip/cache
+      * ~/.m2/repository
+      * ~/.gradle/caches
+      * ~/.rustup, ~/.cargo/registry
+      * ~/.go/pkg
+    - Shows size for each directory found
+    - Calculates estimated total cleanable space
+    - Displays human-readable totals
+    - Provides safety warnings
+
+Behavior:
+  - Default mode: shows disk usage tree (current directory if not specified)
+  - Top N mode: requires numeric argument for --top flag (or as positional arg)
+  - Clean mode: ignores directory argument, scans predefined locations
+  - Validates directory exists before processing (default and top modes)
+  - Returns error if directory doesn't exist (default and top modes)
+  - Returns error if --top is used without a numeric argument
+  - Handles permission errors gracefully (suppresses errors from du)
+
+Directory Resolution:
+  - Accepts relative and absolute paths
+  - Expands to absolute path for display
+  - Current directory (.) is used if no directory specified
+  - Works with paths starting with - using -- separator
+
+Output Format:
+  Default Mode:
+    📊 DISK USAGE TREE
+    ===================
+    Directory: /absolute/path
+    
+    [Tree view or du output sorted by size]
+
+  Top N Mode:
+    📊 TOP N LARGEST DIRECTORIES
+    ======================================
+    Directory: /absolute/path
+    
+    1.  <size>  /path/to/dir1
+    2.  <size>  /path/to/dir2
+    ...
+
+  Clean Mode:
+    🧹 CLEANUP SUGGESTIONS
+    ====================
+    
+      📁 /path/to/cache
+         Size: <human-readable-size>
+    
+      💡 Estimated total cleanable: ~<total-size>
+    
+      Note: Review these directories before deleting.
+            Some may contain important cached data.
+
+Dependencies:
+  - du (required, for disk usage calculation)
+  - sort (required, for sorting output)
+  - tree (optional, for enhanced tree view in default mode)
+  - numfmt or awk (optional, for human-readable total in clean mode)
+  - cut, head, tail, nl (for output formatting)
+
+Examples:
+  disk-usage                            # Show disk usage tree for current directory
+  disk-usage /home                      # Show disk usage tree for /home
+  disk-usage --top 10                   # Show top 10 largest directories
+  disk-usage 10                         # Same as above (shorthand)
+  disk-usage --top 5 /var               # Show top 5 largest directories in /var
+  disk-usage --clean                    # Suggest files to clean
+  disk-usage --help                     # Show help message
+  diskusage                             # Same as disk-usage (alias)
+
+Note: The function provides multiple ways to analyze disk usage. Default mode
+      gives a comprehensive tree view, while --top mode is faster for finding
+      space hogs. The --clean mode scans common cache locations but doesn't
+      automatically delete anything - review suggestions before cleaning. The
+      tree command is optional - if not available, the function falls back to
+      du output. All sizes are displayed in human-readable format (KB, MB, GB).
+      Permission errors are suppressed for better user experience, but may
+      affect accuracy if run without appropriate permissions.
+EOF
+                return 0
+                ;;
             cpx)
                 cat <<EOF
 cpx - Compile and Execute C++ Files
@@ -2158,6 +2287,142 @@ Note: The swap operation is atomic - if any step fails, the operation
 EOF
                 return 0
                 ;;
+            sanitize-filenames|sanitize_filenames|fixnames)
+                cat <<EOF
+sanitize-filenames - Clean Filenames
+
+Clean filenames by removing special characters and normalizing spaces.
+
+Usage: sanitize-filenames [OPTIONS] [file|directory]
+       sanitize-filenames [file|directory] [OPTIONS]
+       sanitize_filenames [OPTIONS] [file|directory]
+       fixnames [OPTIONS] [file|directory]
+
+Description:
+  - Removes or replaces special characters in filenames
+  - Normalizes multiple spaces (or replaces with underscores)
+  - Makes filenames safe for cross-platform use
+  - Works with single files or directories (recursive)
+  - Preserves hidden files (leading dot)
+  - Supports dry-run mode to preview changes
+
+Options:
+  --dry-run, -d           Preview changes without renaming files
+                          Shows what would be renamed without actually doing it
+                          Useful for verifying changes before applying
+  --replace-spaces, -r    Replace spaces with underscores
+                          Without this flag, multiple spaces are normalized to single space
+                          Useful for preparing files for systems that don't handle spaces well
+  --help, -h               Show this help message
+  --                       Separator for file path (useful when path starts with -)
+
+Modes:
+  Single File Mode:
+    - Sanitizes a single file
+    - Defaults to current directory if no path specified
+    - Shows preview or performs rename based on flags
+
+  Directory Mode:
+    - Processes all files and directories recursively
+    - Processes files first, then directories (deepest to shallowest)
+    - Handles nested directories correctly by processing from deepest level first
+    - Skips items whose names don't change after sanitization
+
+Sanitization Rules:
+  - Removes or replaces special characters (keeps alphanumeric, dots, hyphens, underscores, spaces)
+  - Problematic characters are replaced with underscores
+  - Leading/trailing spaces, dots, and hyphens are removed
+  - Multiple consecutive underscores/hyphens are normalized to single underscore
+  - Hidden files (starting with dot) preserve their leading dot
+  - Empty or invalid names are replaced with "sanitized_<timestamp>_<pid>"
+  - Prevents renaming to "." or ".." (reserved directory names)
+
+Space Handling:
+  Without --replace-spaces:
+    - Multiple spaces are normalized to single space
+    - Leading/trailing spaces are removed
+    - Preserves single spaces in filenames
+
+  With --replace-spaces:
+    - All spaces are replaced with underscores
+    - Useful for systems that don't handle spaces well
+    - Makes filenames URL-safe
+
+Behavior:
+  - Validates path exists before processing
+  - Skips files whose names don't change after sanitization
+  - Skips renaming if target name already exists (prevents overwrites)
+  - Shows colored output: green (✓) for successful renames, yellow (⚠) for skips, red (✗) for errors
+  - Displays summary statistics after processing
+  - Returns error if any rename operations fail
+
+Safety Features:
+  - Dry-run mode to preview changes before applying
+  - Skips items if target name already exists (prevents overwrites)
+  - Processes directories from deepest to shallowest (handles nested dirs correctly)
+  - Preserves hidden files (leading dot)
+  - Validates path exists before processing
+
+Dependencies:
+  - find (for recursive directory processing)
+  - mv (for renaming files)
+  - sed (for text processing in sanitization)
+  - awk, sort (optional, for sorting directories by depth)
+
+Output Format:
+  Default Mode:
+    🧹 SANITIZING FILENAMES
+    ======================
+    Mode: Single file / Directory (recursive)
+    [Options enabled]
+    
+    ✓ Renamed: 'old_name' -> 'new_name'
+    ⚠ Skip: 'old_name' -> 'new_name' (target exists)
+    ✗ Failed to rename: 'old_name'
+    
+    Summary:
+      Files renamed: N
+      Files unchanged: M
+      Errors: K (if any)
+
+  Dry Run Mode:
+    🧹 SANITIZING FILENAMES
+    ======================
+    Mode: DRY RUN (preview only)
+    
+    [DRY RUN] Would rename: 'old_name' -> 'new_name'
+    
+    Summary:
+      Files that would be renamed: N
+      Files unchanged: M
+
+Examples:
+  sanitize-filenames                        # Sanitize current directory (recursive)
+  sanitize-filenames file.txt               # Sanitize single file
+  sanitize-filenames --dry-run .            # Preview changes in current directory
+  sanitize-filenames -d ~/Downloads         # Preview changes in Downloads
+  sanitize-filenames --replace-spaces .     # Replace spaces with underscores recursively
+  sanitize-filenames -r file with spaces.txt # Replace spaces in single file
+  sanitize-filenames -d -r ~/Music          # Preview replacing spaces in Music directory
+  fixnames .                                # Same as sanitize-filenames (alias)
+  sanitize_filenames --dry-run              # Same as sanitize-filenames (alias)
+
+Aliases:
+  sanitize_filenames    Alias for sanitize-filenames (with underscore)
+  fixnames              Quick alias for sanitize-filenames
+
+Note: The function is designed to make filenames safe for cross-platform use
+      by removing special characters that may cause issues on different
+      operating systems. Use --dry-run to preview changes before applying
+      them. The function preserves hidden files (starting with dot) and
+      processes directories from deepest to shallowest to handle nested
+      directories correctly. If a target name already exists, the rename
+      is skipped to prevent overwriting. The --replace-spaces flag is
+      useful for preparing files for systems that don't handle spaces
+      well in filenames.
+EOF
+                return 0
+                ;;
             timer)
                 cat <<EOF
 timer - Simple Timer Utility
@@ -2563,12 +2828,14 @@ File Operations:
   compress           - Create archives
   extract            - Extract archives
   mkcd               - Make directory and change into it
+  sanitize-filenames - Clean filenames (remove special chars, normalize spaces)
   swap               - Swap two filenames safely
 
 Information:
   analyze-file       - File analysis tool with comprehensive information
   automotd           - Automatic message of the day generator
   cpuinfo            - Display CPU usage and top processes
+  disk-usage         - Enhanced disk usage analyzer with tree view
   drcfortune         - Display fortune cookies with typewriter effect
   pokefetch          - System information with Pokemon logo
   weather            - Weather information display
@@ -2625,6 +2892,7 @@ _drchelp_completion() {
         "command-not-found"
         "compress"
         "cpuinfo"
+        "disk-usage"
         "dupefind"
         "cpx"
         "dl-paper"
@@ -2635,6 +2903,7 @@ _drchelp_completion() {
         "drchelp"
         "extract"
         "fastnote"
+        "fixnames"
         "genpassword"
         "h"
         "mkcd"
@@ -2647,6 +2916,7 @@ _drchelp_completion() {
         "prepfile"
         "pwd"
         "runtests"
+        "sanitize-filenames"
         "silent"
         "slashback"
         "swap"

@@ -1,6 +1,9 @@
 # Testing directory
 testing/
 
+# Unit test result files
+unit-tests/test-*.results
+
 # User plugin example
 plugins/user-plugins/example.sh
 
