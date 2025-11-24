@@ -2287,6 +2287,95 @@ Note: The swap operation is atomic - if any step fails, the operation
 EOF
                 return 0
                 ;;
+            sort-downloads|sortdl)
+                cat <<EOF
+sort-downloads - Organize Downloads Directory
+
+Organize files in Downloads directory by file extension or date into subdirectories.
+
+Usage: sort-downloads [OPTIONS] [directory]
+       sortdl [OPTIONS] [directory]
+
+Description:
+  - Organizes files in Downloads directory (or specified directory) into subdirectories
+  - Can organize by file extension or by date (year-month)
+  - Creates subdirectories automatically as needed
+  - Handles duplicate filenames by appending numbers
+  - Supports dry-run mode to preview changes before organizing
+  - Preserves original filenames
+
+Organization Modes:
+  By Extension (default):
+    - Groups files by their file extension (e.g., .pdf, .jpg, .txt)
+    - Files without extensions go into "no-extension" folder
+    - Extension names are converted to lowercase for consistency
+
+  By Date:
+    - Groups files by modification date in year-month format (e.g., 2024-01, 2024-02)
+    - Useful for organizing by when files were downloaded
+    - Files with unknown dates go into "unknown" folder
+
+Options:
+  --by-date, -d           Organize files by modification date (year-month)
+                          Creates directories like: 2024-01, 2024-02, etc.
+  --by-extension, -e      Organize files by file extension (default)
+                          Creates directories based on file extensions
+  --dry-run, -n           Preview changes without actually moving files
+                          Shows what would be organized without doing it
+                          Useful for verifying before organizing
+  --directory, --dir <path>
+                          Specify directory to organize (default: ~/Downloads)
+                          If not specified, uses ~/Downloads
+  --help, -h              Show this help message
+
+Behavior:
+  - Only processes files in the top-level of the specified directory
+  - Does not process files in subdirectories (single level only)
+  - Creates subdirectories as needed
+  - If target file already exists, appends _1, _2, etc. to filename
+  - Skips files that cannot be moved (shows error message)
+  - Shows summary of how many files were organized
+
+Dependencies:
+  - find (for finding files)
+  - mkdir (for creating directories)
+  - mv (for moving files)
+  - basename (for extracting filenames)
+  - date or stat (for getting file modification dates)
+  - file (for file type detection, optional)
+
+Examples:
+  # Organize ~/Downloads by file extension
+  sort-downloads
+
+  # Preview what would be organized (dry-run)
+  sort-downloads --dry-run
+
+  # Organize by date instead of extension
+  sort-downloads --by-date
+
+  # Organize a different directory
+  sort-downloads --directory ~/Desktop/downloads
+
+  # Use short alias
+  sortdl --dry-run
+
+  # Organize by date with preview
+  sortdl -d -n
+
+  # Organize custom directory by extension
+  sort-downloads --dir /path/to/files --by-extension
+
+Note: The function only processes files in the top-level directory, not subdirectories.
+      Files are moved (not copied) to their organized locations. Use --dry-run to
+      preview changes before organizing. Duplicate filenames are handled automatically
+      by appending numbers. The function creates directories as needed and skips
+      files that cannot be moved, showing errors for those cases. Tab completion
+      is available for options and directory paths. The sortdl function is an
+      alias that passes all arguments to sort-downloads.
+EOF
+                return 0
+                ;;
             sanitize-filenames|sanitize_filenames|fixnames)
                 cat <<EOF
 sanitize-filenames - Clean Filenames
@@ -2919,6 +3008,8 @@ _drchelp_completion() {
         "sanitize-filenames"
         "silent"
         "slashback"
+        "sort-downloads"
+        "sortdl"
         "swap"
         "timer"
         "update"

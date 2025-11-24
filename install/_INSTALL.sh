@@ -730,6 +730,7 @@ verify_installation() {
         "plugins/file-operations/dupefind.sh"
         "plugins/file-operations/mkcd.sh"
         "plugins/file-operations/sanitize-filenames.sh"
+        "plugins/file-operations/sort-downloads.sh"
         "plugins/file-operations/swap.sh"
         "plugins/information/analyze-file.sh"
         "plugins/information/cpuinfo.sh"
