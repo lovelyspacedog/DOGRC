@@ -10,5 +10,8 @@
     "enable_vimkeys": true,
     "enable_drchelp": true,
     "enable_zoxide": true,
-    "enable_automotd": true
+    "enable_automotd": true,
+    "enable_hydecheck": true,
+    "enable_hydecheck_include_timeshift": true,
+    "enable_global_typewriter": true
 }

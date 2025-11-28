@@ -300,6 +300,174 @@ Note: The function finds duplicates by comparing file content, not filenames.
 EOF
                 return 0
                 ;;
+            checksum-verify)
+                cat <<EOF
+checksum-verify - File Checksum Verification and Generation
+
+Verify file integrity using checksums or generate checksums for files.
+
+Usage: checksum-verify <file> <checksum> [OPTIONS]
+       checksum-verify --generate <file> [OPTIONS]
+
+Description:
+  - Verify file integrity by comparing checksums
+  - Generate checksums for files
+  - Supports multiple hash algorithms: MD5, SHA1, SHA256, SHA512
+  - Useful for verifying file integrity after downloads
+  - Ensures files haven't been corrupted or tampered with
+
+Options:
+  --generate, -g              Generate checksum for file (instead of verifying)
+  --algorithm, -a <algorithm> Specify hash algorithm (default: sha256)
+                              Supported: md5, sha1, sha256, sha512
+  --help, -h                  Show this help message
+  --                          Separator for arguments
+
+Algorithms:
+  md5:
+    - Fastest, but less secure
+    - 32 hexadecimal characters
+    - Use for quick integrity checks
+
+  sha1:
+    - Faster than SHA256, but deprecated for security
+    - 40 hexadecimal characters
+    - Use for legacy compatibility
+
+  sha256 (default):
+    - Recommended for most use cases
+    - 64 hexadecimal characters
+    - Good balance of security and speed
+
+  sha512:
+    - Most secure, but slower
+    - 128 hexadecimal characters
+    - Use for high-security applications
+
+Modes:
+  Verify Mode (default):
+    - Compares file checksum with provided checksum
+    - Returns 0 if checksums match, 1 if they don't
+    - Shows detailed comparison results
+    - Example: checksum-verify file.txt abc123def456...
+
+  Generate Mode (--generate):
+    - Generates checksum for the specified file
+    - Outputs only the checksum (suitable for scripts)
+    - Example: checksum-verify --generate file.txt
+
+Behavior:
+  - Automatically detects available checksum commands
+  - Supports both GNU coreutils (md5sum, sha*sum) and BSD (md5, shasum)
+  - Normalizes checksums (removes spaces, converts to lowercase)
+  - Validates file existence before processing
+  - Provides clear success/failure messages
+
+Dependencies:
+  Required (at least one per algorithm):
+    - md5sum or md5 (for MD5)
+    - sha1sum or shasum (for SHA1)
+    - sha256sum or shasum (for SHA256)
+    - sha512sum or shasum (for SHA512)
+
+Examples:
+  # Verify a file's checksum
+  checksum-verify file.txt abc123def456...
+  checksum-verify file.txt abc123def456... --algorithm sha256
+
+  # Generate a checksum
+  checksum-verify --generate file.txt
+  checksum-verify --generate file.txt --algorithm md5
+  checksum-verify -g file.txt -a sha512
+
+  # Verify with different algorithm
+  checksum-verify file.txt abc123... --algorithm sha1
+
+  # Store checksum for later verification
+  checksum-verify --generate file.txt > file.txt.sha256
+  checksum-verify file.txt $(cat file.txt.sha256)
+
+Output Format:
+  Verify Mode (match):
+    ✓ Checksums match
+      File: file.txt
+      Algorithm: sha256
+      Checksum: abc123def456...
+
+  Verify Mode (mismatch):
+    ✗ Checksums do NOT match
+      File: file.txt
+      Algorithm: sha256
+      Expected: abc123def456...
+      Actual:   xyz789ghi012...
+
+  Generate Mode:
+    abc123def456...  (just the checksum)
+
+Note: The function automatically detects which checksum commands are available
+      on your system. On Linux, it uses md5sum/sha*sum. On macOS/BSD, it uses
+      md5/shasum. Checksums are normalized (lowercase, no spaces) for comparison.
+      The default algorithm is SHA256, which provides a good balance of security
+      and performance. For maximum security, use SHA512. For quick checks, use MD5.
+EOF
+                return 0
+                ;;
+            find-empty-dirs)
+                cat <<EOF
+find-empty-dirs - Find Empty Directories
+
+Find empty directories recursively in a specified directory tree.
+
+Usage: find-empty-dirs [OPTIONS] [directory]
+
+Description:
+  - Finds all empty directories recursively in the specified directory
+  - Empty directories contain no files or subdirectories
+  - Can optionally delete found empty directories with confirmation
+  - Useful for cleanup projects and removing unused directory structures
+  - Displays relative paths for cleaner output
+
+Options:
+  --delete, -d           Delete found empty directories (with confirmation)
+  --                     Separator for directory path
+
+Default Behavior:
+  - Searches current directory (.) if no directory specified
+  - Lists all empty directories found
+  - Does not delete directories (display only)
+  - Shows count of empty directories found
+
+Delete Mode (--delete):
+  - Prompts for confirmation before deletion (interactive shells only)
+  - Deletes all found empty directories
+  - Reports success/failure for each deletion
+  - Returns error if any deletion fails
+
+Behavior:
+  - Recursively searches from the specified directory
+  - Uses find with -type d -empty to identify empty directories
+  - Excludes the starting directory itself (uses -mindepth 1)
+  - Displays relative paths when possible for cleaner output
+  - In delete mode: requires confirmation in interactive shells
+  - In delete mode: skips confirmation in non-interactive shells (use with caution)
+
+Dependencies:
+  - find (for directory discovery)
+
+Examples:
+  find-empty-dirs                    # Find empty directories in current directory
+  find-empty-dirs ~/Projects         # Find empty directories in Projects
+  find-empty-dirs --delete           # Find and delete empty directories (with confirmation)
+  find-empty-dirs --delete ~/Old     # Find and delete empty directories in Old folder
+
+Note: Empty directories are those that contain no files or subdirectories.
+      The function uses find's -empty flag which checks for truly empty directories.
+      Use --delete with caution as it permanently removes directories. In interactive
+      shells, you'll be prompted for confirmation. The function will not delete the
+      starting directory itself, only subdirectories within it.
+EOF
+                return 0
+                ;;
             calc)
                 cat <<EOF
 calc - Command Line Calculator
@@ -806,6 +974,313 @@ Output Format:
 Note: The function provides a quick snapshot of CPU usage. For continuous
       monitoring, consider using top or htop directly. The CPU percentage
       is extracted from top's output and may vary slightly from other tools.
+EOF
+                return 0
+                ;;
+            system-stats)
+                cat <<EOF
+system-stats - Enhanced System Statistics Display
+
+Display comprehensive system statistics including CPU, memory, disk, and network.
+
+Usage: system-stats [OPTIONS]
+
+Description:
+  - Shows CPU usage percentage
+  - Displays memory statistics (total, used, free, available, percentage)
+  - Shows disk usage for root filesystem
+  - Displays network statistics (if available)
+  - Shows system uptime and load average
+  - Supports live updating with --watch mode
+  - Can output as JSON format for scripting
+
+Options:
+  --watch, -w              Enable watch mode (live updating display)
+  --json, -j               Output statistics as JSON format
+  --interval, -i <seconds> Set update interval for watch mode (default: 2 seconds)
+  --help, -h               Show this help message
+
+Modes:
+  Default Mode:
+    - Displays statistics once and exits
+    - Human-readable formatted output
+    - Shows all available statistics
+
+  Watch Mode (--watch):
+    - Continuously updates the display
+    - Clears screen before each update
+    - Updates at specified interval (default: 2 seconds)
+    - Press Ctrl+C to exit
+    - Useful for real-time monitoring
+
+  JSON Mode (--json):
+    - Outputs statistics in JSON format
+    - Suitable for scripting and automation
+    - Can be combined with --watch for continuous JSON output
+    - Each update is a complete JSON object
+
+Statistics Displayed:
+  CPU:
+    - Current CPU usage percentage
+    - Uses top or vmstat (whichever is available)
+
+  Memory:
+    - Total memory
+    - Used memory (with percentage)
+    - Free memory
+    - Available memory
+    - Memory usage percentage
+
+  Disk:
+    - Root filesystem usage percentage
+    - Uses df command
+
+  Network:
+    - RX (receive) statistics (if available)
+    - TX (transmit) statistics (if available)
+    - Requires ifconfig or similar tool
+
+  System:
+    - System uptime
+    - Load average (1, 5, 15 minutes)
+
+Dependencies:
+  Required:
+    - free (memory statistics)
+    - df (disk usage)
+    - uptime (system uptime)
+
+  Optional (for enhanced features):
+    - top or vmstat (CPU usage - more accurate)
+    - ifconfig or ip (network statistics)
+    - /proc/loadavg (load average on Linux)
+
+Examples:
+  system-stats                    # Display statistics once
+  system-stats --watch            # Live updating display (2 second interval)
+  system-stats --watch --interval 5  # Live updating (5 second interval)
+  system-stats --json             # Output as JSON
+  system-stats --watch --json     # Continuous JSON output
+  system-stats -w -i 1            # Watch mode with 1 second interval
+
+Output Format:
+  Default (human-readable):
+    ═══════════════════════════════════════════════════════════
+                        SYSTEM STATISTICS
+    ═══════════════════════════════════════════════════════════
+    
+    CPU Usage:        <percentage>
+    
+    Memory:
+      Total:          <size>
+      Used:           <size> (<percentage>%)
+      Free:           <size>
+      Available:      <size>
+    
+    Disk Usage (/):   <percentage>
+    
+    Network:
+      RX:             <status>
+      TX:             <status>
+    
+    System:
+      Uptime:         <time>
+      Load Average:   <1min, 5min, 15min>
+    ═══════════════════════════════════════════════════════════
+
+  JSON Format:
+    {
+      "cpu": { "usage": "<percentage>" },
+      "memory": {
+        "total": "<size>",
+        "used": "<size>",
+        "free": "<size>",
+        "available": "<size>",
+        "percent": <number>
+      },
+      "disk": { "usage": "<percentage>" },
+      "network": {
+        "rx": "<status>",
+        "tx": "<status>"
+      },
+      "system": {
+        "uptime": "<time>",
+        "load_average": "<values>"
+      }
+    }
+
+Note: The function adapts to available system tools. Some statistics may
+      show "N/A" if required tools are not available. CPU usage detection
+      varies by system - Linux systems typically provide more detailed
+      information. Network statistics require appropriate network tools
+      and may not be available on all systems. Watch mode uses clear to
+      refresh the display - ensure your terminal supports ANSI escape codes.
+      Tab completion is available for flags and options.
+EOF
+                return 0
+                ;;
+            network-info)
+                cat <<EOF
+network-info - Network Information and Diagnostics
+
+Display comprehensive network information including interfaces, IPs, speed tests, ports, and connections.
+
+Usage: network-info [OPTIONS]
+
+Description:
+  - Shows network interfaces and their IP addresses
+  - Displays default gateway and DNS servers
+  - Can test network speed (requires speedtest-cli)
+  - Shows listening ports on the system
+  - Displays active network connections
+  - Useful for network troubleshooting and monitoring
+  - Adapts to available system tools (ip, ifconfig, ss, netstat)
+
+Options:
+  --speed, -s              Test network speed (requires speedtest-cli)
+  --ports, -p              Show listening ports
+  --connections, -c        Show active network connections
+  --help, -h               Show this help message
+
+Modes:
+  Default Mode (no flags):
+    - Shows network interfaces and IP addresses
+    - Displays default gateway
+    - Shows DNS servers
+    - Uses ip command on Linux, ifconfig on macOS/BSD
+
+  Speed Test Mode (--speed):
+    - Runs network speed test using speedtest-cli
+    - Shows download and upload speeds
+    - Requires speedtest-cli to be installed
+    - May take a minute to complete
+
+  Ports Mode (--ports):
+    - Lists all listening ports on the system
+    - Shows port number, protocol, and process
+    - Uses ss command (preferred) or netstat (fallback)
+    - Limited to top 20 ports for readability
+
+  Connections Mode (--connections):
+    - Shows active network connections
+    - Displays local and remote addresses
+    - Shows connection state
+    - Uses ss command (preferred) or netstat (fallback)
+    - Limited to top 20 connections for readability
+
+Flags can be combined:
+  - network-info --ports --connections  # Show both ports and connections
+  - network-info -s -p                  # Test speed and show ports
+
+Network Interface Information:
+  - Lists all network interfaces (wired, wireless, virtual)
+  - Shows IPv4 addresses for each interface
+  - Displays default gateway (router IP)
+  - Shows configured DNS servers
+  - Format varies by system (Linux vs macOS/BSD)
+
+Speed Test:
+  - Uses speedtest-cli or speedtest command
+  - Tests download and upload speeds
+  - Connects to nearest speedtest server
+  - Results shown in Mbps (megabits per second)
+  - Requires internet connection
+
+Listening Ports:
+  - Shows ports that are listening for incoming connections
+  - Includes both TCP and UDP ports
+  - Displays associated process name (if available)
+  - Useful for identifying running services
+  - Helps with firewall configuration
+
+Active Connections:
+  - Shows established network connections
+  - Displays both incoming and outgoing connections
+  - Shows connection state (ESTABLISHED, TIME_WAIT, etc.)
+  - Useful for monitoring network activity
+  - Helps identify suspicious connections
+
+Dependencies:
+  Required (at least one):
+    - ip (Linux, preferred) or ifconfig (macOS/BSD/Linux fallback)
+  
+  Optional (for enhanced features):
+    - ss (Linux, preferred for ports/connections)
+    - netstat (fallback for ports/connections)
+    - speedtest-cli (for speed testing)
+    - speedtest (alternative speed test tool)
+
+Installation:
+  Linux (Debian/Ubuntu):
+    sudo apt install iproute2        # For ip and ss commands
+    sudo apt install net-tools       # For netstat (if ss not available)
+    pip install speedtest-cli        # For speed testing
+  
+  Linux (RHEL/CentOS):
+    sudo yum install iproute         # For ip and ss commands
+    sudo yum install net-tools       # For netstat
+    pip install speedtest-cli        # For speed testing
+  
+  macOS:
+    # ifconfig and netstat are built-in
+    pip install speedtest-cli        # For speed testing
+
+Examples:
+  network-info                       # Show interfaces and IPs (default)
+  network-info --speed               # Test network speed
+  network-info --ports               # Show listening ports
+  network-info --connections         # Show active connections
+  network-info -s -p                 # Test speed and show ports
+  network-info --ports --connections # Show ports and connections
+  network-info -p -c                 # Short flags for ports and connections
+
+Output Format:
+  Default (Interfaces):
+    ═══════════════════════════════════════════════════════════
+                      NETWORK INTERFACES
+    ═══════════════════════════════════════════════════════════
+    
+    Interfaces and IP Addresses:
+      wlp5s0:
+        IP: 192.168.1.100/24
+    
+    Default Gateway:
+      192.168.1.1
+    
+    DNS Servers:
+      8.8.8.8
+      8.8.4.4
+    ═══════════════════════════════════════════════════════════
+
+  Ports:
+    ═══════════════════════════════════════════════════════════
+                      LISTENING PORTS
+    ═══════════════════════════════════════════════════════════
+    
+    Port  Protocol  Process
+    ───────────────────────────────────────────────────────
+    22    tcp       sshd
+    80    tcp       nginx
+    443   tcp       nginx
+    ═══════════════════════════════════════════════════════════
+
+  Connections:
+    ═══════════════════════════════════════════════════════════
+                    ACTIVE CONNECTIONS
+    ═══════════════════════════════════════════════════════════
+    
+    Local Address          Remote Address         State
+    ────────────────────────────────────────────────────────────────────
+    192.168.1.100:54321    8.8.8.8:53            ESTABLISHED
+    ═══════════════════════════════════════════════════════════
+
+Note: The function automatically detects available tools and uses the best
+      option. On Linux, 'ip' and 'ss' are preferred over 'ifconfig' and
+      'netstat' as they are more modern and provide better information.
+      Port and connection listings are limited to 20 entries for readability.
+      For full listings, use the tools directly (ss -tulpn, netstat -tulpn).
+      Speed testing requires an active internet connection and may take
+      a minute to complete. Tab completion is available for flags.
 EOF
                 return 0
                 ;;
@@ -1501,6 +1976,110 @@ Note: Passwords are generated using /dev/urandom which provides cryptographicall
       accounts, API keys, or any other security-sensitive purposes.
 EOF
                 return 0
+                ;;
+            url-shortener)
+                cat <<EOF
+url-shortener - URL Shortening Service
+
+Shorten long URLs using various free URL shortening services.
+
+Usage: url-shortener <url> [OPTIONS]
+       url-shortener [url] --service [service]
+       shorturl <url> [OPTIONS]              # Shortcut alias
+
+Description:
+  - Shortens long URLs using free URL shortening services
+  - Supports multiple services: is.gd, tinyurl
+  - Automatically copies shortened URL to clipboard (if available)
+  - No API keys required for supported services
+  - Useful for sharing long URLs in messages, emails, or documents
+
+Options:
+  --service, -s <service>   Specify shortening service (default: is.gd)
+                            Supported: is.gd, tinyurl
+  --show-service            Display service name with shortened URL
+  --help, -h                Show this help message
+  --                        Separator for URL (useful when URL starts with -)
+
+Services:
+  is.gd (default):
+    - Free, no API key required
+    - Returns JSON response
+    - Fast and reliable
+    - Example: https://is.gd/create.php?format=json&url=<url>
+
+  tinyurl:
+    - Free, no API key required
+    - Returns shortened URL directly
+    - Simple and straightforward
+    - Example: https://tinyurl.com/api-create.php?url=<url>
+
+Behavior:
+  - Requires a valid URL starting with http:// or https://
+  - Validates URL format before sending request
+  - Automatically copies result to clipboard if available
+  - Shows error messages if shortening fails
+  - Returns 0 on success, non-zero on error
+
+Clipboard Support:
+  - Automatically copies shortened URL to clipboard if available
+  - Supports: wl-copy (Wayland), xclip (X11), pbcopy (macOS)
+  - Shows "(Copied to clipboard)" message when successful
+  - Works silently if clipboard tools are not available
+
+Dependencies:
+  Required:
+    - curl (for API requests)
+  
+  Optional (for enhanced features):
+    - jq (for better JSON parsing with is.gd)
+    - wl-copy, xclip, or pbcopy (for clipboard support)
+
+Examples:
+  url-shortener https://example.com/very/long/url/path
+  url-shortener https://example.com --service is.gd
+  url-shortener https://example.com -s tinyurl
+  url-shortener --service tinyurl https://example.com
+  url-shortener --show-service https://example.com
+  url-shortener -- https://example.com  # Use -- if URL starts with -
+  shorturl https://example.com          # Shortcut alias
+  shorturl https://example.com -s tinyurl  # Shortcut with options
+
+Output Format:
+  Default:
+    https://is.gd/abc123
+    (Copied to clipboard)
+  
+  With --show-service:
+    https://is.gd/abc123 (is.gd)
+    (Copied to clipboard)
+
+Error Handling:
+  - Validates URL format (must start with http:// or https://)
+  - Checks for network connectivity
+  - Handles API errors gracefully
+  - Shows descriptive error messages
+  - Returns appropriate exit codes
+
+Note: The function requires an active internet connection to shorten URLs.
+      Services may have rate limits or restrictions. The shortened URLs
+      are permanent and will continue to work as long as the service
+      remains operational. Clipboard copying is optional and will not
+      fail if clipboard tools are unavailable. Tab completion is available
+      for flags and service names. A shortcut alias 'shorturl' is available
+      as a convenience (e.g., shorturl <url>).
+EOF
+                return 0
+                ;;
+            shorturl)
+                # Redirect to url-shortener help
+                if declare -f drchelp >/dev/null 2>&1; then
+                    drchelp url-shortener
+                    return 0
+                else
+                    echo "Error: drchelp not available" >&2
+                    return 1
+                fi
                 ;;
             fastnote)
                 cat <<EOF
@@ -2795,13 +3374,14 @@ EOF
                 cat <<EOF
 update - System Update Automation
 
-Automatically update system packages using multiple package managers.
+Automatically update system packages using multiple package managers, with optional HyDE update checking.
 
 Usage: update
 
 Description:
   - Updates system packages using yay (AUR), flatpak, and topgrade
   - Runs all updates non-interactively
+  - Optionally checks for HyDE updates if enabled in configuration
   - Provides composite exit code indicating which updates failed
   - Requires sudo privileges (passwordless sudo recommended)
 
@@ -2809,6 +3389,20 @@ Update Sources:
   - yay:      AUR packages and official Arch repositories
   - flatpak:  Flatpak applications
   - topgrade: System-wide updates (excluding pacdef, pacstall, flatpak)
+  - HyDE:     HyDE scripts update (optional, if enabled)
+
+HyDE Update Check:
+  - Checks if 90+ days have passed since last HyDE update
+  - Only runs if enable_hydecheck is true in ~/DOGRC/config/DOGRC.json
+  - Prompts user to update HyDE if threshold is met
+  - Optionally creates timeshift snapshot before updating (if enable_hydecheck_include_timeshift is true)
+  - Updates timestamp file after successful HyDE update
+
+Configuration:
+  - enable_hydecheck: Enable/disable HyDE update checking (default: false)
+  - enable_hydecheck_include_timeshift: Create timeshift snapshot before HyDE update (default: false)
+  - Settings are read from ~/DOGRC/config/DOGRC.json
+  - Timestamp stored in ~/DOGRC/config/hydecheck.timestamp
 
 Behavior:
   - Checks for sudo availability and privileges
@@ -2816,6 +3410,9 @@ Behavior:
   - Verifies passwordless sudo works (sudo -n true)
   - Runs each package manager update if available
   - Skips updates if package manager is not installed (with warning)
+  - Checks HyDE update status if enabled in configuration
+  - Prompts for HyDE update if 90+ days have passed
+  - Optionally creates timeshift snapshot before HyDE update
   - Returns composite exit code indicating failures
 
 Exit Codes:
@@ -2836,6 +3433,14 @@ Dependencies:
   - yay (optional, for AUR updates)
   - flatpak (optional, for Flatpak updates)
   - topgrade (optional, for system-wide updates)
+  - jq (optional, for reading DOGRC.json configuration)
+  - kitty (optional, for timeshift snapshot GUI)
+  - timeshift (optional, for creating snapshots before HyDE update)
+  - git (required for HyDE update process)
+
+Files:
+  - ~/DOGRC/config/DOGRC.json - Configuration file for feature flags
+  - ~/DOGRC/config/hydecheck.timestamp - Timestamp of last HyDE update check
 
 Examples:
   update                 # Update all available package sources
@@ -2846,7 +3451,12 @@ Note: The function requires sudo privileges. It's recommended to configure
       with a warning. The composite exit code allows scripts to determine
       which specific updates failed. The topgrade command excludes pacdef,
       pacstall, and flatpak to avoid conflicts with the dedicated update
-      commands.
+      commands. HyDE update checking is optional and controlled by the
+      enable_hydecheck setting in DOGRC.json. If enabled, the function will
+      prompt to update HyDE scripts if 90+ days have passed since the last
+      update. The timeshift snapshot feature is also optional and controlled
+      by enable_hydecheck_include_timeshift. If timeshift snapshot creation
+      fails, the user can choose to continue without a snapshot.
 EOF
                 return 0
                 ;;
@@ -2914,8 +3524,10 @@ Navigation:
 
 File Operations:
   backup             - Create timestamped backups of files/directories
+  checksum-verify    - File checksum verification and generation
   compress           - Create archives
   extract            - Extract archives
+  find-empty-dirs    - Find empty directories recursively
   mkcd               - Make directory and change into it
   sanitize-filenames - Clean filenames (remove special chars, normalize spaces)
   swap               - Swap two filenames safely
@@ -2926,7 +3538,9 @@ Information:
   cpuinfo            - Display CPU usage and top processes
   disk-usage         - Enhanced disk usage analyzer with tree view
   drcfortune         - Display fortune cookies with typewriter effect
+  network-info       - Network information and diagnostics
   pokefetch          - System information with Pokemon logo
+  system-stats       - Enhanced system statistics display
   weather            - Weather information display
   wttr               - Direct weather query via wttr.in
   drcversion         - Display DOGRC version
@@ -2949,9 +3563,11 @@ Utilities:
   prepfile           - Prepare new file with language templates
   pwd                - Print working directory with clipboard support
   runtests           - Run DOGRC unit test suite
+  shorturl           - URL shortening service (alias for url-shortener)
   silent             - Run command silently
   timer              - Named timer management
   update             - System update automation
+  url-shortener      - URL shortening service
   xx                 - Open new terminal window
 
 Examples:
@@ -2978,6 +3594,7 @@ _drchelp_completion() {
         "calc"
         "cd"
         "cdd"
+        "checksum-verify"
         "command-not-found"
         "compress"
         "cpuinfo"
@@ -2992,6 +3609,7 @@ _drchelp_completion() {
         "drchelp"
         "extract"
         "fastnote"
+        "find-empty-dirs"
         "fixnames"
         "genpassword"
         "h"
@@ -2999,6 +3617,7 @@ _drchelp_completion() {
         "motd"
         "n"
         "navto"
+        "network-info"
         "notifywhendone"
         "openthis"
         "pokefetch"
@@ -3006,13 +3625,16 @@ _drchelp_completion() {
         "pwd"
         "runtests"
         "sanitize-filenames"
+        "shorturl"
         "silent"
         "slashback"
         "sort-downloads"
         "sortdl"
         "swap"
+        "system-stats"
         "timer"
         "update"
+        "url-shortener"
         "weather"
         "wttr"
         "xx"

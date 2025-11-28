@@ -728,6 +728,8 @@ verify_installation() {
         "plugins/file-operations/backup.sh"
         "plugins/file-operations/blank.sh"
         "plugins/file-operations/dupefind.sh"
+        "plugins/file-operations/checksum-verify.sh"
+        "plugins/file-operations/find-empty-dirs.sh"
         "plugins/file-operations/mkcd.sh"
         "plugins/file-operations/sanitize-filenames.sh"
         "plugins/file-operations/sort-downloads.sh"
@@ -738,6 +740,8 @@ verify_installation() {
         "plugins/information/drcversion.sh"
         "plugins/information/disk-usage.sh"
         "plugins/information/pokefetch.sh"
+        "plugins/information/system-stats.sh"
+        "plugins/information/network-info.sh"
         "plugins/information/weather.sh"
         "plugins/navigation/cd-cdd-zd.sh"
         "plugins/navigation/dots.sh"
@@ -750,6 +754,7 @@ verify_installation() {
         "plugins/utilities/command-not-found.sh"
         "plugins/utilities/cpx.sh"
         "plugins/utilities/dl-paper.sh"
+        "plugins/utilities/drcupdate.sh"
         "plugins/utilities/fastnote.sh"
         "plugins/utilities/genpassword.sh"
         "plugins/utilities/h.sh"
@@ -763,6 +768,7 @@ verify_installation() {
         "plugins/utilities/silent.sh"
         "plugins/utilities/timer.sh"
         "plugins/utilities/update.sh"
+        "plugins/utilities/url-shortener.sh"
         "plugins/utilities/xx.sh"
     )
 

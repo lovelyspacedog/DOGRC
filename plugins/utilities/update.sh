@@ -58,6 +58,110 @@ update() {
         topgrade_fail=1
     fi
 
+    # Check if hydecheck is enabled in DOGRC.json
+    local hydecheck_enabled=false
+    local config_file="${HOME}/DOGRC/config/DOGRC.json"
+    if [[ -f "$config_file" ]]; then
+        if command -v jq >/dev/null 2>&1; then
+            hydecheck_enabled=$(jq -r '.enable_hydecheck // false' "$config_file" 2>/dev/null)
+        else
+            # Fallback to grep if jq is not available
+            if grep -q '"enable_hydecheck"[[:space:]]*:[[:space:]]*true' "$config_file" 2>/dev/null; then
+                hydecheck_enabled="true"
+            fi
+        fi
+    fi
+
+    # Debug: Check what value we got (remove this after debugging)
+    #if [[ -n "${DEBUG_UPDATE:-}" ]]; then
+    #    echo "DEBUG: config_file=$config_file" >&2
+    #    echo "DEBUG: hydecheck_enabled=[$hydecheck_enabled]" >&2
+    #    echo "DEBUG: comparison result=$([ "$hydecheck_enabled" == "true" ] && echo "match" || echo "no match")" >&2
+    #fi
+
+    if [[ "$hydecheck_enabled" == "true" ]]; then
+        [[ -f "${HOME}/DOGRC/config/hydecheck.timestamp" ]] || {
+            printf "%s" "$(($(date +%s) / 86400))" > "${HOME}/DOGRC/config/hydecheck.timestamp"
+        }
+
+        local hydecheck_timestamp="$(cat "${HOME}/DOGRC/config/hydecheck.timestamp")"
+        local current_timestamp="$(($(date +%s) / 86400))"
+        local days_since_last_check=$((current_timestamp - hydecheck_timestamp))
+
+        if [[ $days_since_last_check -ge 90 ]]; then
+            printf "\n\nIt's been over 90 days since last HyDE update.\n"
+            printf "Would you like to update HyDE now? (y/N) "
+            read -n 1 -r
+            if [[ "${REPLY,,}" == "y" ]]; then
+                while true; do
+                    # Check if timeshift snapshot is enabled
+                    local timeshift_enabled=false
+                    if [[ -f "$config_file" ]]; then
+                        if command -v jq >/dev/null 2>&1; then
+                            timeshift_enabled=$(jq -r '.enable_hydecheck_include_timeshift // false' "$config_file" 2>/dev/null)
+                        else
+                            # Fallback to grep if jq is not available
+                            if grep -q '"enable_hydecheck_include_timeshift"[[:space:]]*:[[:space:]]*true' "$config_file" 2>/dev/null; then
+                                timeshift_enabled="true"
+                            fi
+                        fi
+                    fi
+
+                    if [[ "$timeshift_enabled" == "true" ]]; then
+                        printf "Running timeshift snapshot! (sudo required)\n"
+                        kitty bash -c "sudo timeshift --create --comments 'HyDE update'" || {
+                            printf "WARNING: Failed to run timeshift snapshot\n"
+                            printf "Press Enter to continue without a snapshot (i hope you know what you're doing)"
+                            read -n 1 -r
+                        }
+                    fi
+
+                    printf "Changing to HyDE scripts directory...\n"
+                    cd "${HOME}/HyDE/Scripts" || {
+                        printf "Error: Failed to change to HyDE scripts directory\n"
+                        printf "Skipping HyDE update.\n"
+                        printf "Delete DOGRC/config/hydecheck.timestamp to disable this check.\n\n"
+                        break
+                    }
+
+                    printf "Pulling latest HyDE scripts...\n"
+                    git pull origin master || {
+                        printf "Error: Failed to pull latest HyDE scripts\n"
+                        printf "Skipping HyDE update.\n"
+                        printf "Delete DOGRC/config/hydecheck.timestamp to disable this check.\n\n"
+                        break
+                    }
+
+                    printf "Displaying update information...\n"
+                    cat <<'EOF'
+HyDE update script found and updated!
+
+Any configurations you made will be overwritten if listed to be done so as listed
+  by Scripts/restore_cfg.psv. However, all replaced configs are backed up and may
+  be recovered from in ~/.config/cfg_backups.
+
+Confirm timeshift snapshot was created before proceeding.
+
+Press Enter to continue...
+EOF
+                    read -n 1 -r
+
+                    printf "Updating HyDE scripts...\n"
+                    ./install.sh -r || {
+                        printf "Error: Failed to update HyDE scripts\n"
+                        printf "You may need to restore to a previous snapshot. :(\n"
+                        break
+                    }
+
+                    printf "%s" "$(($(date +%s) / 86400))" > "${HOME}/DOGRC/config/hydecheck.timestamp"
+                    printf "HyDE update complete! Timestamp updated.\n\n"
+                    break
+                done
+
+            fi
+        fi
+    fi
+
     local result=$((yay_fail * 100 + flatpak_fail * 10 + topgrade_fail))
     return $result
 }

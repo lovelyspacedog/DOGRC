@@ -1,0 +1,23 @@
+{
+    "whitelist": [
+        "ls",
+        "pwd",
+        "lsa",
+        "topgrade"
+    ],
+    "interactive_commands": [
+        "topgrade",
+        "top",
+        "htop",
+        "vim",
+        "vi",
+        "nano",
+        "less",
+        "more",
+        "man",
+        "watch",
+        "ncurses",
+        "dialog",
+        "whiptail"
+    ]
+}
