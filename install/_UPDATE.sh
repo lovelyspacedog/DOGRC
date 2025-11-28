@@ -34,49 +34,31 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
 # Update changelog (current release changes only)
 __UPDATE_CHANGELOG="$(cat <<'EOF'
-Changes in this update (version 0.1.6):
+Changes in this update (version 0.1.7):
 Type 'changelog' to view the complete changelog.
 
 ### New Features
-- **dupefind Plugin**: Added new file-operations plugin for finding duplicate files
-  - Finds duplicate files by content hash (MD5/SHA256)
-  - Recursive directory scanning with detailed duplicate grouping
-  - Comprehensive unit test suite (45 tests)
+- **8 New Plugins Added**:
+  - **network-info**: Network diagnostics (interfaces, IPs, ports, connections, speed tests)
+  - **system-stats**: Enhanced system statistics with live updates and JSON output
+  - **url-shortener**: URL shortening service (is.gd, tinyurl) with `shorturl` alias
+  - **checksum-verify**: File checksum verification/generation (MD5, SHA1, SHA256, SHA512)
+  - **find-empty-dirs**: Find and optionally delete empty directories recursively
+  - **sort-downloads**: Organize Downloads directory by extension or date
+  - **sanitize-filenames**: Clean filenames (remove special chars, normalize spaces)
+  - **disk-usage**: Enhanced disk usage analyzer with tree view and cleanup suggestions
 
-- **Parallel Test Execution**: Added `--parallel` flag for simultaneous test execution
-  - Significantly faster test suite execution
-  - Resource monitor (htop/top) in right tmux pane during parallel runs
-  - All test files updated for parallel execution safety
-
-- **Test Runner Enhancements**: Added `--stage` flag for targeted testing
-  - Test specific test and its adjacent tests for faster debugging
-
-- **pokefetch Enhancement**: Added `--relocate` flag for custom output location
-  - Enables test isolation and custom file paths
-
-- **timer Enhancement**: Added `--use-dir` flag for custom timer directory
-  - Enables test isolation and custom timer file locations
+- **Test Runner Enhancement**: Added `--egg` / `-EGG` flag for easter egg mode
+  - Displays animated bonsai tree (cbonsai) in right pane during tests
 
 ### Enhancements
-- **Version Comparison**: Enhanced to handle 4+ part version strings (e.g., `0.1.5.12`)
-  - Updated both `drcupdate.sh` and `_UPDATE.sh` with improved comparison logic
-  - Comprehensive unit tests for 4-part version comparison
+- **Documentation**: Updated drchelp.sh with comprehensive help for all 8 new plugins
+- **Installation**: Updated _INSTALL.sh to verify all new plugin files
+- **Test Isolation**: Improved test isolation for parallel execution
 
-- **Test Suite Improvements**: Enhanced for parallel execution safety
-  - All test files use unique process ID prefixes to prevent conflicts
-  - Fixed race conditions in `test-backup.sh` and other test files
-  - Improved cleanup logic for all temporary files and directories
-
-- **Update Script Enhancements**: Improved migration logic
-  - Added preservation of `disabled.json` user customizations
-  - Added preservation of user-created test files
-  - Enhanced migration summary messages
-
-### Bug Fixes
-- Fixed test score tabulation with proper integer conversion
-- Fixed parallel execution conflicts and race conditions
-- Fixed test cleanup issues in multiple test files
-- Fixed `--fail-fast` logic in `_test-all-fb.sh`
+### Infrastructure
+- Added comprehensive unit tests for url-shortener, checksum-verify, and find-empty-dirs
+- All new plugins follow DOGRC architectural patterns
 EOF
 )"
 

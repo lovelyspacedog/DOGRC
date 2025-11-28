@@ -1,5 +1,103 @@
 # DOGRC Changelog
 
+## [0.1.7] - 2025-11-25
+
+### New Features
+- **network-info Plugin**: Added new information plugin for network diagnostics
+  - Display network interfaces and IP addresses
+  - Show default gateway and DNS servers
+  - Test network speed (requires speedtest-cli)
+  - List listening ports on the system
+  - Display active network connections
+  - Supports `--speed`, `--ports`, `--connections` flags
+  - Full drchelp documentation integration
+
+- **system-stats Plugin**: Added new information plugin for system statistics
+  - Display CPU usage, memory statistics, disk usage, and network stats
+  - Show system uptime and load average
+  - Live updating with `--watch` mode
+  - JSON output format with `--json` flag
+  - Customizable update interval
+  - Full drchelp documentation integration
+
+- **url-shortener Plugin**: Added new utility plugin for URL shortening
+  - Shorten URLs using is.gd (default) and tinyurl services
+  - No API keys required
+  - Automatically copies shortened URL to clipboard (if available)
+  - Supports `--service` flag to specify service
+  - `--show-service` flag to display service name
+  - `shorturl` alias for convenience
+  - Full drchelp documentation integration
+  - Comprehensive unit test suite (35 tests)
+
+- **checksum-verify Plugin**: Added new file-operations plugin for checksum verification
+  - Verify file integrity by comparing checksums
+  - Generate checksums for files
+  - Supports MD5, SHA1, SHA256 (default), and SHA512 algorithms
+  - Cross-platform support (GNU coreutils and BSD/macOS)
+  - Normalizes checksums (case-insensitive, removes spaces)
+  - Full drchelp documentation integration
+  - Comprehensive unit test suite (40 tests)
+
+- **find-empty-dirs Plugin**: Added new file-operations plugin for finding empty directories
+  - Find empty directories recursively
+  - Optional deletion with `--delete` flag
+  - Interactive confirmation for deletion
+  - Displays relative paths for cleaner output
+  - Full drchelp documentation integration
+  - Comprehensive unit test suite
+
+- **sort-downloads Plugin**: Added new file-operations plugin for organizing downloads
+  - Organize files by extension or by date (year-month)
+  - Dry-run mode to preview changes
+  - Handles duplicate filenames automatically
+  - Full drchelp documentation integration
+  - Comprehensive unit test suite
+
+- **sanitize-filenames Plugin**: Added new file-operations plugin for cleaning filenames
+  - Remove or replace special characters
+  - Normalize spaces or replace with underscores
+  - Works with single files or directories (recursive)
+  - Dry-run mode to preview changes
+  - Preserves hidden files (leading dot)
+  - Full drchelp documentation integration
+  - Comprehensive unit test suite
+
+- **disk-usage Plugin**: Added new information plugin for disk usage analysis
+  - Enhanced disk usage analyzer with tree view
+  - Show top N largest directories with `--top` flag
+  - Suggest files to clean with `--clean` flag
+  - Scans common cache/temp locations
+  - Full drchelp documentation integration
+
+- **Test Runner Enhancement**: Added `--egg` / `-EGG` flag for easter egg mode
+  - Displays animated bonsai tree (cbonsai) in right pane during tests
+  - Provides visual entertainment while tests run
+  - Requires cbonsai to be installed
+  - Can be combined with other flags
+
+### Enhancements
+- **Test Isolation**: Improved test isolation for parallel execution
+  - Enhanced test-backup.sh with better directory tracking
+  - Updated runtests documentation with new flags
+  - Improved cleanup logic
+
+- **Documentation**: Updated drchelp.sh with comprehensive help for all new plugins
+  - Added help entries for 8 new plugins
+  - Updated function list in default help output
+  - Added all new plugins to tab completion
+
+- **Installation**: Updated _INSTALL.sh to verify all new plugin files
+  - Added verification for 8 new plugin files
+  - Ensures all plugins are properly installed
+
+### Infrastructure
+- Removed file-watcher plugin
+- Added unit tests for url-shortener, checksum-verify, and find-empty-dirs
+- All new plugins follow DOGRC architectural patterns
+
+---
+
 ## [0.1.6] - 2025-11-21
 
 ### New Features

@@ -1,5 +1,5 @@
 {
-    "version": "0.1.6",
+    "version": "0.1.7",
     "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
@@ -12,6 +12,5 @@
     "enable_zoxide": true,
     "enable_automotd": true,
     "enable_hydecheck": true,
-    "enable_hydecheck_include_timeshift": true,
-    "enable_global_typewriter": true
+    "enable_hydecheck_include_timeshift": true
 }

@@ -2,7 +2,7 @@
 
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
 
-> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.6). Features may change, and there may be bugs. Use at your own discretion.
+> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.7). Features may change, and there may be bugs. Use at your own discretion.
 
 ## Features
 
@@ -12,7 +12,7 @@
 - 🛠️ **Rich Utilities** - File operations, navigation, information tools, and more
 - 📦 **Self-Contained** - All configuration in one directory (`~/DOGRC`)
 - 🔄 **Update-Friendly** - Update system that preserves user customizations
-- 🧪 **Well-Tested** - Comprehensive unit test suite (27+ test files, 40+ plugins)
+- 🧪 **Well-Tested** - Comprehensive unit test suite (30+ test files, 48+ plugins)
 - ⚡ **Parallel Testing** - Run tests in parallel for faster execution
 - 📊 **Test Staging** - Targeted testing with `--stage` flag
 
@@ -80,15 +80,22 @@ DOGRC/
 │   │   ├── archive.sh     # Archive extraction and compression
 │   │   ├── backup.sh      # Timestamped backups
 │   │   ├── blank.sh       # Empty files with safety countdown
+│   │   ├── checksum-verify.sh # File checksum verification/generation
 │   │   ├── dupefind.sh    # Find duplicate files by content hash
+│   │   ├── find-empty-dirs.sh # Find and optionally delete empty directories
 │   │   ├── mkcd.sh        # Create directory and cd into it
+│   │   ├── sanitize-filenames.sh # Clean filenames (remove special chars)
+│   │   ├── sort-downloads.sh # Organize Downloads directory
 │   │   └── swap.sh        # Swap file names
 │   ├── information/       # System information plugins
 │   │   ├── analyze-file.sh
 │   │   ├── cpuinfo.sh
+│   │   ├── disk-usage.sh  # Enhanced disk usage analyzer
 │   │   ├── drcfortune.sh
 │   │   ├── drcversion.sh
+│   │   ├── network-info.sh # Network diagnostics
 │   │   ├── pokefetch.sh
+│   │   ├── system-stats.sh # System statistics with live updates
 │   │   └── weather.sh
 │   ├── navigation/        # Directory navigation plugins
 │   │   ├── cd-cdd-zd.sh   # Enhanced cd commands
@@ -106,6 +113,7 @@ DOGRC/
 │   │   ├── runtests.sh    # Run unit test suite
 │   │   ├── timer.sh
 │   │   ├── update.sh
+│   │   ├── url-shortener.sh # URL shortening service
 │   │   └── ... (many more)
 │   └── user-plugins/      # User-created plugins
 │       └── example.sh
@@ -119,7 +127,7 @@ DOGRC/
 │   ├── test-archive.sh
 │   ├── test-backup.sh
 │   ├── test-dupefind.sh
-│   └── ... (27+ test files)
+│   └── ... (30+ test files)
 └── reports/               # Documentation
     ├── COMPARISON_REPORT.md
     └── MIGRATION_0.1.5_TO_0.1.6.md
@@ -133,7 +141,7 @@ Edit `~/DOGRC/config/DOGRC.json` to enable/disable features:
 
 ```json
 {
-    "version": "0.1.6",
+    "version": "0.1.7",
     "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
@@ -200,6 +208,30 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
   - `dupefind --recursive` - Recursive search
   - Supports `--help` or `-h` for detailed help
 
+- **`checksum-verify`** - Verify file integrity or generate checksums
+  - `checksum-verify file.txt <checksum>` - Verify file against checksum
+  - `checksum-verify --generate file.txt` - Generate checksum (SHA256 default)
+  - `checksum-verify --generate --algorithm md5 file.txt` - Use MD5
+  - Supports MD5, SHA1, SHA256 (default), SHA512
+  - Supports `--help` or `-h` for detailed help
+
+- **`find-empty-dirs`** - Find and optionally delete empty directories
+  - `find-empty-dirs` - Find empty directories recursively
+  - `find-empty-dirs --delete` - Delete empty directories (with confirmation)
+  - Supports `--help` or `-h` for detailed help
+
+- **`sort-downloads`** - Organize Downloads directory
+  - `sort-downloads` - Organize by extension
+  - `sort-downloads --by-date` - Organize by date (year-month)
+  - `sort-downloads --dry-run` - Preview changes without moving files
+  - Supports `--help` or `-h` for detailed help
+
+- **`sanitize-filenames`** - Clean filenames (remove special characters)
+  - `sanitize-filenames file.txt` - Clean single file
+  - `sanitize-filenames directory` - Clean all files in directory (recursive)
+  - `sanitize-filenames --dry-run` - Preview changes
+  - Supports `--help` or `-h` for detailed help
+
 - **`mkcd`** - Create directory and change into it
   - `mkcd newdir` - Create and cd into directory
   - Automatically lists directory contents
@@ -242,6 +274,26 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 
 - **`weather`** - Weather information (supports multiple cities)
 
+- **`network-info`** - Network diagnostics and information
+  - `network-info` - Display network interfaces and IP addresses
+  - `network-info --speed` - Test network speed (requires speedtest-cli)
+  - `network-info --ports` - List listening ports
+  - `network-info --connections` - Display active network connections
+  - Supports `--help` or `-h` for detailed help
+
+- **`system-stats`** - Enhanced system statistics
+  - `system-stats` - Display CPU, memory, disk, and network stats
+  - `system-stats --watch` - Live updating mode
+  - `system-stats --json` - JSON output format
+  - `system-stats --interval 2` - Custom update interval (seconds)
+  - Supports `--help` or `-h` for detailed help
+
+- **`disk-usage`** - Enhanced disk usage analyzer
+  - `disk-usage` - Display disk usage with tree view
+  - `disk-usage --top 10` - Show top N largest directories
+  - `disk-usage --clean` - Suggest files to clean
+  - Supports `--help` or `-h` for detailed help
+
 ### Utilities
 
 - **`calc`** - Calculator utility
@@ -273,6 +325,7 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
   - `runtests --ci` - Run tests in CI mode
   - `runtests --parallel` - Run tests in parallel mode
   - `runtests --stage <test-name>` - Run specific test and neighbors
+  - `runtests --egg` - Easter egg mode (animated bonsai tree)
 
 - **`bashrc`** - Manage .bashrc files
   - `bashrc --edit` - Edit .bashrc
@@ -281,6 +334,14 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
   - `bashrc --edit config` - Edit DOGRC.json
 
 - **`drcupdate`** - Update DOGRC system
+
+- **`url-shortener`** / **`shorturl`** - URL shortening service
+  - `url-shortener https://example.com` - Shorten URL (is.gd default)
+  - `url-shortener --service tinyurl https://example.com` - Use tinyurl
+  - `url-shortener --show-service https://example.com` - Show service name
+  - `shorturl https://example.com` - Alias for url-shortener
+  - Automatically copies to clipboard if available
+  - Supports `--help` or `-h` for detailed help
 
 - And many more...
 
@@ -340,6 +401,7 @@ cd ~/DOGRC/unit-tests
 ./_TEST-ALL.sh --ci             # Run tests in CI mode
 ./_TEST-ALL.sh --parallel       # Run tests in parallel (faster execution)
 ./_TEST-ALL.sh --stage dupefind # Run specific test and neighbors
+./_TEST-ALL.sh --egg            # Easter egg mode (animated bonsai tree)
 ./test-archive.sh               # Test archive.sh (extract, compress)
 ./test-backup.sh                # Test backup.sh
 ./test-dupefind.sh              # Test dupefind.sh
@@ -351,9 +413,10 @@ cd ~/DOGRC/unit-tests
 The test suite includes:
 - Real-time progress tracking with split pane display
 - Elapsed time tracking for suite and individual tests
-- **27+ test files** covering all 40+ plugins
+- **30+ test files** covering all 48+ plugins
 - **Parallel execution support** (`--parallel` flag) for faster test runs
 - **Test staging** (`--stage` flag) for targeted testing
+- **Easter egg mode** (`--egg` flag) with animated bonsai tree
 - Resource monitoring (htop/top) during parallel execution
 - All tests report pass/fail status with percentage completion
 - Comprehensive cleanup of temporary files and directories
@@ -453,7 +516,24 @@ When contributing:
 
 ## Version History
 
-**v0.1.6** (Current)
+**v0.1.7** (Current)
+- **8 New Plugins Added**:
+  - **network-info**: Network diagnostics (interfaces, IPs, ports, connections, speed tests)
+  - **system-stats**: Enhanced system statistics with live updates and JSON output
+  - **url-shortener**: URL shortening service (is.gd, tinyurl) with `shorturl` alias
+  - **checksum-verify**: File checksum verification/generation (MD5, SHA1, SHA256, SHA512)
+  - **find-empty-dirs**: Find and optionally delete empty directories recursively
+  - **sort-downloads**: Organize Downloads directory by extension or date
+  - **sanitize-filenames**: Clean filenames (remove special chars, normalize spaces)
+  - **disk-usage**: Enhanced disk usage analyzer with tree view and cleanup suggestions
+- **Test Runner Enhancement**: Added `--egg` / `-EGG` flag for easter egg mode
+  - Displays animated bonsai tree (cbonsai) in right pane during tests
+- **Documentation**: Updated drchelp.sh with comprehensive help for all 8 new plugins
+- **Installation**: Updated _INSTALL.sh to verify all new plugin files
+- **Test Isolation**: Improved test isolation for parallel execution
+- Added comprehensive unit tests for url-shortener, checksum-verify, and find-empty-dirs
+
+**v0.1.6**
 - **dupefind Plugin**: New file-operations plugin for finding duplicate files
   - Finds duplicates by content hash (MD5/SHA256)
   - Recursive directory scanning with detailed reporting
