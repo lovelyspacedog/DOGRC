@@ -2,7 +2,7 @@
 
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
 
-> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.1.7). Features may change, and there may be bugs. Use at your own discretion.
+> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.2.0). Features may change, and there may be bugs. Use at your own discretion.
 
 ## Features
 
@@ -12,7 +12,7 @@
 - 🛠️ **Rich Utilities** - File operations, navigation, information tools, and more
 - 📦 **Self-Contained** - All configuration in one directory (`~/DOGRC`)
 - 🔄 **Update-Friendly** - Update system that preserves user customizations
-- 🧪 **Well-Tested** - Comprehensive unit test suite (30+ test files, 48+ plugins)
+- 🧪 **Well-Tested** - Comprehensive unit test suite (35+ test files, 45+ passing tests)
 - ⚡ **Parallel Testing** - Run tests in parallel for faster execution
 - 📊 **Test Staging** - Targeted testing with `--stage` flag
 
@@ -141,7 +141,7 @@ Edit `~/DOGRC/config/DOGRC.json` to enable/disable features:
 
 ```json
 {
-    "version": "0.1.7",
+    "version": "0.2.0",
     "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
@@ -211,7 +211,8 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
 - **`checksum-verify`** - Verify file integrity or generate checksums
   - `checksum-verify file.txt <checksum>` - Verify file against checksum
   - `checksum-verify --generate file.txt` - Generate checksum (SHA256 default)
-  - `checksum-verify --generate --algorithm md5 file.txt` - Use MD5
+  - `checksum-verify --recursive directory` - Generate checksums for all files in directory
+  - `checksum-verify --check checksums.txt` - Verify all files listed in a checksum file
   - Supports MD5, SHA1, SHA256 (default), SHA512
   - Supports `--help` or `-h` for detailed help
 
@@ -516,7 +517,14 @@ When contributing:
 
 ## Version History
 
-**v0.1.7** (Current)
+**v0.2.0** (Current)
+- **checksum-verify Plugin Enhancements**:
+  - Added recursive directory checksum generation (`--recursive`, `-r`)
+  - Added batch verification mode (`--check`, `-c`) to verify files from a checksum file
+- **Environment**: Improved `.bashrc` completion bindings (Tab cycles forward, Shift+Tab cycles backward)
+- **Testing**: Integrated 5 new tests for `checksum-verify`, expanding test suite to 45+ passing tests
+
+**v0.1.7**
 - **8 New Plugins Added**:
   - **network-info**: Network diagnostics (interfaces, IPs, ports, connections, speed tests)
   - **system-stats**: Enhanced system statistics with live updates and JSON output
