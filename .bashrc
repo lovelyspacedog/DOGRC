@@ -190,9 +190,10 @@ export PATH="$PATH:$HOME/bin"
 
 # Enhanced Completion
 bind 'set completion-ignore-case on'       # Ignore case in completion
-bind 'set show-all-if-ambiguous on'        # Show all matches if ambiguous
+bind 'set show-all-if-ambiguous on'       # Don't show list first, just cycle
 bind 'set menu-complete-display-prefix on' # Show prefix in completion menu
-bind 'TAB:menu-complete'                   # Tab to complete
+bind 'TAB:menu-complete'                   # Tab to cycle forward through completions
+bind '"\e[Z":menu-complete-backward'       # Shift+Tab to cycle backward
 
 # Better Key Bindings
 bind '"\C-f":forward-word'       # Forward word (Ctrl + f)

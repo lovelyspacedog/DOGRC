@@ -308,16 +308,21 @@ Verify file integrity using checksums or generate checksums for files.
 
 Usage: checksum-verify <file> <checksum> [OPTIONS]
        checksum-verify --generate <file> [OPTIONS]
+       checksum-verify --recursive <directory> [OPTIONS]
+       checksum-verify --check <checksum_file> [OPTIONS]
 
 Description:
   - Verify file integrity by comparing checksums
-  - Generate checksums for files
+  - Generate checksums for individual files or entire directories
+  - Verify all files listed in a checksum file (recursive verification)
   - Supports multiple hash algorithms: MD5, SHA1, SHA256, SHA512
   - Useful for verifying file integrity after downloads
   - Ensures files haven't been corrupted or tampered with
 
 Options:
   --generate, -g              Generate checksum for file (instead of verifying)
+  --recursive, -r             Recursively generate checksums for all files in directory
+  --check, -c                 Read checksums from file and verify them
   --algorithm, -a <algorithm> Specify hash algorithm (default: sha256)
                               Supported: md5, sha1, sha256, sha512
   --help, -h                  Show this help message
@@ -379,6 +384,12 @@ Examples:
   checksum-verify --generate file.txt
   checksum-verify --generate file.txt --algorithm md5
   checksum-verify -g file.txt -a sha512
+
+  # Recursive generation for a directory
+  checksum-verify --recursive my_folder > my_folder.sha256
+
+  # Recursive verification from a checksum file
+  checksum-verify --check my_folder.sha256
 
   # Verify with different algorithm
   checksum-verify file.txt abc123... --algorithm sha1

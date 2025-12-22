@@ -24,6 +24,8 @@ checksum-verify() {
     fi
     
     local generate_mode=false
+    local recursive_mode=false
+    local check_mode=false
     local algorithm="sha256"
     local file=""
     local checksum=""
@@ -33,6 +35,14 @@ checksum-verify() {
         case "$1" in
             --generate|-g)
                 generate_mode=true
+                shift
+                ;;
+            --recursive|-r)
+                recursive_mode=true
+                shift
+                ;;
+            --check|-c)
+                check_mode=true
                 shift
                 ;;
             --algorithm|-a)
@@ -63,7 +73,7 @@ checksum-verify() {
                 if [[ -z "$file" ]]; then
                     file="$1"
                 # Second non-flag argument is the checksum (for verify mode)
-                elif [[ -z "$checksum" ]] && [[ "$generate_mode" == false ]]; then
+                elif [[ -z "$checksum" ]] && [[ "$generate_mode" == false ]] && [[ "$check_mode" == false ]]; then
                     checksum="$1"
                 else
                     echo "Error: Too many arguments" >&2
@@ -79,13 +89,30 @@ checksum-verify() {
         echo "Error: File is required" >&2
         echo "Usage: checksum-verify <file> [checksum]" >&2
         echo "       checksum-verify --generate <file>" >&2
+        echo "       checksum-verify --recursive <directory>" >&2
+        echo "       checksum-verify --check <checksum_file>" >&2
         echo "       checksum-verify --help for more information" >&2
         return 1
     fi
     
-    # Validate file exists
-    if [[ ! -f "$file" ]]; then
-        echo "Error: File '$file' does not exist or is not a regular file" >&2
+    # Validate file/directory exists
+    if [[ ! -e "$file" ]]; then
+        echo "Error: '$file' does not exist" >&2
+        return 1
+    fi
+    
+    if [[ "$recursive_mode" == true ]] && [[ ! -d "$file" ]]; then
+        echo "Error: --recursive requires a directory, but '$file' is not a directory" >&2
+        return 1
+    fi
+    
+    if [[ "$check_mode" == true ]] && [[ ! -f "$file" ]]; then
+        echo "Error: --check requires a file, but '$file' is not a regular file" >&2
+        return 1
+    fi
+    
+    if [[ "$recursive_mode" == false ]] && [[ "$check_mode" == false ]] && [[ ! -f "$file" ]]; then
+        echo "Error: '$file' is not a regular file (use --recursive for directories)" >&2
         return 1
     fi
     
@@ -160,6 +187,113 @@ checksum-verify() {
         echo "Supported algorithms: md5, sha1, sha256, sha512" >&2
         echo "Required commands: md5sum/md5, sha1sum/shasum, sha256sum/shasum, sha512sum/shasum" >&2
         return 1
+    fi
+    
+    # Recursive mode (directory checksums)
+    if [[ "$recursive_mode" == true ]]; then
+        local target_dir="$file"
+        # Use find to list all files, then calculate checksum for each
+        # We cd into the directory so the paths in the output are relative to it
+        (
+            cd "$target_dir" || exit 1
+            find . -type f | sort | while read -r f; do
+                # Remove leading ./
+                local clean_path="${f#./}"
+                # Generate checksum for this file
+                local output
+                if [[ "$cmd" =~ ^shasum ]]; then
+                    output=$(eval "$cmd \"$clean_path\" 2>/dev/null")
+                else
+                    output=$($cmd "$clean_path" 2>/dev/null)
+                fi
+                
+                if [[ $? -eq 0 ]] && [[ -n "$output" ]]; then
+                    echo "$output"
+                fi
+            done
+        )
+        return $?
+    fi
+
+    # Check mode (verify against checksum file)
+    if [[ "$check_mode" == true ]]; then
+        local checksum_file="$file"
+        local total=0
+        local passed=0
+        local failed=0
+        local missing=0
+
+        # Determine the base directory for the check (usually the directory containing the checksum file)
+        local base_dir=$(dirname "$checksum_file")
+        
+        # Determine command type for output parsing
+        local check_cmd_type=""
+        if [[ "$cmd" == "md5" ]]; then
+            check_cmd_type="md5"
+        fi
+
+        while read -r line; do
+            [[ -z "$line" ]] && continue
+            
+            # Lines are expected to be "checksum  path"
+            local line_checksum=$(echo "$line" | awk '{print $1}')
+            local line_path=$(echo "$line" | cut -d' ' -f3-)
+            # If no double space, try single space
+            if [[ -z "$line_path" ]]; then
+                line_path=$(echo "$line" | cut -d' ' -f2-)
+            fi
+            # trim leading/trailing spaces
+            line_path=$(echo "$line_path" | xargs)
+
+            ((total++))
+            
+            local full_path="$base_dir/$line_path"
+            # If path not found relative to checksum file, try absolute if it looks absolute
+            if [[ ! -f "$full_path" ]] && [[ -f "$line_path" ]]; then
+                full_path="$line_path"
+            fi
+
+            if [[ ! -f "$full_path" ]]; then
+                echo "✗ MISSING: $line_path"
+                ((missing++))
+                continue
+            fi
+
+            # Normalize checksum
+            line_checksum=$(echo "$line_checksum" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+
+            # Generate checksum for the file
+            local output
+            if [[ "$cmd" =~ ^shasum ]]; then
+                output=$(eval "$cmd \"$full_path\" 2>/dev/null")
+            else
+                output=$($cmd "$full_path" 2>/dev/null)
+            fi
+
+            local file_checksum=$(extract_checksum "$output" "$check_cmd_type")
+            file_checksum=$(echo "$file_checksum" | tr '[:upper:]' '[:lower:]')
+
+            if [[ "$file_checksum" == "$line_checksum" ]]; then
+                echo "✓ OK: $line_path"
+                ((passed++))
+            else
+                echo "✗ FAILED: $line_path"
+                ((failed++))
+            fi
+        done < "$checksum_file"
+
+        echo ""
+        echo "Summary:"
+        echo "  Total:   $total"
+        echo "  Passed:  $passed"
+        echo "  Failed:  $failed"
+        [[ $missing -gt 0 ]] && echo "  Missing: $missing"
+        
+        if [[ $failed -eq 0 ]] && [[ $missing -eq 0 ]] && [[ $total -gt 0 ]]; then
+            return 0
+        else
+            return 1
+        fi
     fi
     
     # Generate mode
@@ -248,7 +382,7 @@ _checksum_verify_completion() {
     
     # If current word starts with dash, complete with flags
     if [[ "$cur" == -* ]]; then
-        COMPREPLY=($(compgen -W "--generate -g --algorithm -a --help -h --" -- "$cur"))
+        COMPREPLY=($(compgen -W "--generate -g --recursive -r --check -c --algorithm -a --help -h --" -- "$cur"))
         return 0
     fi
     

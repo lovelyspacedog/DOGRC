@@ -30,7 +30,7 @@ print_msg() {
 }
 
 score=0
-total_tests=40  # Tests 1-38 plus 2 summary tests with "*"
+total_tests=45  # Updated total tests
 printf "Running unit tests for checksum-verify.sh...\n\n"
 
 # Initialize progress tracking for real-time updates
@@ -720,6 +720,81 @@ if ! checksum-verify --generate "${TEST_DIR}/test.txt" "extra" 2>/dev/null; then
     fi
 else
     print_msg 38 "Does generate mode error on too many arguments?" false
+fi
+
+printf "\nTesting recursive and check modes...\n"
+
+# Test 39: Recursive generation
+mkdir -p "${TEST_DIR}/recursive/subdir"
+echo "file1" > "${TEST_DIR}/recursive/file1.txt"
+echo "file2" > "${TEST_DIR}/recursive/subdir/file2.txt"
+# Use find to generate checksums relative to the directory
+(cd "${TEST_DIR}/recursive" && checksum-verify --recursive "." > "../recursive_checksums.txt")
+if [[ -s "${TEST_DIR}/recursive_checksums.txt" ]] && \
+   grep -q "file1.txt" "${TEST_DIR}/recursive_checksums.txt" && \
+   grep -q "subdir/file2.txt" "${TEST_DIR}/recursive_checksums.txt"; then
+    if print_msg 39 "Does --recursive generation work correctly?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 39 "Does --recursive generation work correctly?" false
+fi
+
+# Test 40: Check mode verification
+# We need to be in the directory where the checksums were generated from if the paths are relative
+if (cd "${TEST_DIR}/recursive" && checksum-verify --check "../recursive_checksums.txt") | grep -q "OK: file1.txt" && \
+   (cd "${TEST_DIR}/recursive" && checksum-verify --check "../recursive_checksums.txt") | grep -q "OK: subdir/file2.txt"; then
+    if print_msg 40 "Does --check mode verify recursive files correctly?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    echo "DEBUG: $(cd "${TEST_DIR}/recursive" && checksum-verify --check "../recursive_checksums.txt")"
+    print_msg 40 "Does --check mode verify recursive files correctly?" false
+fi
+
+# Test 41: Check mode detects modification
+echo "modified" >> "${TEST_DIR}/recursive/file1.txt"
+if (cd "${TEST_DIR}/recursive" && checksum-verify --check "../recursive_checksums.txt") | grep -q "FAILED: file1.txt"; then
+    if print_msg 41 "Does --check mode detect file modification?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    echo "DEBUG: $(cd "${TEST_DIR}/recursive" && checksum-verify --check "../recursive_checksums.txt")"
+    print_msg 41 "Does --check mode detect file modification?" false
+fi
+
+# Test 42: Check mode detects missing file
+rm "${TEST_DIR}/recursive/subdir/file2.txt"
+if (cd "${TEST_DIR}/recursive" && checksum-verify --check "../recursive_checksums.txt") | grep -q "MISSING: subdir/file2.txt"; then
+    if print_msg 42 "Does --check mode detect missing files?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 42 "Does --check mode detect missing files?" false
+fi
+
+# Test 43: Error when --recursive is used on a file
+if ! checksum-verify --recursive "${TEST_DIR}/test.txt" 2>/dev/null; then
+    if print_msg 43 "Does --recursive error when target is a file?" true; then
+        ((score++))
+        if type update_progress_from_score >/dev/null 2>&1; then
+            update_progress_from_score
+        fi
+    fi
+else
+    print_msg 43 "Does --recursive error when target is a file?" false
 fi
 
 print_msg "*" "Did I complete all functional tests?" true
