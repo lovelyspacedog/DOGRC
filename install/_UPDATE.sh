@@ -32,33 +32,20 @@ readonly NC='\033[0m' # No Color
 COPYRIGHT="${COPYRIGHT:-true}"
 msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
-# Update changelog (current release changes only)
-__UPDATE_CHANGELOG="$(cat <<'EOF'
-Changes in this update (version 0.1.7):
+  # Update changelog (current release changes only)
+  __UPDATE_CHANGELOG="$(cat <<'EOF'
+Changes in this update (version 0.2.0):
 Type 'changelog' to view the complete changelog.
 
 ### New Features
-- **8 New Plugins Added**:
-  - **network-info**: Network diagnostics (interfaces, IPs, ports, connections, speed tests)
-  - **system-stats**: Enhanced system statistics with live updates and JSON output
-  - **url-shortener**: URL shortening service (is.gd, tinyurl) with `shorturl` alias
-  - **checksum-verify**: File checksum verification/generation (MD5, SHA1, SHA256, SHA512)
-  - **find-empty-dirs**: Find and optionally delete empty directories recursively
-  - **sort-downloads**: Organize Downloads directory by extension or date
-  - **sanitize-filenames**: Clean filenames (remove special chars, normalize spaces)
-  - **disk-usage**: Enhanced disk usage analyzer with tree view and cleanup suggestions
-
-- **Test Runner Enhancement**: Added `--egg` / `-EGG` flag for easter egg mode
-  - Displays animated bonsai tree (cbonsai) in right pane during tests
+- **Recursive Checksums**: `checksum-verify` now supports recursive directory scanning (`-r`) and batch verification from files (`-c`).
 
 ### Enhancements
-- **Documentation**: Updated drchelp.sh with comprehensive help for all 8 new plugins
-- **Installation**: Updated _INSTALL.sh to verify all new plugin files
-- **Test Isolation**: Improved test isolation for parallel execution
+- **Tab Completion**: Improved cycling through completions with Tab and Shift+Tab.
+- **Documentation**: Updated `drchelp` for all new `checksum-verify` features.
 
-### Infrastructure
-- Added comprehensive unit tests for url-shortener, checksum-verify, and find-empty-dirs
-- All new plugins follow DOGRC architectural patterns
+### Testing
+- **Integrated Tests**: Expanded `checksum-verify` test suite to 45 passing tests.
 EOF
 )"
 

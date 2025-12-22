@@ -1,5 +1,22 @@
 # DOGRC Changelog
 
+## [0.2.0] - 2025-12-11
+
+### New Features
+- **checksum-verify Plugin Enhancements**:
+  - Added recursive directory checksum generation (`--recursive`, `-r`)
+  - Added batch verification mode (`--check`, `-c`) to verify files from a checksum file
+  - Improved argument parsing and error handling for all modes
+
+### Enhancements
+- **Tab Completion**: Updated `checksum-verify` completion to include new flags
+- **Environment**: Improved `.bashrc` completion bindings (Tab cycles forward, Shift+Tab cycles backward)
+
+### Testing
+- **Integrated Unit Tests**: Added 5 new tests for `checksum-verify` (recursive and check modes) and integrated them into the main test suite (45 tests total)
+
+---
+
 ## [0.1.7] - 2025-11-25
 
 ### New Features
