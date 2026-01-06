@@ -1,7 +1,15 @@
 #!/bin/bash
-# Sourcing Guard - check if cd or cdd or zd function already exists
-if declare -f cd >/dev/null 2>&1 || declare -f cdd >/dev/null 2>&1 || declare -f zd >/dev/null 2>&1; then
-    return 0
+# Sourcing Guard
+if [[ "${enable_zoxide:-false}" == true ]]; then
+    # If zoxide is enabled, we already have alias cd="z"
+    # Only define cdd and zd
+    if declare -f cdd >/dev/null 2>&1 || declare -f zd >/dev/null 2>&1; then
+        return 0
+    fi
+else
+    if declare -f cd >/dev/null 2>&1 || declare -f cdd >/dev/null 2>&1 || declare -f zd >/dev/null 2>&1; then
+        return 0
+    fi
 fi
 
 [[ -z "${__NAVIGATION_DIR:-}" ]] && readonly __NAVIGATION_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -11,25 +19,28 @@ fi
 
 source "${__CORE_DIR}/dependency_check.sh"
 
-cd() {
-    # Handle drchelp flags (preserve builtin --help)
-    [[ "$1" == "--drchelp" ]] || [[ "$1" == "--drc" ]] && {
-        if declare -f drchelp >/dev/null 2>&1; then
-            drchelp cd
-            return 0
+# Only define cd() if zoxide is NOT enabled
+if [[ "${enable_zoxide:-false}" != true ]]; then
+    cd() {
+        # Handle drchelp flags (preserve builtin --help)
+        [[ "$1" == "--drchelp" ]] || [[ "$1" == "--drc" ]] && {
+            if declare -f drchelp >/dev/null 2>&1; then
+                drchelp cd
+                return 0
+            else
+                echo "Error: drchelp not available" >&2
+                return 1
+            fi
+        }
+        
+        if [[ -z "$1" ]]; then
+            builtin cd "${HOME}"
         else
-            echo "Error: drchelp not available" >&2
-            return 1
+            builtin cd "$@"
         fi
+        return 0
     }
-    
-    if [[ -z "$1" ]]; then
-        builtin cd "${HOME}"
-    else
-        builtin cd "$@"
-    fi
-    return 0
-}
+fi
 
 cdd() {
     # Handle help flags
@@ -85,13 +96,14 @@ zd() {
         fi
     fi
     
-    # Fallback to cd if zoxide fails or isn't available
+    # Fallback to builtin cd if zoxide fails or isn't available
     if [[ -z "$1" ]]; then
         builtin cd "${HOME}" || {
             echo "Error: Failed to change to directory ${HOME}" >&2
             return 1
         }
     else
+        # Use builtin cd to avoid potential alias loops if cd is an alias to z
         builtin cd "$@" || {
             echo "Error: Failed to change to directory $1" >&2
             return 1
@@ -118,7 +130,11 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     
     case "$func_name" in
         cd)
-            cd "$@"
+            if declare -f cd >/dev/null 2>&1; then
+                cd "$@"
+            else
+                builtin cd "$@"
+            fi
             exit $?
             ;;
         cdd)
