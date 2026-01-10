@@ -177,12 +177,12 @@ extract_preamble_snippet() {
         return 1
     fi
     
-    # Find the case branch
+    # Find the case branch and collect all lines until ;;
     local in_branch=false
-    local snippet=""
     local found_comment=false
+    local branch_content=()
     
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
         # Check if we're entering the target branch
         if [[ "$line" =~ ^[[:space:]]*"$branch"[[:space:]]*\) ]]; then
             in_branch=true
@@ -190,37 +190,66 @@ extract_preamble_snippet() {
             continue
         fi
         
-        # If we hit another case branch or return, we're done
-        if [[ "$in_branch" == true ]] && [[ "$line" =~ ^[[:space:]]*return[[:space:]]+0 ]]; then
-            break
-        fi
-        
-        # If we hit another case branch while in branch, we're done
-        if [[ "$in_branch" == true ]] && [[ "$line" =~ ^[[:space:]]*--[a-z-]+\) ]]; then
-            break
-        fi
-        
-        # If we're in the branch, collect lines after comment
+        # If we're in the branch, look for the first comment
         if [[ "$in_branch" == true ]]; then
-            # Check if this is a comment line (start of user content area)
-            if [[ "$line" =~ ^[[:space:]]*# ]]; then
-                found_comment=true
-                continue
-            fi
-            
-            # Collect content after comment (skip empty lines at start)
-            if [[ "$found_comment" == true ]]; then
-                # Skip leading empty lines
-                if [[ -z "$snippet" ]] && [[ -z "$(echo "$line" | tr -d '[:space:]')" ]]; then
+            if [[ "$found_comment" == false ]]; then
+                if [[ "$line" =~ ^[[:space:]]*# ]]; then
+                    found_comment=true
                     continue
                 fi
-                snippet+="$line"$'\n'
+            else
+                # We are after the first comment, collect lines until we hit ;;
+                if [[ "$line" =~ ^[[:space:]]*;; ]]; then
+                    in_branch=false
+                    break
+                fi
+                branch_content+=("$line")
             fi
         fi
     done < "$preamble_file"
     
-    # Trim trailing newlines
-    echo -n "${snippet%%$'\n'}"
+    # We now have the content between the first comment and ;;
+    # We need to remove the trailing 'return 0' and any trailing empty lines
+    # that belong to the template.
+    local last_idx=$((${#branch_content[@]} - 1))
+    local found_return=false
+    
+    # Work backwards to strip the template's 'return 0' and empty lines
+    while [[ $last_idx -ge 0 ]]; do
+        local current_line="${branch_content[$last_idx]}"
+        
+        # Skip empty lines
+        if [[ -z "$(echo "$current_line" | tr -d '[:space:]')" ]]; then
+            unset 'branch_content[$last_idx]'
+            last_idx=$((last_idx - 1))
+            continue
+        fi
+        
+        # Check for 'return 0' - only strip the FIRST one we hit from the bottom
+        # as that's the template's return.
+        if [[ "$found_return" == false ]] && [[ "$current_line" =~ ^[[:space:]]*return[[:space:]]+0 ]]; then
+            unset 'branch_content[$last_idx]'
+            last_idx=$((last_idx - 1))
+            found_return=true
+            continue
+        fi
+        
+        # If we hit anything else, we've reached the user's content
+        break
+    done
+    
+    # Output the remaining lines
+    local first=true
+    for line in "${branch_content[@]}"; do
+        if [[ "$first" == true ]]; then
+            # Skip leading empty lines
+            if [[ -z "$(echo "$line" | tr -d '[:space:]')" ]]; then
+                continue
+            fi
+            first=false
+        fi
+        printf "%s\n" "$line"
+    done
 }
 
 # Extract user aliases (aliases not in new version)
@@ -237,7 +266,7 @@ extract_user_aliases() {
     local in_user_section=false
     
     # Extract aliases from old file
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
         # Skip comments and empty lines at start
         if [[ "$line" =~ ^[[:space:]]*# ]] || [[ -z "$(echo "$line" | tr -d '[:space:]')" ]]; then
             continue
@@ -267,7 +296,7 @@ store_enable_values() {
     fi
     
     # Extract all enable_* keys and store them
-    while IFS= read -r key; do
+    while IFS= read -r key || [[ -n "$key" ]]; do
         if [[ "$key" =~ ^enable_ ]]; then
             local value=$(jq -r ".[\"$key\"] // false" "$json_file" 2>/dev/null)
             # Store as __ENABLE_<UPPERCASE_KEY> to avoid conflicts
@@ -293,7 +322,7 @@ restore_enable_values() {
     
     # Get all enable_* variables from environment
     local var_name
-    while IFS= read -r var_name; do
+    while IFS= read -r var_name || [[ -n "$var_name" ]]; do
         # Match __ENABLE_ENABLE_* variables (e.g., __ENABLE_ENABLE_BLESH=true)
         if [[ "$var_name" =~ ^__ENABLE_(ENABLE_[A-Z_]+)=(.+)$ ]]; then
             local key="${BASH_REMATCH[1]}"
@@ -342,7 +371,7 @@ restore_preamble_snippets() {
     local in_branch=false
     local current_branch=""
     
-    while IFS= read -r line; do
+    while IFS= read -r line || [[ -n "$line" ]]; do
         # Check if entering a case branch
         if [[ "$line" =~ ^[[:space:]]*--(non-interactive|interactive|after-loading)[[:space:]]*\) ]]; then
             current_branch="${BASH_REMATCH[1]}"
