@@ -1,7 +1,7 @@
 # DOGRC
 
 <p align="center">
-  <img src="https://game-icons.net/icons/ffffff/000000/1x1/delapouite/dog-house.svg" alt="DOGRC Logo" width="64" height="64">
+  <img src="https://game-icons.net/icons/000000/transparent/1x1/delapouite/dog-house.svg" alt="DOGRC Logo" width="128" height="128">
 </p>
 
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
