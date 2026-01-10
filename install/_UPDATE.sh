@@ -199,7 +199,7 @@ extract_preamble_snippet() {
                 fi
             else
                 # We are after the first comment, collect lines until we hit ;;
-                if [[ "$line" =~ ^[[:space:]]*;; ]]; then
+                if [[ "$line" =~ ^[[:space:]]*";;" ]]; then
                     in_branch=false
                     break
                 fi
