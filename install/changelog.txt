@@ -1,5 +1,16 @@
 # DOGRC Changelog
 
+## [0.2.2] - 2026-01-10
+
+### Bug Fixes
+- **Update Script (`_UPDATE.sh`)**: 
+  - Fixed critical syntax error in `preamble.sh` extraction logic.
+  - Improved robustness of preamble migration to correctly handle multi-line blocks (if/case/for) and comments.
+  - Added safer line reading to handle files without trailing newlines.
+  - Quoted reserved tokens in regex to prevent shell parser misinterpretation.
+
+---
+
 ## [0.2.1] - 2026-01-10
 
 ### New Features

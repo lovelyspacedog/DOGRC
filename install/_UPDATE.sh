@@ -34,20 +34,17 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
   # Update changelog (current release changes only)
   __UPDATE_CHANGELOG="$(cat <<'EOF'
-Changes in this update (version 0.2.1):
+Changes in this update (version 0.2.2):
 Type 'changelog' to view the complete changelog.
 
-### New Features
-- **Recursive Checksums**: `checksum-verify` now supports recursive directory scanning (`-r`) and batch verification from files (`-c`).
-- **Pastebin Integration**: New `pastethis` utility to upload files to Pastebin with 200+ syntax formats and automatic extension detection.
+### Bug Fixes
+- **Migration Logic**: Fixed critical bug in `preamble.sh` migration that caused syntax errors.
+- **Update Reliability**: Fixed syntax error in `_UPDATE.sh` during version comparison and extraction.
+- **Robustness**: Improved handling of multi-line blocks and comments in user configurations.
 
-### Enhancements
-- **Tab Completion**: Improved cycling through completions with Tab and Shift+Tab.
-- **Documentation**: Updated `drchelp` for all new `checksum-verify` features.
-
-### Testing
-- **Integrated Tests**: Expanded `checksum-verify` test suite to 45 passing tests.
-- **New Test Suite**: Added comprehensive enterprise-grade unit tests for `pastethis` (56 tests).
+### New Features (from 0.2.1)
+- **Pastebin Integration**: New `pastethis` utility to upload files to Pastebin with 200+ syntax formats.
+- **Smart Detection**: Automatic syntax detection based on file extensions.
 EOF
 )"
 
