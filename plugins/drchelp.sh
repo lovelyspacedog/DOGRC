@@ -2162,6 +2162,95 @@ Note: Note numbers must be positive integers or zero. The function will
 EOF
                 return 0
                 ;;
+            pastethis)
+                cat <<EOF
+pastethis - Paste Files to Pastebin
+
+Upload files to Pastebin with automatic syntax highlighting and customizable options.
+
+Usage: pastethis [OPTIONS] <file>
+       pastethis -n <file>                    # Never expires
+       pastethis --help
+
+Description:
+  - Uploads file contents to Pastebin with syntax highlighting
+  - Supports 200+ programming languages and file formats
+  - Automatically detects format from file extension (can be overridden)
+  - Customizable privacy, expiration, and title settings
+
+Options:
+  --file|-f <file>           Specify file to paste (can also be positional argument)
+  --privacy|-p <level>       Privacy level: public, unlisted, private (default: public)
+  --title|-t <title>         Custom title for the paste (default: filename with extension)
+  --expires|-e <duration>    Expiration time: n(never), 10m, 1h, 1d, 1w, 2w, 1m, 6m, 1y (default: 10M)
+  --format|-r <language>     Syntax highlighting language (default: auto-detect from extension)
+  --pastebin-api-key|-k <key> Override API key (normally read from ~/Documents/pastebin-api-key)
+  -n                         Never expires (shortcut for --expires n)
+
+Arguments:
+  <file>                     File to paste (positional argument, same as --file)
+
+Privacy Levels:
+  - public (0)               Visible to everyone, appears in recent pastes
+  - unlisted (1)             Not listed in recent pastes but accessible via direct link
+  - private (2)              Only accessible to you (requires account and API key)
+
+Expiration Times:
+  - n, never                 Paste never expires
+  - 10m, 10 minutes         Expires in 10 minutes
+  - 1h, 1 hour              Expires in 1 hour
+  - 1d, 1 day               Expires in 1 day
+  - 1w, 1 week              Expires in 1 week
+  - 2w, 2 weeks             Expires in 2 weeks
+  - 1m, 1 month             Expires in 1 month
+  - 6m, 6 months            Expires in 6 months
+  - 1y, 1 year              Expires in 1 year
+
+Format Options:
+  - auto                     Explicitly request auto-detection from file extension
+  - [language name]          Any supported language (see full list below)
+  - text                     Plain text (no syntax highlighting)
+
+Supported Languages (200+):
+  Programming: Bash, Python, JavaScript, TypeScript, Java, C/C++, Rust, Go, Ruby, PHP, etc.
+  Web: HTML, CSS, XML, JSON, YAML, Markdown
+  Data: SQL, CSV, Diff, Log files
+  Config: INI, TOML, Properties
+  Other: Docker, Make, LaTeX, Assembly, etc.
+
+Auto-Detection Examples:
+  - script.py      → Python
+  - config.json    → JSON
+  - README.md      → Markdown
+  - Dockerfile     → Docker
+  - Makefile       → Make
+
+Dependencies:
+  - curl (for HTTP requests)
+  - cat (for reading files)
+  - API key file: ~/Documents/pastebin-api-key (must exist and be readable)
+
+Files:
+  - ~/Documents/pastebin-api-key - Contains your Pastebin API key
+  - Input file (any readable file to be pasted)
+
+Examples:
+  pastethis script.py                           # Auto-detect Python highlighting
+  pastethis -n script.py                        # Never expires, auto-detect Python
+  pastethis --format auto config.json           # Explicit auto-detection for JSON
+  pastethis --privacy unlisted --title "My Code" script.sh
+  pastethis --expires 1d --format "C++" program.cpp
+  pastethis --privacy private --expires 1w important.txt
+
+Note: Requires a valid Pastebin API key stored in ~/Documents/pastebin-api-key.
+      The API key file should contain only the key string. Format auto-detection
+      works for 100+ file extensions and can be overridden with --format. All
+      pastes return a direct URL to the created paste. Tab completion is
+      available for all options, privacy levels, expiration times, format names,
+      and filenames.
+EOF
+                return 0
+                ;;
             h)
                 cat <<EOF
 h - Enhanced History Search

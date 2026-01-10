@@ -1,5 +1,24 @@
 # DOGRC Changelog
 
+## [0.2.1] - 2026-01-10
+
+### New Features
+- **pastethis Plugin**: New utility for uploading files to Pastebin.
+  - Supports 200+ syntax highlighting formats.
+  - Intelligent auto-detection of format from file extensions (100+ mappings).
+  - Secure API key management (reads from `~/Documents/pastebin-api-key`).
+  - Customizable privacy (public/unlisted/private), expiration times, and titles.
+  - Full bash completion for all flags and options.
+
+### Enhancements
+- **Documentation**: Added comprehensive `drchelp` documentation for `pastethis`.
+- **Installation/Update**: Integrated `pastethis` into `_INSTALL.sh` and `_UPDATE.sh` for verification and migration summary.
+
+### Testing
+- **New Test Suite**: Added 56 enterprise-grade unit tests for `pastethis` with full support for parallel execution.
+
+---
+
 ## [0.2.0] - 2025-12-11
 
 ### New Features

@@ -762,6 +762,7 @@ verify_installation() {
         "plugins/utilities/n.sh"
         "plugins/utilities/notifywhendone.sh"
         "plugins/utilities/openthis.sh"
+        "plugins/utilities/pastethis.sh"
         "plugins/utilities/prepfile.sh"
         "plugins/utilities/pwd.sh"
         "plugins/utilities/runtests.sh"

@@ -34,11 +34,12 @@ msg="Made by Tony Pup (c) 2025. All rights reserved.    Rarf~~! <3"
 
   # Update changelog (current release changes only)
   __UPDATE_CHANGELOG="$(cat <<'EOF'
-Changes in this update (version 0.2.0):
+Changes in this update (version 0.2.1):
 Type 'changelog' to view the complete changelog.
 
 ### New Features
 - **Recursive Checksums**: `checksum-verify` now supports recursive directory scanning (`-r`) and batch verification from files (`-c`).
+- **Pastebin Integration**: New `pastethis` utility to upload files to Pastebin with 200+ syntax formats and automatic extension detection.
 
 ### Enhancements
 - **Tab Completion**: Improved cycling through completions with Tab and Shift+Tab.
@@ -46,6 +47,7 @@ Type 'changelog' to view the complete changelog.
 
 ### Testing
 - **Integrated Tests**: Expanded `checksum-verify` test suite to 45 passing tests.
+- **New Test Suite**: Added comprehensive enterprise-grade unit tests for `pastethis` (56 tests).
 EOF
 )"
 
