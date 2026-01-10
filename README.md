@@ -1,5 +1,9 @@
 # DOGRC
 
+<p align="center">
+  <img src="https://game-icons.net/icons/ffffff/000000/1x1/delapouite/dog-house.svg" alt="DOGRC Logo" width="64" height="64">
+</p>
+
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
 
 > ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.2.2). Features may change, and there may be bugs. Use at your own discretion.
@@ -628,6 +632,8 @@ See the [LICENSE](LICENSE) file for the full license text.
 ## Acknowledgments
 
 DOGRC is inspired by various bashrc configurations and aims to provide a modern, maintainable approach to shell configuration.
+
+**Icon**: Dog House icon by [Delapouite](https://delapouite.com/) from [Game Icons](https://game-icons.net/1x1/delapouite/dog-house.html), licensed under [CC0 (Public Domain)](https://creativecommons.org/publicdomain/zero/1.0/).
 
 Made by Tony Pup (c) 2025. All rights reserved. Rarf~~! <3
 
