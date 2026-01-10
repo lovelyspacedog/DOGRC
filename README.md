@@ -2,7 +2,7 @@
 
 **DOGRC** is a modular, extensible bash configuration system that provides a comprehensive set of utilities, aliases, and plugins for enhancing your shell experience.
 
-> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.2.0). Features may change, and there may be bugs. Use at your own discretion.
+> ⚠️ **Status: Alpha** - This project is currently in alpha development (v0.2.2). Features may change, and there may be bugs. Use at your own discretion.
 
 ## Features
 
@@ -141,7 +141,7 @@ Edit `~/DOGRC/config/DOGRC.json` to enable/disable features:
 
 ```json
 {
-    "version": "0.2.0",
+    "version": "0.2.2",
     "enable_update_check": true,
     "enable_user_plugins": true,
     "enable_aliases": true,
@@ -307,6 +307,16 @@ Run `drchelp` to see all available commands, or `drchelp <command>` for detailed
   - `timer CLEAR` - Clear all timers
   - `timer --use-dir /path/to/dir` - Use custom directory for timer files
   - `timer -ud /path/to/dir` - Short form for use-dir flag
+
+- **`pastethis`** - Upload files to Pastebin service
+  - `pastethis file.txt` - Upload file to Pastebin
+  - `pastethis --format python file.py` - Specify syntax highlighting
+  - `pastethis --private` - Make paste private (unlisted)
+  - `pastethis --title "My Code"` - Set paste title
+  - `pastethis --expiration 1D` - Set expiration time (1D, 1W, 1M, N)
+  - Reads API key from `~/Documents/pastebin-api-key`
+  - Supports 200+ syntax highlighting formats
+  - Supports `--help` or `-h` for detailed help
 
 - **`fastnote`** - Quick note-taking utility
 
@@ -517,7 +527,26 @@ When contributing:
 
 ## Version History
 
-**v0.2.0** (Current)
+**v0.2.2** (Current)
+- **Bug Fixes**:
+  - **Update Script (`_UPDATE.sh`)**: Fixed critical syntax error in `preamble.sh` extraction logic
+  - Improved robustness of preamble migration to correctly handle multi-line blocks (if/case/for) and comments
+  - Added safer line reading to handle files without trailing newlines
+  - Quoted reserved tokens in regex to prevent shell parser misinterpretation
+
+**v0.2.1**
+- **New Features**:
+  - **pastethis Plugin**: New utility for uploading files to Pastebin
+  - Supports 200+ syntax highlighting formats with intelligent auto-detection
+  - Secure API key management (reads from `~/Documents/pastebin-api-key`)
+  - Customizable privacy (public/unlisted/private), expiration times, and titles
+  - Full bash completion for all flags and options
+- **Enhancements**:
+  - **Documentation**: Added comprehensive `drchelp` documentation for `pastethis`
+  - **Installation/Update**: Integrated `pastethis` into `_INSTALL.sh` and `_UPDATE.sh` for verification and migration summary
+- **Testing**: Added 56 enterprise-grade unit tests for `pastethis` with full support for parallel execution
+
+**v0.2.0**
 - **checksum-verify Plugin Enhancements**:
   - Added recursive directory checksum generation (`--recursive`, `-r`)
   - Added batch verification mode (`--check`, `-c`) to verify files from a checksum file
